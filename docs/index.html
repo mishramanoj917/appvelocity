@@ -5,418 +5,445 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AppVelocity — AI-Powered Mobile Development Platform</title>
   <meta name="description" content="Seven specialized AI agents that transform Figma designs into production-ready mobile code. From design to deployment in minutes, not weeks." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 
   <style>
-    /* ─── Reset & Base ─────────────────────────────────────────────────────── */
+    /* ─── Reset ───────────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; font-size: 16px; }
+    html { scroll-behavior: smooth; }
 
+    /* ─── Tokens ──────────────────────────────────────────────────────────── */
     :root {
-      --bg:       #06060f;
-      --surface:  #0e0e1a;
-      --card:     #13131f;
-      --border:   rgba(99,102,241,0.18);
-      --primary:  #6366f1;
-      --primary2: #818cf8;
-      --violet:   #8b5cf6;
-      --pink:     #ec4899;
-      --cyan:     #06b6d4;
-      --green:    #22c55e;
-      --amber:    #f59e0b;
-      --red:      #ef4444;
-      --txt:      #e2e8f0;
-      --muted:    #64748b;
-      --faint:    #1e293b;
-      --radius:   14px;
-      --shadow:   0 4px 32px rgba(99,102,241,0.12);
+      --bg:         #F3F4F6;
+      --surface:    #FFFFFF;
+      --surface2:   #F9FAFB;
+      --border:     #E5E7EB;
+      --border-lt:  #F0F0F0;
+      --txt:        #111827;
+      --txt2:       #4B5563;
+      --muted:      #9CA3AF;
+      --primary:    #6366f1;
+      --primary-dk: #4F46E5;
+      --primary-lt: #EEF2FF;
+      --primary-bd: #C7D2FE;
+      --violet:     #8B5CF6;
+      --violet-lt:  #F5F3FF;
+      --green:      #10B981;
+      --green-lt:   #ECFDF5;
+      --amber:      #F59E0B;
+      --amber-lt:   #FFFBEB;
+      --blue:       #3B82F6;
+      --blue-lt:    #EFF6FF;
+      --red:        #EF4444;
+      --red-lt:     #FEF2F2;
+      --pink:       #EC4899;
+      --pink-lt:    #FDF2F8;
+      --cyan:       #06B6D4;
+      --cyan-lt:    #ECFEFF;
+      --sh-sm:      0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --sh-md:      0 4px 14px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+      --sh-lg:      0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
+      --r:          12px;
+      --r-lg:       18px;
+      /* Node type palette */
+      --c-gate:       #10B981; --bg-gate:      #ECFDF5; --bd-gate:      #A7F3D0;
+      --c-llm:        #8B5CF6; --bg-llm:       #F5F3FF; --bd-llm:       #DDD6FE;
+      --c-io:         #3B82F6; --bg-io:        #EFF6FF; --bd-io:        #BFDBFE;
+      --c-transform:  #F59E0B; --bg-transform: #FFFBEB; --bd-transform: #FDE68A;
     }
 
     body {
       background: var(--bg);
       color: var(--txt);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       line-height: 1.6;
       overflow-x: hidden;
+      font-size: 15px;
     }
 
     a { color: inherit; text-decoration: none; }
+    code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--primary-lt); color: var(--primary-dk); padding: 2px 6px; border-radius: 4px; }
 
-    /* ─── Typography ───────────────────────────────────────────────────────── */
-    .grad { background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    h1 { font-size: clamp(2.4rem, 5vw, 4rem); font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; }
-    h2 { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 800; letter-spacing: -0.02em; }
-    h3 { font-size: 1.25rem; font-weight: 700; }
-    p  { color: #94a3b8; }
+    /* ─── Typography ──────────────────────────────────────────────────────── */
+    h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; color: var(--txt); }
+    h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 800; letter-spacing: -0.025em; color: var(--txt); }
+    h3 { font-size: 1.15rem; font-weight: 700; color: var(--txt); }
+    p  { color: var(--txt2); }
+    .grad { background: linear-gradient(135deg, #6366f1 0%, #8B5CF6 50%, #EC4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 
-    /* ─── Layout ───────────────────────────────────────────────────────────── */
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-    section { padding: 100px 0; }
-    .section-label { display: inline-flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--primary); background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25); border-radius: 100px; padding: 5px 14px; margin-bottom: 24px; }
-    .section-label::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); display: inline-block; animation: pulse-dot 2s infinite; }
+    /* ─── Layout ──────────────────────────────────────────────────────────── */
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 88px 0; }
 
-    /* ─── Nav ──────────────────────────────────────────────────────────────── */
+    /* ─── Pill / Label ────────────────────────────────────────────────────── */
+    .chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--primary); background: var(--primary-lt);
+      border: 1px solid var(--primary-bd);
+      border-radius: 100px; padding: 5px 14px;
+      margin-bottom: 20px;
+    }
+    .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); animation: blink 2s infinite; }
+
+    /* ─── Badge ───────────────────────────────────────────────────────────── */
+    .badge { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; }
+    .badge-active  { background: var(--green-lt);  color: var(--green);  border: 1px solid #A7F3D0; }
+    .badge-planned { background: var(--surface2);  color: var(--muted);  border: 1px solid var(--border); }
+    .badge-llm     { background: var(--violet-lt); color: var(--violet); border: 1px solid #DDD6FE; }
+
+    /* ─── Buttons ─────────────────────────────────────────────────────────── */
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8B5CF6);
+      color: #fff; padding: 13px 30px; border-radius: 10px;
+      font-weight: 700; font-size: 0.9rem; border: none; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
+    .btn-outline {
+      background: var(--surface); color: var(--txt);
+      padding: 13px 30px; border-radius: 10px;
+      font-weight: 600; font-size: 0.9rem;
+      border: 1.5px solid var(--border); cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-outline:hover { border-color: var(--primary); background: var(--primary-lt); color: var(--primary-dk); }
+
+    /* ─── Divider ─────────────────────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--border); }
+
+    /* ─── Nav ─────────────────────────────────────────────────────────────── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(6,6,15,0.8);
-      backdrop-filter: blur(20px);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 64px;
-      display: flex; align-items: center;
+      height: 60px;
+      box-shadow: var(--sh-sm);
     }
-    .nav-inner { max-width: 1200px; margin: 0 auto; width: 100%; display: flex; align-items: center; justify-content: space-between; }
-    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.1rem; }
-    .nav-logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
-    .nav-links { display: flex; align-items: center; gap: 32px; }
-    .nav-links a { font-size: 0.875rem; color: var(--muted); transition: color 0.2s; }
+    .nav-inner { max-width: 1160px; margin: 0 auto; padding: 0 24px; height: 100%; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 1rem; color: var(--txt); }
+    .nav-logo-mark { width: 30px; height: 30px; background: linear-gradient(135deg, #6366f1, #8B5CF6); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; }
+    .nav-links { display: flex; gap: 28px; }
+    .nav-links a { font-size: 0.85rem; font-weight: 500; color: var(--txt2); transition: color 0.18s; }
     .nav-links a:hover { color: var(--txt); }
-    .nav-cta { background: var(--primary); color: #fff; padding: 8px 20px; border-radius: 8px; font-size: 0.875rem; font-weight: 600; transition: opacity 0.2s; }
-    .nav-cta:hover { opacity: 0.85; }
+    .nav-cta { background: var(--txt); color: #fff; padding: 7px 18px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; transition: opacity 0.18s; }
+    .nav-cta:hover { opacity: 0.8; }
 
-    /* ─── Hero ─────────────────────────────────────────────────────────────── */
+    /* ─── Hero ────────────────────────────────────────────────────────────── */
     #hero {
-      padding-top: 180px;
-      padding-bottom: 120px;
-      position: relative;
-      overflow: hidden;
+      padding-top: 140px; padding-bottom: 96px;
+      background: linear-gradient(160deg, #FAFBFF 0%, #F3F4F6 60%, #F0F4FF 100%);
+      position: relative; overflow: hidden;
     }
-    .hero-glow {
-      position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
-      width: 900px; height: 700px;
-      background: radial-gradient(ellipse at center, rgba(99,102,241,0.18) 0%, transparent 70%);
-      pointer-events: none;
+    .hero-mesh {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(99,102,241,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(139,92,246,0.07) 0%, transparent 50%);
     }
-    .hero-grid-bg {
-      position: absolute; inset: 0;
-      background-image: linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
-      background-size: 60px 60px;
-      pointer-events: none;
-    }
-    .hero-content { position: relative; text-align: center; max-width: 840px; margin: 0 auto; }
-    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3); border-radius: 100px; padding: 6px 16px; font-size: 0.8rem; font-weight: 600; color: var(--primary2); margin-bottom: 32px; }
-    .hero-badge span { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s infinite; display: inline-block; }
-    .hero-title { margin-bottom: 24px; }
-    .hero-sub { font-size: 1.2rem; color: #94a3b8; max-width: 600px; margin: 0 auto 48px; }
-    .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 80px; }
-    .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; padding: 14px 32px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 24px rgba(99,102,241,0.35); cursor: pointer; border: none; }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(99,102,241,0.45); }
-    .btn-ghost { background: transparent; color: var(--txt); padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; border: 1px solid var(--border); transition: border-color 0.2s, background 0.2s; cursor: pointer; }
-    .btn-ghost:hover { border-color: var(--primary); background: rgba(99,102,241,0.06); }
-    .hero-stats { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; }
-    .stat { text-align: center; }
-    .stat-num { font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, #6366f1, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .hero-inner { position: relative; max-width: 800px; }
+    .hero-kicker { display: inline-flex; align-items: center; gap: 8px; background: var(--primary-lt); border: 1px solid var(--primary-bd); border-radius: 100px; padding: 5px 14px; font-size: 0.78rem; font-weight: 600; color: var(--primary-dk); margin-bottom: 28px; }
+    .hero-kicker-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+    .hero-title { margin-bottom: 20px; }
+    .hero-sub { font-size: 1.1rem; color: var(--txt2); max-width: 580px; margin-bottom: 40px; line-height: 1.7; }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 64px; }
+    .hero-stats { display: flex; gap: 48px; flex-wrap: wrap; }
+    .stat-val { font-size: 2.2rem; font-weight: 900; color: var(--primary); letter-spacing: -0.04em; }
+    .stat-lbl { font-size: 0.78rem; color: var(--muted); margin-top: 2px; font-weight: 500; }
 
-    /* ─── Agents grid ──────────────────────────────────────────────────────── */
-    .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 56px; }
+    /* ─── Agent cards ─────────────────────────────────────────────────────── */
+    #platform { background: var(--surface); }
+    .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(295px,1fr)); gap: 18px; margin-top: 48px; }
     .agent-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 22px;
+      transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
+      position: relative; overflow: hidden;
+      box-shadow: var(--sh-sm);
+    }
+    .agent-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--ac, var(--primary)); opacity: 0; transition: opacity 0.22s; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+    .agent-card:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); border-color: #D1D5DB; }
+    .agent-card:hover::after, .agent-card.highlight::after { opacity: 1; }
+    .agent-card.highlight { border-color: var(--primary-bd); }
+    .agent-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .agent-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; background: var(--bg); }
+    .agent-name { font-weight: 800; font-size: 1rem; color: var(--txt); margin-bottom: 5px; }
+    .agent-desc { font-size: 0.84rem; color: var(--txt2); line-height: 1.55; }
+    .agent-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+    .tag { font-size: 0.68rem; color: var(--txt2); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-weight: 500; }
+
+    /* ─── DTC section ─────────────────────────────────────────────────────── */
+    #dtc { background: var(--bg); }
+    .dtc-split { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin-bottom: 80px; }
+    @media(max-width:780px){ .dtc-split { grid-template-columns: 1fr; gap: 36px; } }
+    .feature-rows { margin-top: 28px; display: flex; flex-direction: column; gap: 13px; }
+    .feature-row { display: flex; gap: 12px; align-items: flex-start; }
+    .feature-check { width: 20px; height: 20px; border-radius: 50%; background: var(--green-lt); border: 1.5px solid #A7F3D0; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: var(--green); font-weight: 900; }
+    .feature-row p { font-size: 0.875rem; margin: 0; }
+    .code-card { background: var(--txt); border-radius: var(--r-lg); padding: 22px; box-shadow: var(--sh-lg); }
+    .code-dots { display: flex; gap: 6px; margin-bottom: 18px; }
+    .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .c-line { display: flex; gap: 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.9; }
+    .c-num { color: #4B5563; min-width: 20px; text-align: right; user-select: none; }
+    .kw  { color: #C792EA; } .fn  { color: #82AAFF; } .str { color: #C3E88D; }
+    .cm  { color: #546E7A; font-style: italic; } .type { color: #FFCB6B; }
+    .op  { color: #89DDFF; } .prop { color: #80CBC4; }
+
+    /* ─── Pipeline Infographic ────────────────────────────────────────────── */
+    .pipeline-section { margin-top: 0; }
+    .pipeline-heading { text-align: center; margin-bottom: 52px; }
+    .pipeline-heading p { margin-top: 10px; font-size: 1rem; }
+
+    /* Node type colors (must be inside a rule block — appended to :root above) */
+
+    .pipeline-diagram {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 40px 32px 32px;
+      box-shadow: var(--sh-md);
       position: relative;
-      overflow: hidden;
     }
-    .agent-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: var(--agent-color, var(--primary));
-      opacity: 0;
-      transition: opacity 0.25s;
-    }
-    .agent-card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.35); box-shadow: var(--shadow); }
-    .agent-card:hover::before { opacity: 1; }
-    .agent-card.active { border-color: rgba(99,102,241,0.4); }
-    .agent-card.active::before { opacity: 1; }
-    .agent-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .agent-icon { font-size: 1.8rem; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: rgba(99,102,241,0.1); }
-    .badge { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 100px; text-transform: uppercase; }
-    .badge-active { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
-    .badge-planned { background: rgba(100,116,139,0.15); color: var(--muted); border: 1px solid rgba(100,116,139,0.2); }
-    .badge-beta { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
-    .agent-name { font-weight: 800; font-size: 1.05rem; margin-bottom: 6px; }
-    .agent-desc { font-size: 0.875rem; color: var(--muted); line-height: 1.5; }
-    .agent-caps { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
-    .cap-pill { font-size: 0.7rem; color: #94a3b8; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 3px 8px; }
 
-    /* ─── DesignToCode Feature Section ────────────────────────────────────── */
-    #dtc { background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 50%, var(--bg) 100%); }
-    .dtc-intro { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin-bottom: 80px; }
-    @media(max-width:768px){ .dtc-intro { grid-template-columns: 1fr; gap: 40px; } }
-    .dtc-feature-list { list-style: none; display: flex; flex-direction: column; gap: 16px; margin-top: 32px; }
-    .dtc-feature-list li { display: flex; align-items: flex-start; gap: 12px; font-size: 0.9rem; color: #94a3b8; }
-    .dtc-feature-list li::before { content: ''; width: 20px; height: 20px; border-radius: 50%; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.35); flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
-    .check-icon { color: var(--green); font-weight: 900; font-size: 0.8rem; flex-shrink: 0; margin-top: 3px; }
-    .dtc-code-preview {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: 0.8rem;
-      line-height: 1.7;
-    }
-    .code-line { display: flex; gap: 16px; }
-    .code-num { color: var(--muted); user-select: none; min-width: 24px; text-align: right; }
-    .kw { color: #c792ea; } .fn { color: #82aaff; } .str { color: #c3e88d; }
-    .cm { color: #546e7a; font-style: italic; } .type { color: #ffcb6b; }
-    .op { color: #89ddff; } .num { color: #f78c6c; }
+    /* Legend */
+    .pipe-legend { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 36px; }
+    .leg-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 600; color: var(--txt2); }
+    .leg-dot { width: 10px; height: 10px; border-radius: 50%; }
 
-    /* ─── Workflow Pipeline ────────────────────────────────────────────────── */
-    .pipeline-wrapper { position: relative; }
-    .pipeline-heading { text-align: center; margin-bottom: 56px; }
-    .pipeline-heading p { margin-top: 12px; }
+    /* Nodes row */
+    .pipe-row { display: flex; align-items: flex-start; gap: 0; position: relative; }
 
-    .pipeline {
-      display: flex;
-      align-items: flex-start;
-      gap: 0;
-      overflow-x: auto;
-      padding: 0 0 40px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--border) transparent;
-    }
-    .pipeline-node {
+    .pipe-node {
       flex: 1;
-      min-width: 160px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      cursor: pointer;
       position: relative;
+      cursor: pointer;
+      padding: 0 6px;
     }
-    .pipeline-node:not(:last-child)::after {
+
+    /* arrow connector between nodes */
+    .pipe-node:not(:last-child)::after {
       content: '';
       position: absolute;
-      top: 40px;
-      right: -1px;
-      width: calc(100% - 80px + 2px);
+      top: 36px; /* vertically center on circle */
+      left: calc(50% + 38px);
+      right: calc(-50% + 38px);
       height: 2px;
-      background: linear-gradient(90deg, rgba(99,102,241,0.6), rgba(139,92,246,0.4));
+      background: linear-gradient(90deg, var(--border), var(--border));
       z-index: 0;
-      left: calc(50% + 40px);
     }
-    .node-circle {
-      width: 80px; height: 80px;
-      border-radius: 50%;
-      background: var(--card);
-      border: 2px solid var(--border);
+    .pipe-node:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      top: 31px;
+      right: calc(-50% + 35px);
+      width: 0; height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 7px solid var(--muted);
+      z-index: 1;
+    }
+
+    .p-circle {
+      width: 72px; height: 72px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.6rem;
-      position: relative; z-index: 1;
-      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
-      margin-bottom: 16px;
+      font-size: 1.7rem;
+      background: var(--node-bg, var(--bg));
+      border: 2px solid var(--node-bd, var(--border));
+      transition: transform 0.22s, box-shadow 0.22s;
+      position: relative; z-index: 2;
+      box-shadow: var(--sh-sm);
     }
-    .pipeline-node:hover .node-circle,
-    .pipeline-node.active .node-circle {
-      transform: scale(1.1);
-      border-color: var(--primary);
-      box-shadow: 0 0 32px rgba(99,102,241,0.35);
+    .pipe-node:hover .p-circle,
+    .pipe-node.active .p-circle {
+      transform: scale(1.12);
+      box-shadow: 0 0 0 4px var(--node-ring, rgba(99,102,241,0.15)), var(--sh-md);
     }
-    .pipeline-node.llm .node-circle { border-color: rgba(139,92,246,0.5); }
-    .pipeline-node.active .node-circle { background: rgba(99,102,241,0.12); }
-    .node-label { font-size: 0.8rem; font-weight: 700; text-align: center; color: var(--txt); }
-    .node-sublabel { font-size: 0.68rem; color: var(--muted); text-align: center; margin-top: 4px; }
-    .node-llm-badge { font-size: 0.6rem; background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.35); color: #a78bfa; border-radius: 100px; padding: 2px 8px; margin-top: 6px; font-weight: 700; letter-spacing: 0.05em; }
+    .p-num {
+      position: absolute; top: -5px; right: -5px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--node-c, var(--primary));
+      color: #fff; font-size: 0.6rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #fff;
+      z-index: 3;
+    }
+    .p-name { font-size: 0.75rem; font-weight: 700; color: var(--txt); text-align: center; margin-top: 10px; line-height: 1.3; }
+    .p-type { font-size: 0.65rem; font-weight: 600; text-align: center; margin-top: 4px; padding: 2px 8px; border-radius: 100px; background: var(--node-bg); color: var(--node-c); border: 1px solid var(--node-bd); }
+
+    /* Retry arc */
+    .retry-arc-wrap {
+      position: relative; margin-top: 18px; height: 54px;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    .retry-arc-wrap svg { position: absolute; left: 0; top: 0; width: 100%; height: 54px; overflow: visible; }
+    .retry-label { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.7rem; font-weight: 600; color: var(--red); background: #FEF2F2; border: 1px solid #FECACA; border-radius: 100px; padding: 2px 10px; z-index: 2; }
+
+    /* Conditional routing annotation */
+    .route-note { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+    .route-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--txt2); }
+    .route-line { width: 24px; height: 2px; border-radius: 1px; }
+    .route-line.dashed { background: repeating-linear-gradient(90deg, currentColor 0, currentColor 4px, transparent 4px, transparent 8px); }
 
     /* Node detail panel */
-    .node-detail {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 32px;
-      margin-top: 40px;
-      display: none;
-      animation: fadeUp 0.3s ease;
+    .node-panel {
+      margin-top: 24px; display: none;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: var(--r); padding: 28px;
+      animation: fadeUp 0.28s ease;
     }
-    .node-detail.visible { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-    @media(max-width:768px){ .node-detail.visible { grid-template-columns: 1fr; } }
-    .node-detail-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; grid-column: 1 / -1; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
-    .node-detail-icon { font-size: 2rem; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 14px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); }
-    .node-detail-title { font-size: 1.4rem; font-weight: 800; }
-    .node-detail-subtitle { font-size: 0.875rem; color: var(--muted); margin-top: 4px; }
-    .node-section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 12px; }
-    .node-io-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-    .node-io-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.875rem; color: #94a3b8; }
-    .dot-in { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); flex-shrink: 0; margin-top: 6px; }
-    .dot-out { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; margin-top: 6px; }
-    .node-steps { list-style: none; counter-reset: steps; display: flex; flex-direction: column; gap: 10px; }
-    .node-steps li { counter-increment: steps; display: flex; gap: 12px; font-size: 0.875rem; color: #94a3b8; align-items: flex-start; }
-    .node-steps li::before { content: counter(steps); min-width: 24px; height: 24px; border-radius: 50%; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); color: var(--primary2); font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .close-detail { cursor: pointer; font-size: 0.8rem; color: var(--muted); background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 4px 12px; border-radius: 6px; float: right; transition: background 0.2s; }
-    .close-detail:hover { background: rgba(255,255,255,0.08); }
-    .node-indicator { position: absolute; bottom: -48px; left: 50%; transform: translateX(-50%); display: none; }
-    .node-indicator.visible { display: block; }
-    .node-indicator svg { color: var(--primary); }
+    .node-panel.open { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; }
+    @media(max-width:720px){ .node-panel.open { grid-template-columns: 1fr; } }
+    .panel-hdr { grid-column: 1/-1; display: flex; align-items: center; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+    .panel-icon { width: 52px; height: 52px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; background: var(--primary-lt); flex-shrink: 0; }
+    .panel-title { font-size: 1.2rem; font-weight: 800; color: var(--txt); }
+    .panel-sub { font-size: 0.84rem; color: var(--txt2); margin-top: 3px; }
+    .panel-close { margin-left: auto; font-size: 0.75rem; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 4px 12px; border-radius: 6px; cursor: pointer; transition: background 0.18s; flex-shrink: 0; }
+    .panel-close:hover { background: var(--border); }
+    .panel-sec-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 10px; }
+    .io-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    .io-list li { display: flex; gap: 9px; font-size: 0.84rem; color: var(--txt2); align-items: flex-start; }
+    .io-dot-in  { width: 8px; height: 8px; border-radius: 50%; background: var(--blue);  flex-shrink: 0; margin-top: 5px; }
+    .io-dot-out { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; margin-top: 5px; }
+    .step-list { list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 9px; }
+    .step-list li { counter-increment: s; display: flex; gap: 10px; font-size: 0.84rem; color: var(--txt2); align-items: flex-start; }
+    .step-list li::before { content: counter(s); min-width: 22px; height: 22px; border-radius: 50%; background: var(--primary-lt); border: 1.5px solid var(--primary-bd); color: var(--primary-dk); font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-    /* ─── Data Flow ────────────────────────────────────────────────────────── */
-    .data-flow-grid { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 0; align-items: center; margin-top: 56px; }
-    @media(max-width:860px) { .data-flow-grid { grid-template-columns: 1fr; gap: 16px; } .data-flow-arrow { display: none; } }
-    .data-box {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-    }
-    .data-box-title { font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
-    .data-box-title span { font-size: 1.4rem; }
-    .data-item { display: flex; gap: 8px; align-items: flex-start; font-size: 0.8rem; color: var(--muted); padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-    .data-item:last-child { border-bottom: none; }
-    .data-item-key { color: var(--primary2); font-weight: 600; min-width: 80px; flex-shrink: 0; font-family: monospace; font-size: 0.75rem; }
-    .data-flow-arrow { display: flex; align-items: center; padding: 0 16px; color: var(--muted); font-size: 1.5rem; }
+    /* ─── Data Flow ───────────────────────────────────────────────────────── */
+    #dataflow { background: var(--surface); }
+    .df-grid { display: grid; grid-template-columns: 1fr 48px 1fr 48px 1fr; gap: 0; align-items: center; margin-top: 48px; }
+    @media(max-width:860px){ .df-grid { grid-template-columns: 1fr; gap: 16px; } .df-arr { display: none; } }
+    .df-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 24px; box-shadow: var(--sh-sm); }
+    .df-box-head { font-size: 0.8rem; font-weight: 800; color: var(--txt); display: flex; align-items: center; gap: 9px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .df-box-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+    .df-item { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-lt); font-size: 0.79rem; }
+    .df-item:last-child { border-bottom: none; }
+    .df-key { font-family: 'JetBrains Mono', monospace; color: var(--primary-dk); font-weight: 600; min-width: 76px; flex-shrink: 0; font-size: 0.74rem; }
+    .df-val { color: var(--txt2); }
+    .df-arr { display: flex; align-items: center; justify-content: center; color: var(--muted); }
+    .df-arr svg { width: 24px; height: 24px; }
 
-    /* ─── Architecture ─────────────────────────────────────────────────────── */
-    .arch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
-    @media(max-width:768px){ .arch-grid { grid-template-columns: 1fr; } }
-    .arch-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      transition: border-color 0.25s;
-    }
-    .arch-card:hover { border-color: rgba(99,102,241,0.35); }
-    .arch-icon { font-size: 1.5rem; margin-bottom: 16px; }
+    /* ─── Architecture ────────────────────────────────────────────────────── */
+    #architecture { background: var(--bg); }
+    .arch-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 48px; }
+    @media(max-width:760px){ .arch-grid { grid-template-columns: 1fr; } }
+    .arch-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 24px; box-shadow: var(--sh-sm); transition: transform 0.2s, box-shadow 0.2s; }
+    .arch-card:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); }
+    .arch-ic { font-size: 1.4rem; width: 44px; height: 44px; border-radius: 11px; background: var(--primary-lt); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
     .arch-title { font-weight: 700; margin-bottom: 8px; }
-    .arch-desc { font-size: 0.875rem; color: var(--muted); }
+    .arch-desc { font-size: 0.84rem; color: var(--txt2); line-height: 1.6; }
 
-    /* ─── Future Agents ────────────────────────────────────────────────────── */
-    .future-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-top: 56px; }
-    .future-card {
-      background: var(--card);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: var(--radius);
-      padding: 24px;
-      opacity: 0.8;
-      transition: opacity 0.25s, border-color 0.25s;
-    }
-    .future-card:hover { opacity: 1; border-color: var(--border); }
-    .future-card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-    .future-icon { font-size: 1.5rem; width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-    .future-name { font-weight: 700; font-size: 1rem; }
-    .future-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
-    .future-caps { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
-    .future-cap { font-size: 0.75rem; color: #64748b; display: flex; gap: 6px; align-items: center; }
-    .future-cap::before { content: '—'; color: var(--muted); }
+    /* ─── Roadmap ─────────────────────────────────────────────────────────── */
+    #roadmap { background: var(--surface); }
+    .roadmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px,1fr)); gap: 18px; margin-top: 48px; }
+    .roadmap-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-lg); padding: 22px; box-shadow: var(--sh-sm); transition: transform 0.2s, box-shadow 0.2s; }
+    .roadmap-card:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); }
+    .rm-hdr { display: flex; align-items: center; gap: 13px; margin-bottom: 13px; }
+    .rm-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+    .rm-name { font-weight: 800; font-size: 0.95rem; color: var(--txt); }
+    .rm-phase { font-size: 0.68rem; color: var(--muted); font-weight: 600; margin-top: 1px; }
+    .rm-desc { font-size: 0.84rem; color: var(--txt2); line-height: 1.55; margin-bottom: 12px; }
+    .rm-caps { display: flex; flex-direction: column; gap: 6px; }
+    .rm-cap { font-size: 0.76rem; color: var(--txt2); display: flex; gap: 7px; align-items: flex-start; }
+    .rm-cap::before { content: '—'; color: var(--muted); flex-shrink: 0; }
 
-    /* ─── CTA ──────────────────────────────────────────────────────────────── */
+    /* ─── CTA ─────────────────────────────────────────────────────────────── */
     #cta {
-      padding: 100px 0;
+      background: linear-gradient(135deg, #6366f1 0%, #8B5CF6 100%);
+      padding: 96px 0;
       text-align: center;
-      position: relative;
-      overflow: hidden;
+      position: relative; overflow: hidden;
     }
-    .cta-glow {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      width: 600px; height: 400px;
-      background: radial-gradient(ellipse, rgba(99,102,241,0.2), transparent 70%);
-      pointer-events: none;
+    #cta::before {
+      content: ''; position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
     }
-    .cta-content { position: relative; }
-    .cta-title { margin-bottom: 20px; }
-    .cta-sub { font-size: 1.1rem; color: #94a3b8; max-width: 500px; margin: 0 auto 48px; }
+    .cta-inner { position: relative; }
+    #cta h2 { color: #fff; margin-bottom: 16px; }
+    #cta p { color: rgba(255,255,255,0.75); font-size: 1.05rem; max-width: 480px; margin: 0 auto 40px; }
+    .btn-cta-white { background: #fff; color: var(--primary-dk); padding: 14px 36px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.15); transition: transform 0.2s; }
+    .btn-cta-white:hover { transform: translateY(-2px); }
+    .btn-cta-ghost { background: transparent; color: #fff; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; border: 1.5px solid rgba(255,255,255,0.4); cursor: pointer; transition: background 0.2s; }
+    .btn-cta-ghost:hover { background: rgba(255,255,255,0.1); }
 
-    /* ─── Footer ───────────────────────────────────────────────────────────── */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 40px 0;
-      text-align: center;
-      font-size: 0.875rem;
-      color: var(--muted);
-    }
-    .footer-logo { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; color: var(--txt); margin-bottom: 16px; font-size: 1rem; }
-    .footer-links { display: flex; justify-content: center; gap: 32px; margin-bottom: 24px; }
-    .footer-links a { color: var(--muted); transition: color 0.2s; }
-    .footer-links a:hover { color: var(--txt); }
+    /* ─── Footer ──────────────────────────────────────────────────────────── */
+    footer { background: var(--txt); color: #9CA3AF; padding: 44px 0 28px; text-align: center; }
+    .foot-logo { display: flex; align-items: center; justify-content: center; gap: 9px; color: #fff; font-weight: 800; margin-bottom: 18px; }
+    .foot-links { display: flex; justify-content: center; gap: 28px; margin-bottom: 28px; flex-wrap: wrap; }
+    .foot-links a { font-size: 0.84rem; color: #6B7280; transition: color 0.2s; }
+    .foot-links a:hover { color: #fff; }
+    footer p { font-size: 0.8rem; }
 
-    /* ─── Divider ──────────────────────────────────────────────────────────── */
-    .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 0; }
+    /* ─── Animations ──────────────────────────────────────────────────────── */
+    @keyframes blink  { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes dash   { to{stroke-dashoffset:0} }
 
-    /* ─── Animations ───────────────────────────────────────────────────────── */
-    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes flow { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-
-    .fade-up { animation: fadeUp 0.6s ease both; }
-    .delay-1 { animation-delay: 0.1s; }
-    .delay-2 { animation-delay: 0.2s; }
-    .delay-3 { animation-delay: 0.3s; }
-    .delay-4 { animation-delay: 0.4s; }
-
-    /* ─── Scrollbar ────────────────────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    /* ─── Scrollbar ───────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-    /* ─── Highlight ────────────────────────────────────────────────────────── */
-    .highlight { color: var(--primary2); }
-    .text-center { text-align: center; }
-    .mb-4 { margin-bottom: 16px; }
-    .mt-4 { margin-top: 16px; }
+    /* ─── Responsive helpers ──────────────────────────────────────────────── */
+    @media(max-width:640px){
+      section { padding: 64px 0; }
+      .nav-links { display: none; }
+      .hero-stats { gap: 28px; }
+    }
   </style>
 </head>
 <body>
 
-<!-- ── Navigation ──────────────────────────────────────────────────────────── -->
+<!-- ── NAV ────────────────────────────────────────────────────────────────── -->
 <nav>
   <div class="nav-inner">
     <div class="nav-logo">
-      <div class="nav-logo-icon">⚡</div>
-      <span>AppVelocity</span>
+      <div class="nav-logo-mark">⚡</div>
+      AppVelocity
     </div>
     <div class="nav-links">
       <a href="#platform">Platform</a>
       <a href="#dtc">DesignToCode</a>
-      <a href="#architecture">Architecture</a>
+      <a href="#dataflow">Architecture</a>
       <a href="#roadmap">Roadmap</a>
     </div>
     <a href="#cta" class="nav-cta">Get Early Access</a>
   </div>
 </nav>
 
-<!-- ── Hero ────────────────────────────────────────────────────────────────── -->
+<!-- ── HERO ───────────────────────────────────────────────────────────────── -->
 <section id="hero">
-  <div class="hero-glow"></div>
-  <div class="hero-grid-bg"></div>
+  <div class="hero-mesh"></div>
   <div class="container">
-    <div class="hero-content">
-      <div class="hero-badge fade-up">
-        <span></span>
-        Phase 2 Complete — LangGraph Workflow Active
+    <div class="hero-inner">
+      <div class="hero-kicker">
+        <span class="hero-kicker-dot"></span>
+        Phase 2 Complete &nbsp;·&nbsp; LangGraph Workflow Live
       </div>
-      <h1 class="hero-title fade-up delay-1">
+      <h1 class="hero-title">
         Build Mobile Apps<br/>
         <span class="grad">10× Faster with AI</span>
       </h1>
-      <p class="hero-sub fade-up delay-2">
-        Seven specialized agents that transform Figma designs into production-ready React Native and Flutter code — automatically, with full accessibility and design fidelity.
+      <p class="hero-sub">
+        Seven specialized AI agents that transform Figma designs into production-ready React Native and Flutter code — with full design fidelity, built-in accessibility, and zero manual effort.
       </p>
-      <div class="hero-actions fade-up delay-3">
-        <button class="btn-primary" onclick="document.getElementById('dtc').scrollIntoView({behavior:'smooth'})">
-          See How It Works ↓
-        </button>
-        <button class="btn-ghost" onclick="document.getElementById('platform').scrollIntoView({behavior:'smooth'})">
-          Explore Platform
-        </button>
+      <div class="hero-actions">
+        <button class="btn-primary" onclick="document.getElementById('dtc').scrollIntoView({behavior:'smooth'})">See How It Works →</button>
+        <button class="btn-outline" onclick="document.getElementById('platform').scrollIntoView({behavior:'smooth'})">Explore Platform</button>
       </div>
-      <div class="hero-stats fade-up delay-4">
-        <div class="stat">
-          <div class="stat-num">7</div>
-          <div class="stat-label">AI Agents</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num">90%</div>
-          <div class="stat-label">Faster Delivery</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num">4</div>
-          <div class="stat-label">Target Frameworks</div>
-        </div>
-        <div class="stat">
-          <div class="stat-num">100%</div>
-          <div class="stat-label">Design Fidelity</div>
-        </div>
+      <div class="hero-stats">
+        <div><div class="stat-val">7</div><div class="stat-lbl">AI Agents</div></div>
+        <div><div class="stat-val">90%</div><div class="stat-lbl">Faster Delivery</div></div>
+        <div><div class="stat-val">4</div><div class="stat-lbl">Target Frameworks</div></div>
+        <div><div class="stat-val">100%</div><div class="stat-lbl">Design Fidelity</div></div>
       </div>
     </div>
   </div>
@@ -424,343 +451,368 @@
 
 <div class="divider"></div>
 
-<!-- ── Platform Overview ────────────────────────────────────────────────────── -->
+<!-- ── PLATFORM OVERVIEW ──────────────────────────────────────────────────── -->
 <section id="platform">
   <div class="container">
-    <div class="section-label">Platform</div>
-    <h2>Seven Agents,<br/><span class="grad">One Platform</span></h2>
-    <p style="max-width:560px; margin-top:16px;">Each agent is purpose-built for a specific phase of mobile development — from design parsing to security hardening. One platform, end-to-end.</p>
+    <div class="chip"><span class="chip-dot"></span>Platform</div>
+    <h2>Seven Agents, <span class="grad">One Platform</span></h2>
+    <p style="max-width:540px; margin-top:12px;">Each agent is purpose-built for a specific phase of mobile development — from design parsing to regulatory compliance.</p>
 
     <div class="agents-grid">
-      <!-- DesignToCode -->
-      <div class="agent-card active" style="--agent-color: #6366f1;">
-        <div class="agent-header">
-          <div class="agent-icon">🎨</div>
+
+      <div class="agent-card highlight" style="--ac:#6366f1;">
+        <div class="agent-hdr">
+          <div class="agent-icon" style="background:#EEF2FF;">🎨</div>
           <span class="badge badge-active">Active</span>
         </div>
         <div class="agent-name">DesignToCodeAgent</div>
-        <div class="agent-desc">Transforms Figma designs into production-ready React Native and Flutter code via a 6-node LangGraph workflow.</div>
-        <div class="agent-caps">
-          <span class="cap-pill">Figma API</span>
-          <span class="cap-pill">LangGraph</span>
-          <span class="cap-pill">React Native</span>
-          <span class="cap-pill">Flutter</span>
-          <span class="cap-pill">Design Tokens</span>
-          <span class="cap-pill">IR Builder</span>
+        <div class="agent-desc">Full 6-node LangGraph workflow — Figma → IR → production React Native &amp; Flutter code with design tokens and accessibility.</div>
+        <div class="agent-tags">
+          <span class="tag">Figma API</span><span class="tag">LangGraph</span><span class="tag">React Native</span><span class="tag">Flutter</span><span class="tag">Design IR</span>
         </div>
       </div>
-      <!-- Access -->
-      <div class="agent-card" style="--agent-color: #22c55e;">
-        <div class="agent-header">
-          <div class="agent-icon" style="background:rgba(34,197,94,0.1)">♿</div>
+
+      <div class="agent-card" style="--ac:#10B981;">
+        <div class="agent-hdr">
+          <div class="agent-icon" style="background:#ECFDF5;">♿</div>
           <span class="badge badge-planned">Planned</span>
         </div>
         <div class="agent-name">AccessAgent</div>
-        <div class="agent-desc">Ensures every screen meets WCAG AA/AAA standards — color contrast, focus order, screen reader labels, and keyboard navigation.</div>
-        <div class="agent-caps">
-          <span class="cap-pill">WCAG AA/AAA</span>
-          <span class="cap-pill">Screen Reader</span>
-          <span class="cap-pill">Color Contrast</span>
+        <div class="agent-desc">Validates and remediates WCAG AA/AAA compliance — color contrast, focus order, screen reader labels.</div>
+        <div class="agent-tags">
+          <span class="tag">WCAG AA/AAA</span><span class="tag">Color Contrast</span><span class="tag">Screen Reader</span>
         </div>
       </div>
-      <!-- Shield -->
-      <div class="agent-card" style="--agent-color: #ef4444;">
-        <div class="agent-header">
-          <div class="agent-icon" style="background:rgba(239,68,68,0.1)">🛡️</div>
+
+      <div class="agent-card" style="--ac:#EF4444;">
+        <div class="agent-hdr">
+          <div class="agent-icon" style="background:#FEF2F2;">🛡️</div>
           <span class="badge badge-planned">Planned</span>
         </div>
         <div class="agent-name">ShieldAgent</div>
-        <div class="agent-desc">Scans generated code for security vulnerabilities — injection flaws, XSS, insecure storage, and exposed secrets.</div>
-        <div class="agent-caps">
-          <span class="cap-pill">OWASP Top 10</span>
-          <span class="cap-pill">Secrets Detection</span>
-          <span class="cap-pill">Input Validation</span>
+        <div class="agent-desc">Scans generated code for OWASP Mobile Top 10 vulnerabilities, exposed secrets, and insecure patterns.</div>
+        <div class="agent-tags">
+          <span class="tag">OWASP</span><span class="tag">Secret Detection</span><span class="tag">Static Analysis</span>
         </div>
       </div>
-      <!-- Perfect -->
-      <div class="agent-card" style="--agent-color: #f59e0b;">
-        <div class="agent-header">
-          <div class="agent-icon" style="background:rgba(245,158,11,0.1)">⚡</div>
+
+      <div class="agent-card" style="--ac:#F59E0B;">
+        <div class="agent-hdr">
+          <div class="agent-icon" style="background:#FFFBEB;">⚡</div>
           <span class="badge badge-planned">Planned</span>
         </div>
         <div class="agent-name">PerfectAgent</div>
-        <div class="agent-desc">Optimizes bundle size, lazy loading, image compression, and render performance to hit 60fps on all target devices.</div>
-        <div class="agent-caps">
-          <span class="cap-pill">Bundle Analysis</span>
-          <span class="cap-pill">Lazy Loading</span>
-          <span class="cap-pill">Image Optimization</span>
+        <div class="agent-desc">Optimizes for 60fps — bundle size, lazy loading, image compression, re-render analysis.</div>
+        <div class="agent-tags">
+          <span class="tag">Bundle Analysis</span><span class="tag">Lazy Loading</span><span class="tag">60fps</span>
         </div>
       </div>
-      <!-- TestIQ -->
-      <div class="agent-card" style="--agent-color: #8b5cf6;">
-        <div class="agent-header">
-          <div class="agent-icon" style="background:rgba(139,92,246,0.1)">🧪</div>
+
+      <div class="agent-card" style="--ac:#8B5CF6;">
+        <div class="agent-hdr">
+          <div class="agent-icon" style="background:#F5F3FF;">🧪</div>
           <span class="badge badge-planned">Planned</span>
         </div>
         <div class="agent-name">TestIQAgent</div>
-        <div class="agent-desc">Generates a complete test suite — unit, integration, and E2E — matched to the generated component structure.</div>
-        <div class="agent-caps">
-          <span class="cap-pill">Unit Tests</span>
-          <span class="cap-pill">E2E (Detox)</span>
-          <span class="cap-pill">Visual Regression</span>
+        <div class="agent-desc">Auto-generates unit, integration, and E2E tests matched to the generated component structure.</div>
+        <div class="agent-tags">
+          <span class="tag">Jest</span><span class="tag">Detox E2E</span><span class="tag">Visual Regression</span>
         </div>
       </div>
-      <!-- DevBoost -->
-      <div class="agent-card" style="--agent-color: #06b6d4;">
-        <div class="agent-header">
-          <div class="agent-icon" style="background:rgba(6,182,212,0.1)">🚀</div>
+
+      <div class="agent-card" style="--ac:#06B6D4;">
+        <div class="agent-hdr">
+          <div class="agent-icon" style="background:#ECFEFF;">🚀</div>
           <span class="badge badge-planned">Planned</span>
         </div>
         <div class="agent-name">DevBoostAgent</div>
-        <div class="agent-desc">Generates documentation, CI/CD pipelines, setup scripts, and changelogs to accelerate every dev workflow.</div>
-        <div class="agent-caps">
-          <span class="cap-pill">README Gen</span>
-          <span class="cap-pill">CI/CD Config</span>
-          <span class="cap-pill">API Docs</span>
+        <div class="agent-desc">Generates READMEs, CI/CD pipelines, API docs, and Fastlane lanes for instant developer onboarding.</div>
+        <div class="agent-tags">
+          <span class="tag">CI/CD Config</span><span class="tag">API Docs</span><span class="tag">Fastlane</span>
         </div>
       </div>
-      <!-- Compliance -->
-      <div class="agent-card" style="--agent-color: #ec4899;">
-        <div class="agent-header">
-          <div class="agent-icon" style="background:rgba(236,72,153,0.1)">📋</div>
+
+      <div class="agent-card" style="--ac:#EC4899;">
+        <div class="agent-hdr">
+          <div class="agent-icon" style="background:#FDF2F8;">📋</div>
           <span class="badge badge-planned">Planned</span>
         </div>
         <div class="agent-name">ComplianceAgent</div>
-        <div class="agent-desc">Validates regulatory compliance — GDPR data handling, HIPAA controls, PCI DSS patterns, and privacy policy generation.</div>
-        <div class="agent-caps">
-          <span class="cap-pill">GDPR</span>
-          <span class="cap-pill">HIPAA</span>
-          <span class="cap-pill">PCI DSS</span>
+        <div class="agent-desc">Ensures GDPR, HIPAA, and PCI DSS compliance patterns are baked into every generated app from day one.</div>
+        <div class="agent-tags">
+          <span class="tag">GDPR</span><span class="tag">HIPAA</span><span class="tag">PCI DSS</span>
         </div>
       </div>
+
     </div>
   </div>
 </section>
 
 <div class="divider"></div>
 
-<!-- ── DesignToCode Deep Dive ───────────────────────────────────────────────── -->
+<!-- ── DESIGN TO CODE DEEP DIVE ───────────────────────────────────────────── -->
 <section id="dtc">
   <div class="container">
-    <div class="section-label">DesignToCodeAgent</div>
+    <div class="chip"><span class="chip-dot"></span>DesignToCodeAgent</div>
 
-    <!-- Intro split -->
-    <div class="dtc-intro">
+    <!-- Split intro -->
+    <div class="dtc-split">
       <div>
-        <h2>From Figma File<br/><span class="grad">to Production Code</span></h2>
-        <p style="margin-top:16px; font-size:1rem;">
-          Give the agent a Figma URL. It reads the entire design file, extracts tokens and components, builds a platform-agnostic Intermediate Representation (IR), validates quality with an LLM critic, then generates clean, idiomatic mobile code.
-        </p>
-        <ul class="dtc-feature-list">
-          <li>
-            <span class="check-icon">✓</span>
-            Direct Figma API integration with full design token extraction
-          </li>
-          <li>
-            <span class="check-icon">✓</span>
-            Platform-agnostic IR decouples design parsing from code generation
-          </li>
-          <li>
-            <span class="check-icon">✓</span>
-            LLM critic validates accessibility and structure before generating
-          </li>
-          <li>
-            <span class="check-icon">✓</span>
-            React Native &amp; Flutter output with correct auto-layout mapping
-          </li>
-          <li>
-            <span class="check-icon">✓</span>
-            Iterative retry loop — automatically re-builds IR on critic failure
-          </li>
-          <li>
-            <span class="check-icon">✓</span>
-            37 unit + integration tests · TypeScript strict · zero any
-          </li>
-        </ul>
+        <h2>Figma URL In,<br/><span class="grad">Production Code Out</span></h2>
+        <p style="margin-top:14px; font-size:0.95rem; line-height:1.75;">Give the agent a Figma URL. It reads the design file, extracts tokens and components, builds a platform-agnostic IR, validates it with an LLM critic, then generates clean idiomatic mobile code — in minutes.</p>
+        <div class="feature-rows">
+          <div class="feature-row"><div class="feature-check">✓</div><p>Direct Figma API integration with design token extraction (colors, spacing, typography)</p></div>
+          <div class="feature-row"><div class="feature-check">✓</div><p>Platform-agnostic IR decouples design parsing from code generation — add SwiftUI or Jetpack Compose without touching Figma logic</p></div>
+          <div class="feature-row"><div class="feature-check">✓</div><p>LLM critic validates accessibility and structure before code is generated</p></div>
+          <div class="feature-row"><div class="feature-check">✓</div><p>Iterative retry loop — automatically rebuilds IR if critic validation fails (max 2×)</p></div>
+          <div class="feature-row"><div class="feature-check">✓</div><p>37 unit + integration tests · TypeScript strict · zero <code>any</code></p></div>
+        </div>
       </div>
-      <div class="dtc-code-preview">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
-          <div style="display:flex; gap:6px;">
-            <span style="width:10px;height:10px;border-radius:50%;background:#ff5f57;display:inline-block;"></span>
-            <span style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;display:inline-block;"></span>
-            <span style="width:10px;height:10px;border-radius:50%;background:#28c840;display:inline-block;"></span>
+      <div>
+        <div class="code-card">
+          <div class="code-dots">
+            <div class="code-dot" style="background:#FF5F57;"></div>
+            <div class="code-dot" style="background:#FFBD2E;"></div>
+            <div class="code-dot" style="background:#28C840;"></div>
           </div>
-          <span style="font-size:0.7rem; color:var(--muted);">workflow.ts</span>
+          <div class="c-line"><span class="c-num">1</span><span class="cm">// Invoke the 6-node workflow</span></div>
+          <div class="c-line"><span class="c-num">2</span><span class="kw">const</span> <span class="prop">result</span> = <span class="kw">await</span> <span class="fn">compiledWorkflow</span>.<span class="fn">invoke</span>({</span></div>
+          <div class="c-line"><span class="c-num">3</span><span>&nbsp;&nbsp;<span class="prop">figmaUrl</span>: <span class="str">'https://figma.com/design/abc123'</span>,</span></div>
+          <div class="c-line"><span class="c-num">4</span><span>&nbsp;&nbsp;<span class="prop">targetFramework</span>: <span class="str">'react-native'</span>,</span></div>
+          <div class="c-line"><span class="c-num">5</span><span>&nbsp;&nbsp;<span class="prop">options</span>: { <span class="prop">accessibility</span>: <span class="kw">true</span>, <span class="prop">tokens</span>: <span class="kw">true</span> }</span></div>
+          <div class="c-line"><span class="c-num">6</span><span>});</span></div>
+          <div class="c-line"><span class="c-num">7</span><span>&nbsp;</span></div>
+          <div class="c-line"><span class="c-num">8</span><span class="cm">// Access the code bundle</span></div>
+          <div class="c-line"><span class="c-num">9</span><span><span class="kw">const</span> { <span class="prop">files</span> } = <span class="prop">result</span>.<span class="prop">generatedCode</span>;</span></div>
+          <div class="c-line"><span class="c-num">10</span><span class="cm">// → HomeScreen.tsx, theme.ts, navigation.ts</span></div>
+          <div style="margin-top:16px; padding-top:16px; border-top:1px solid #2d2d3d;">
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <span style="font-size:0.68rem; background:#1a1a2e; color:#82AAFF; border:1px solid #2d2d3d; padding:3px 9px; border-radius:6px;">Claude Sonnet 4.6</span>
+              <span style="font-size:0.68rem; background:#1a1a2e; color:#C3E88D; border:1px solid #2d2d3d; padding:3px 9px; border-radius:6px;">LangGraph v0.2</span>
+              <span style="font-size:0.68rem; background:#1a1a2e; color:#FFCB6B; border:1px solid #2d2d3d; padding:3px 9px; border-radius:6px;">TypeScript strict</span>
+              <span style="font-size:0.68rem; background:#1a1a2e; color:#C792EA; border:1px solid #2d2d3d; padding:3px 9px; border-radius:6px;">37 tests passing</span>
+            </div>
+          </div>
         </div>
-        <div class="code-line"><span class="code-num">1</span><span><span class="cm">// Run the full workflow</span></span></div>
-        <div class="code-line"><span class="code-num">2</span><span><span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">compiledWorkflow</span>.<span class="fn">invoke</span>({</span></div>
-        <div class="code-line"><span class="code-num">3</span><span>&nbsp;&nbsp;figmaUrl: <span class="str">'https://figma.com/design/abc123'</span>,</span></div>
-        <div class="code-line"><span class="code-num">4</span><span>&nbsp;&nbsp;targetFramework: <span class="str">'react-native'</span>,</span></div>
-        <div class="code-line"><span class="code-num">5</span><span>&nbsp;&nbsp;options: { accessibility: <span class="kw">true</span>, tokens: <span class="kw">true</span> }</span></div>
-        <div class="code-line"><span class="code-num">6</span><span>});</span></div>
-        <div class="code-line"><span class="code-num">7</span><span>&nbsp;</span></div>
-        <div class="code-line"><span class="code-num">8</span><span><span class="cm">// Access generated code bundle</span></span></div>
-        <div class="code-line"><span class="code-num">9</span><span><span class="kw">const</span> { files } = result.<span class="fn">generatedCode</span>;</span></div>
-        <div class="code-line"><span class="code-num">10</span><span><span class="cm">// → HomeScreen.tsx, theme.ts, navigation.ts</span></span></div>
       </div>
     </div>
 
-    <!-- Pipeline Visualization -->
-    <div class="pipeline-wrapper">
+    <!-- ── PIPELINE INFOGRAPHIC ────────────────────────────────────────────── -->
+    <div class="pipeline-section">
       <div class="pipeline-heading">
-        <div class="section-label" style="margin:0 auto 16px;">Workflow Orchestration</div>
+        <div class="chip" style="display:inline-flex; margin:0 auto 16px;">Workflow Orchestration</div>
         <h2>6-Node <span class="grad">LangGraph Pipeline</span></h2>
-        <p>Click any node to explore its inputs, outputs, and responsibilities.</p>
+        <p>Click any node to inspect its inputs, outputs, and responsibilities.</p>
       </div>
 
-      <div class="pipeline" id="pipeline">
+      <div class="pipeline-diagram">
 
-        <!-- Node 1: InputValidator -->
-        <div class="pipeline-node" id="node-1" onclick="selectNode(1)">
-          <div class="node-circle">✅</div>
-          <div class="node-label">InputValidator</div>
-          <div class="node-sublabel">Node 1</div>
+        <!-- Legend -->
+        <div class="pipe-legend">
+          <div class="leg-item"><div class="leg-dot" style="background:#10B981;"></div> Gate / Validation</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#8B5CF6;"></div> LLM Reasoning</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#3B82F6;"></div> API I/O</div>
+          <div class="leg-item"><div class="leg-dot" style="background:#F59E0B;"></div> Data Transform</div>
         </div>
 
-        <!-- Node 2: PlannerAgent -->
-        <div class="pipeline-node llm" id="node-2" onclick="selectNode(2)">
-          <div class="node-circle">🗺️</div>
-          <div class="node-label">PlannerAgent</div>
-          <div class="node-sublabel">Node 2</div>
-          <div class="node-llm-badge">🤖 LLM</div>
+        <!-- Nodes -->
+        <div class="pipe-row" id="pipe-row">
+
+          <div class="pipe-node" id="pn1" onclick="openNode(1)"
+            style="--node-c:#10B981; --node-bg:#ECFDF5; --node-bd:#A7F3D0; --node-ring:rgba(16,185,129,0.15);">
+            <div class="p-circle"><span class="p-num">1</span>✅</div>
+            <div class="p-name">Input<br/>Validator</div>
+            <div class="p-type">Gate</div>
+          </div>
+
+          <div class="pipe-node" id="pn2" onclick="openNode(2)"
+            style="--node-c:#8B5CF6; --node-bg:#F5F3FF; --node-bd:#DDD6FE; --node-ring:rgba(139,92,246,0.15);">
+            <div class="p-circle"><span class="p-num">2</span>🗺️</div>
+            <div class="p-name">Planner<br/>Agent</div>
+            <div class="p-type">LLM</div>
+          </div>
+
+          <div class="pipe-node" id="pn3" onclick="openNode(3)"
+            style="--node-c:#3B82F6; --node-bg:#EFF6FF; --node-bd:#BFDBFE; --node-ring:rgba(59,130,246,0.15);">
+            <div class="p-circle"><span class="p-num">3</span>🔍</div>
+            <div class="p-name">Researcher<br/>Agent</div>
+            <div class="p-type">API I/O</div>
+          </div>
+
+          <div class="pipe-node" id="pn4" onclick="openNode(4)"
+            style="--node-c:#F59E0B; --node-bg:#FFFBEB; --node-bd:#FDE68A; --node-ring:rgba(245,158,11,0.15);">
+            <div class="p-circle"><span class="p-num">4</span>🏗️</div>
+            <div class="p-name">IR Builder<br/>Agent</div>
+            <div class="p-type">Transform</div>
+          </div>
+
+          <div class="pipe-node" id="pn5" onclick="openNode(5)"
+            style="--node-c:#8B5CF6; --node-bg:#F5F3FF; --node-bd:#DDD6FE; --node-ring:rgba(139,92,246,0.15);">
+            <div class="p-circle"><span class="p-num">5</span>🔬</div>
+            <div class="p-name">Critic<br/>Agent</div>
+            <div class="p-type">LLM</div>
+          </div>
+
+          <div class="pipe-node" id="pn6" onclick="openNode(6)"
+            style="--node-c:#8B5CF6; --node-bg:#F5F3FF; --node-bd:#DDD6FE; --node-ring:rgba(139,92,246,0.15);">
+            <div class="p-circle"><span class="p-num">6</span>⚙️</div>
+            <div class="p-name">Generator<br/>Agent</div>
+            <div class="p-type">LLM</div>
+          </div>
+
+        </div><!-- /pipe-row -->
+
+        <!-- Retry arc (SVG drawn by JS after layout) -->
+        <div class="retry-arc-wrap" id="retryWrap">
+          <svg id="retrySvg" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <marker id="retryHead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                <path d="M0,0 L0,8 L8,4 z" fill="#EF4444"/>
+              </marker>
+            </defs>
+            <!-- path drawn by JS -->
+          </svg>
+          <span class="retry-label">↩ Retry loop — CriticAgent → IRBuilderAgent (max 2×, on validation failure)</span>
         </div>
 
-        <!-- Node 3: ResearcherAgent -->
-        <div class="pipeline-node" id="node-3" onclick="selectNode(3)">
-          <div class="node-circle">🔍</div>
-          <div class="node-label">ResearcherAgent</div>
-          <div class="node-sublabel">Node 3</div>
+        <!-- Routing key -->
+        <div class="route-note" style="margin-top:12px;">
+          <div class="route-item">
+            <div class="route-line" style="background:#10B981;"></div>
+            <span>Valid input → PlannerAgent</span>
+          </div>
+          <div class="route-item">
+            <div class="route-line" style="background:#EF4444; height:2px; border-top:2px dashed #EF4444; background:none;"></div>
+            <span>Invalid input → END (early exit)</span>
+          </div>
+          <div class="route-item">
+            <div class="route-line" style="background:#10B981;"></div>
+            <span>Critic pass → GeneratorAgent</span>
+          </div>
+          <div class="route-item">
+            <div class="route-line" style="background:#F59E0B;"></div>
+            <span>Critic fail + retries exhausted → END</span>
+          </div>
         </div>
 
-        <!-- Node 4: IRBuilderAgent -->
-        <div class="pipeline-node" id="node-4" onclick="selectNode(4)">
-          <div class="node-circle">🏗️</div>
-          <div class="node-label">IRBuilderAgent</div>
-          <div class="node-sublabel">Node 4</div>
-        </div>
+        <!-- Detail panel -->
+        <div class="node-panel" id="node-panel"></div>
 
-        <!-- Node 5: CriticAgent -->
-        <div class="pipeline-node llm" id="node-5" onclick="selectNode(5)">
-          <div class="node-circle">🔬</div>
-          <div class="node-label">CriticAgent</div>
-          <div class="node-sublabel">Node 5</div>
-          <div class="node-llm-badge">🤖 LLM</div>
-        </div>
+      </div><!-- /pipeline-diagram -->
+    </div><!-- /pipeline-section -->
 
-        <!-- Node 6: GeneratorAgent -->
-        <div class="pipeline-node llm" id="node-6" onclick="selectNode(6)">
-          <div class="node-circle">⚙️</div>
-          <div class="node-label">GeneratorAgent</div>
-          <div class="node-sublabel">Node 6</div>
-          <div class="node-llm-badge">🤖 LLM</div>
-        </div>
-      </div>
-
-      <!-- Retry note -->
-      <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin: -16px 0 32px; font-size:0.8rem; color:var(--muted);">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>
-        </svg>
-        <span>CriticAgent → IRBuilderAgent retry loop (max 2 retries on validation failure)</span>
-      </div>
-
-      <!-- Detail Panel (filled by JS) -->
-      <div class="node-detail" id="node-detail"></div>
-    </div>
   </div>
 </section>
 
 <div class="divider"></div>
 
-<!-- ── Data Flow ────────────────────────────────────────────────────────────── -->
+<!-- ── DATA FLOW ──────────────────────────────────────────────────────────── -->
+<section id="dataflow">
+  <div class="container">
+    <div class="chip"><span class="chip-dot"></span>Data Model</div>
+    <h2>Figma → IR → <span class="grad">Production Code</span></h2>
+    <p style="max-width:560px; margin-top:12px;">A platform-agnostic Intermediate Representation is the key architectural insight — it decouples design parsing from code generation, making new output targets trivial to add.</p>
+
+    <div class="df-grid">
+      <!-- Stage 1 -->
+      <div class="df-box">
+        <div class="df-box-head">
+          <div class="df-box-icon" style="background:#EFF6FF;">📐</div>
+          Raw Figma Data
+        </div>
+        <div class="df-item"><span class="df-key">document</span><span class="df-val">DOCUMENT → CANVAS → FRAME node tree</span></div>
+        <div class="df-item"><span class="df-key">components</span><span class="df-val">Shared component &amp; component-set defs</span></div>
+        <div class="df-item"><span class="df-key">variables</span><span class="df-val">Design tokens — colors, spacing, type</span></div>
+        <div class="df-item"><span class="df-key">styles</span><span class="df-val">Text, fill, stroke, effect style maps</span></div>
+        <div class="df-item"><span class="df-key">layoutMode</span><span class="df-val">AUTO / HORIZONTAL / VERTICAL (Auto Layout)</span></div>
+        <div class="df-item"><span class="df-key">fills</span><span class="df-val">Solid, gradient, image paint defs</span></div>
+      </div>
+
+      <!-- Arrow 1 -->
+      <div class="df-arr">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </div>
+
+      <!-- Stage 2 -->
+      <div class="df-box" style="border-color:#FDE68A;">
+        <div class="df-box-head">
+          <div class="df-box-icon" style="background:#FFFBEB;">🔷</div>
+          Design IR
+        </div>
+        <div class="df-item"><span class="df-key">screens[]</span><span class="df-val">Screen defs with element index map</span></div>
+        <div class="df-item"><span class="df-key">components[]</span><span class="df-val">Reusable component definitions</span></div>
+        <div class="df-item"><span class="df-key">tokens</span><span class="df-val">Normalized colors, spacing, typography</span></div>
+        <div class="df-item"><span class="df-key">assets[]</span><span class="df-val">Images, icons, exported assets</span></div>
+        <div class="df-item"><span class="df-key">layout.flex</span><span class="df-val">direction, gap, padding, alignment</span></div>
+        <div class="df-item"><span class="df-key">a11y</span><span class="df-val">Semantic roles, labels, focus order</span></div>
+      </div>
+
+      <!-- Arrow 2 -->
+      <div class="df-arr">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </div>
+
+      <!-- Stage 3 -->
+      <div class="df-box" style="border-color:#A7F3D0;">
+        <div class="df-box-head">
+          <div class="df-box-icon" style="background:#ECFDF5;">💻</div>
+          Generated Code
+        </div>
+        <div class="df-item"><span class="df-key">screens/</span><span class="df-val">HomeScreen.tsx · ProfileScreen.tsx</span></div>
+        <div class="df-item"><span class="df-key">components/</span><span class="df-val">Button.tsx · Card.tsx · Avatar.tsx</span></div>
+        <div class="df-item"><span class="df-key">theme.ts</span><span class="df-val">Color, spacing &amp; typography tokens</span></div>
+        <div class="df-item"><span class="df-key">navigation.ts</span><span class="df-val">React Navigation / Flutter Navigator</span></div>
+        <div class="df-item"><span class="df-key">styles</span><span class="df-val">StyleSheet.create (RN) · ThemeData (Flutter)</span></div>
+        <div class="df-item"><span class="df-key">assets/</span><span class="df-val">Optimized images, icon components</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── ARCHITECTURE CARDS ─────────────────────────────────────────────────── -->
 <section id="architecture">
   <div class="container">
-    <div class="section-label">Data Model</div>
-    <h2>Figma → IR → <span class="grad">Production Code</span></h2>
-    <p style="max-width:560px; margin-top:16px;">A platform-agnostic Intermediate Representation decouples design parsing from code generation. Add new output targets (SwiftUI, Jetpack Compose) without touching the Figma layer.</p>
+    <div class="chip"><span class="chip-dot"></span>System Design</div>
+    <h2>Key <span class="grad">Architectural Decisions</span></h2>
+    <p style="max-width:520px; margin-top:12px;">The technology choices that make AppVelocity fast, reliable, and extensible.</p>
 
-    <div class="data-flow-grid">
-      <!-- Stage 1: Figma -->
-      <div class="data-box">
-        <div class="data-box-title"><span>📐</span> Raw Figma Data</div>
-        <div class="data-item"><span class="data-item-key">document</span><span>Node tree — DOCUMENT → CANVAS → FRAME</span></div>
-        <div class="data-item"><span class="data-item-key">components</span><span>Shared component definitions &amp; sets</span></div>
-        <div class="data-item"><span class="data-item-key">variables</span><span>Design tokens (colors, spacing, type)</span></div>
-        <div class="data-item"><span class="data-item-key">styles</span><span>Text, fill, stroke, effect styles</span></div>
-        <div class="data-item"><span class="data-item-key">layoutMode</span><span>AUTO, HORIZONTAL, VERTICAL (Auto Layout)</span></div>
-        <div class="data-item"><span class="data-item-key">fills</span><span>Solid, gradient, image fill definitions</span></div>
-      </div>
-      <div class="data-flow-arrow">→</div>
-      <!-- Stage 2: IR -->
-      <div class="data-box" style="border-color:rgba(245,158,11,0.3);">
-        <div class="data-box-title"><span>🔷</span> Design IR</div>
-        <div class="data-item"><span class="data-item-key">screens[]</span><span>Screen definitions with element index</span></div>
-        <div class="data-item"><span class="data-item-key">components[]</span><span>Reusable component definitions</span></div>
-        <div class="data-item"><span class="data-item-key">tokens</span><span>Normalized color/spacing/type tokens</span></div>
-        <div class="data-item"><span class="data-item-key">assets[]</span><span>Images, icons, and exported assets</span></div>
-        <div class="data-item"><span class="data-item-key">layout.flex</span><span>direction, gap, padding, alignment</span></div>
-        <div class="data-item"><span class="data-item-key">a11y</span><span>Semantic roles, labels, focus order</span></div>
-      </div>
-      <div class="data-flow-arrow">→</div>
-      <!-- Stage 3: Code -->
-      <div class="data-box" style="border-color:rgba(34,197,94,0.25);">
-        <div class="data-box-title"><span>💻</span> Generated Code</div>
-        <div class="data-item"><span class="data-item-key">screens/</span><span>HomeScreen.tsx · ProfileScreen.tsx</span></div>
-        <div class="data-item"><span class="data-item-key">components/</span><span>Button.tsx · Card.tsx · Avatar.tsx</span></div>
-        <div class="data-item"><span class="data-item-key">theme.ts</span><span>Colors, spacing, typography tokens</span></div>
-        <div class="data-item"><span class="data-item-key">navigation.ts</span><span>React Navigation / Flutter Navigator</span></div>
-        <div class="data-item"><span class="data-item-key">styles</span><span>StyleSheet.create (RN) · ThemeData (Flutter)</span></div>
-        <div class="data-item"><span class="data-item-key">assets/</span><span>Optimized images, icon components</span></div>
-      </div>
-    </div>
-
-    <!-- Architecture cards -->
-    <div style="margin-top:80px;">
-      <h3 style="margin-bottom:8px;">System Architecture</h3>
-      <p style="font-size:0.9rem;">Key technical decisions behind the platform.</p>
-    </div>
     <div class="arch-grid">
       <div class="arch-card">
-        <div class="arch-icon">🔗</div>
+        <div class="arch-ic">🔗</div>
         <div class="arch-title">LangGraph State Machine</div>
-        <div class="arch-desc">
-          Each node operates on a shared <code style="font-family:monospace;font-size:0.8rem;color:var(--primary2)">WorkflowState</code> with append-reducer semantics for logs and errors. Conditional edges handle early exit, retry loops, and routing decisions — all type-safe via <code style="font-family:monospace;font-size:0.8rem;color:var(--primary2)">Annotation.Root</code>.
-        </div>
+        <div class="arch-desc">Each node operates on a shared <code>WorkflowState</code> with append-reducer semantics for logs and errors. Conditional edges handle retry loops and routing — all type-safe via <code>Annotation.Root</code>.</div>
       </div>
       <div class="arch-card">
-        <div class="arch-icon">📦</div>
-        <div class="arch-title">Monorepo Architecture</div>
-        <div class="arch-desc">
-          pnpm workspaces + Turbo build cache. Each agent lives in its own package (<code style="font-family:monospace;font-size:0.8rem;color:var(--primary2)">packages/agents/*</code>) with independent versioning, test suites, and build targets. Shared types flow through <code style="font-family:monospace;font-size:0.8rem;color:var(--primary2)">@appvelocity/shared-core</code>.
-        </div>
+        <div class="arch-ic">📦</div>
+        <div class="arch-title">pnpm Monorepo</div>
+        <div class="arch-desc">Turborepo build cache + pnpm workspaces. Each agent lives in <code>packages/agents/*</code> with independent versioning and test suites. Shared types flow through <code>@appvelocity/shared-core</code>.</div>
       </div>
       <div class="arch-card">
-        <div class="arch-icon">🤖</div>
-        <div class="arch-title">LLM Abstraction Layer</div>
-        <div class="arch-desc">
-          A <code style="font-family:monospace;font-size:0.8rem;color:var(--primary2)">LLMClient</code> interface wraps Anthropic's API with JSON-mode support and a <code style="font-family:monospace;font-size:0.8rem;color:var(--primary2)">setLLMClient()</code> testing hook. Swap to GPT-4o or any provider by implementing two methods.
-        </div>
+        <div class="arch-ic">🤖</div>
+        <div class="arch-title">Swappable LLM Client</div>
+        <div class="arch-desc">A <code>LLMClient</code> interface wraps Anthropic's SDK with JSON-mode support and a <code>setLLMClient()</code> test hook. Switch to GPT-4o or any provider by implementing two methods.</div>
       </div>
       <div class="arch-card">
-        <div class="arch-icon">⚡</div>
-        <div class="arch-title">Real-time Streaming</div>
-        <div class="arch-desc">
-          The Next.js dashboard streams workflow events via Server-Sent Events. Every log entry, progress tick, and final code bundle is pushed to the browser as it happens — no polling required.
-        </div>
+        <div class="arch-ic">⚡</div>
+        <div class="arch-title">Real-time SSE Streaming</div>
+        <div class="arch-desc">The Next.js dashboard streams workflow events via Server-Sent Events. Every log entry, progress tick, and code bundle is pushed to the browser in real-time — no polling required.</div>
       </div>
       <div class="arch-card">
-        <div class="arch-icon">🛡️</div>
+        <div class="arch-ic">🛡️</div>
         <div class="arch-title">Rate Limiting &amp; Caching</div>
-        <div class="arch-desc">
-          FigmaClient uses p-queue to enforce Figma's 60 req/min API limit. LRU cache with 5-minute TTL prevents redundant fetches. Axios-retry with exponential backoff handles transient failures gracefully.
-        </div>
+        <div class="arch-desc">FigmaClient uses p-queue to enforce Figma's 60 req/min API limit, LRU cache with 5-min TTL, and axios-retry with exponential backoff to handle transient failures.</div>
       </div>
       <div class="arch-card">
-        <div class="arch-icon">🧪</div>
-        <div class="arch-title">Test Coverage</div>
-        <div class="arch-desc">
-          78+ tests across unit, integration, and workflow layers. Vitest with module mocking isolates each node. Integration tests exercise the full LangGraph graph with mocked FigmaClient and LLM responses.
-        </div>
+        <div class="arch-ic">🧪</div>
+        <div class="arch-title">78+ Tests, Strict Types</div>
+        <div class="arch-desc">Vitest with module mocking isolates each node. Integration tests exercise the full LangGraph graph. TypeScript strict mode with zero <code>any</code> across all packages.</div>
       </div>
     </div>
   </div>
@@ -768,377 +820,359 @@
 
 <div class="divider"></div>
 
-<!-- ── Roadmap ──────────────────────────────────────────────────────────────── -->
+<!-- ── ROADMAP ────────────────────────────────────────────────────────────── -->
 <section id="roadmap">
   <div class="container">
-    <div class="section-label">Roadmap</div>
+    <div class="chip"><span class="chip-dot"></span>Roadmap</div>
     <h2>What's <span class="grad">Coming Next</span></h2>
-    <p style="max-width:520px; margin-top:16px;">DesignToCodeAgent is production-ready. The remaining six agents are architected and ready for implementation — each building on the same proven LangGraph foundation.</p>
+    <p style="max-width:520px; margin-top:12px;">DesignToCodeAgent is live. The remaining six agents are architected and ready for implementation — each built on the same proven LangGraph foundation.</p>
 
-    <div class="future-grid">
-      <div class="future-card">
-        <div class="future-card-header">
-          <div class="future-icon" style="background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.2);">♿</div>
+    <div class="roadmap-grid">
+
+      <div class="roadmap-card">
+        <div class="rm-hdr">
+          <div class="rm-icon" style="background:#ECFDF5; border:1.5px solid #A7F3D0;">♿</div>
           <div>
-            <div class="future-name">AccessAgent</div>
-            <span class="badge badge-planned" style="font-size:0.6rem;">Phase 3</span>
+            <div class="rm-name">AccessAgent</div>
+            <div class="rm-phase">Phase 3 · WCAG Compliance</div>
           </div>
         </div>
-        <div class="future-desc">Automatically validate and remediate accessibility issues in generated code to ensure WCAG AA/AAA compliance out of the box.</div>
-        <div class="future-caps">
-          <div class="future-cap">Color contrast validation against all text + background pairs</div>
-          <div class="future-cap">Screen reader label injection for interactive elements</div>
-          <div class="future-cap">Focus order and keyboard navigation path analysis</div>
-          <div class="future-cap">ARIA role mapping from Figma semantic annotations</div>
+        <div class="rm-desc">Automatically validate and remediate accessibility issues — ensuring every generated app passes WCAG AA/AAA out of the box.</div>
+        <div class="rm-caps">
+          <div class="rm-cap">Color contrast validation across all text + background pairs</div>
+          <div class="rm-cap">Screen reader label injection for all interactive elements</div>
+          <div class="rm-cap">ARIA role mapping from Figma semantic annotations</div>
+          <div class="rm-cap">Focus order and keyboard navigation path analysis</div>
         </div>
       </div>
-      <div class="future-card">
-        <div class="future-card-header">
-          <div class="future-icon" style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.2);">🛡️</div>
+
+      <div class="roadmap-card">
+        <div class="rm-hdr">
+          <div class="rm-icon" style="background:#FEF2F2; border:1.5px solid #FECACA;">🛡️</div>
           <div>
-            <div class="future-name">ShieldAgent</div>
-            <span class="badge badge-planned" style="font-size:0.6rem;">Phase 4</span>
+            <div class="rm-name">ShieldAgent</div>
+            <div class="rm-phase">Phase 4 · Security Hardening</div>
           </div>
         </div>
-        <div class="future-desc">Static analysis and LLM-powered security review to catch vulnerabilities before a single line ships to production.</div>
-        <div class="future-caps">
-          <div class="future-cap">OWASP Mobile Top 10 vulnerability scanning</div>
-          <div class="future-cap">Hardcoded secret and credential detection</div>
-          <div class="future-cap">Insecure AsyncStorage and keychain usage</div>
-          <div class="future-cap">Network security config validation</div>
+        <div class="rm-desc">Static analysis and LLM-powered review to catch OWASP Mobile Top 10 vulnerabilities before anything ships to production.</div>
+        <div class="rm-caps">
+          <div class="rm-cap">Hardcoded secret and API credential detection</div>
+          <div class="rm-cap">Insecure AsyncStorage and Keychain usage patterns</div>
+          <div class="rm-cap">Network security config and SSL pinning checks</div>
+          <div class="rm-cap">XSS and injection vulnerability pattern matching</div>
         </div>
       </div>
-      <div class="future-card">
-        <div class="future-card-header">
-          <div class="future-icon" style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.2);">⚡</div>
+
+      <div class="roadmap-card">
+        <div class="rm-hdr">
+          <div class="rm-icon" style="background:#FFFBEB; border:1.5px solid #FDE68A;">⚡</div>
           <div>
-            <div class="future-name">PerfectAgent</div>
-            <span class="badge badge-planned" style="font-size:0.6rem;">Phase 4</span>
+            <div class="rm-name">PerfectAgent</div>
+            <div class="rm-phase">Phase 4 · Performance</div>
           </div>
         </div>
-        <div class="future-desc">Profile and optimize generated apps for 60fps render performance, minimal bundle size, and fast startup times.</div>
-        <div class="future-caps">
-          <div class="future-cap">Metro bundle analysis and tree-shaking hints</div>
-          <div class="future-cap">Image lazy loading and progressive loading setup</div>
-          <div class="future-cap">FlatList / RecyclerView virtualisation patterns</div>
-          <div class="future-cap">Re-render analysis with memo/callback suggestions</div>
+        <div class="rm-desc">Profile and optimize for 60fps render performance, minimal bundle size, and fast cold-start times across iOS and Android.</div>
+        <div class="rm-caps">
+          <div class="rm-cap">Metro bundle analysis and tree-shaking hints</div>
+          <div class="rm-cap">FlatList / RecyclerView virtualisation patterns</div>
+          <div class="rm-cap">Image lazy loading and progressive loading setup</div>
+          <div class="rm-cap">Re-render analysis with useMemo/useCallback hints</div>
         </div>
       </div>
-      <div class="future-card">
-        <div class="future-card-header">
-          <div class="future-icon" style="background:rgba(139,92,246,0.12); border:1px solid rgba(139,92,246,0.2);">🧪</div>
+
+      <div class="roadmap-card">
+        <div class="rm-hdr">
+          <div class="rm-icon" style="background:#F5F3FF; border:1.5px solid #DDD6FE;">🧪</div>
           <div>
-            <div class="future-name">TestIQAgent</div>
-            <span class="badge badge-planned" style="font-size:0.6rem;">Phase 5</span>
+            <div class="rm-name">TestIQAgent</div>
+            <div class="rm-phase">Phase 5 · Test Generation</div>
           </div>
         </div>
-        <div class="future-desc">Generate a complete, realistic test suite that mirrors the component structure produced by DesignToCodeAgent.</div>
-        <div class="future-caps">
-          <div class="future-cap">Jest unit tests for every generated component</div>
-          <div class="future-cap">Detox E2E scenarios covering all navigation flows</div>
-          <div class="future-cap">Visual regression baseline capture</div>
-          <div class="future-cap">Mock data factories matched to screen schemas</div>
+        <div class="rm-desc">Generate a complete, realistic test suite that mirrors the component structure produced by DesignToCodeAgent.</div>
+        <div class="rm-caps">
+          <div class="rm-cap">Jest unit tests for every generated component</div>
+          <div class="rm-cap">Detox E2E scenarios for all navigation flows</div>
+          <div class="rm-cap">Visual regression baseline capture and comparison</div>
+          <div class="rm-cap">Mock data factories matched to screen data schemas</div>
         </div>
       </div>
-      <div class="future-card">
-        <div class="future-card-header">
-          <div class="future-icon" style="background:rgba(6,182,212,0.12); border:1px solid rgba(6,182,212,0.2);">🚀</div>
+
+      <div class="roadmap-card">
+        <div class="rm-hdr">
+          <div class="rm-icon" style="background:#ECFEFF; border:1.5px solid #A5F3FC;">🚀</div>
           <div>
-            <div class="future-name">DevBoostAgent</div>
-            <span class="badge badge-planned" style="font-size:0.6rem;">Phase 5</span>
+            <div class="rm-name">DevBoostAgent</div>
+            <div class="rm-phase">Phase 5 · DX Automation</div>
           </div>
         </div>
-        <div class="future-desc">Accelerate developer onboarding and maintenance with AI-generated documentation, CI/CD configs, and changelogs.</div>
-        <div class="future-caps">
-          <div class="future-cap">README, storybook stories, and component API docs</div>
-          <div class="future-cap">GitHub Actions workflows for CI/CD</div>
-          <div class="future-cap">Fastlane lanes for app store deployment</div>
-          <div class="future-cap">Semantic changelogs from git diff + IR diff</div>
+        <div class="rm-desc">Accelerate developer onboarding and maintenance with AI-generated documentation, CI/CD pipelines, and semantic changelogs.</div>
+        <div class="rm-caps">
+          <div class="rm-cap">README, Storybook stories, and component API docs</div>
+          <div class="rm-cap">GitHub Actions CI/CD workflows</div>
+          <div class="rm-cap">Fastlane lanes for App Store and Play Store deployment</div>
+          <div class="rm-cap">Semantic changelogs from git diff + IR diff</div>
         </div>
       </div>
-      <div class="future-card">
-        <div class="future-card-header">
-          <div class="future-icon" style="background:rgba(236,72,153,0.12); border:1px solid rgba(236,72,153,0.2);">📋</div>
+
+      <div class="roadmap-card">
+        <div class="rm-hdr">
+          <div class="rm-icon" style="background:#FDF2F8; border:1.5px solid #FBCFE8;">📋</div>
           <div>
-            <div class="future-name">ComplianceAgent</div>
-            <span class="badge badge-planned" style="font-size:0.6rem;">Phase 6</span>
+            <div class="rm-name">ComplianceAgent</div>
+            <div class="rm-phase">Phase 6 · Regulatory</div>
           </div>
         </div>
-        <div class="future-desc">Ensure every generated app meets the regulatory requirements of its target market — from day one of development.</div>
-        <div class="future-caps">
-          <div class="future-cap">GDPR consent flow and data deletion patterns</div>
-          <div class="future-cap">HIPAA secure storage and audit log scaffolding</div>
-          <div class="future-cap">PCI DSS payment form compliance checks</div>
-          <div class="future-cap">Privacy policy and app store metadata generation</div>
+        <div class="rm-desc">Ensure every generated app meets its target market's regulatory requirements — from GDPR to HIPAA — from the very first commit.</div>
+        <div class="rm-caps">
+          <div class="rm-cap">GDPR consent flow and right-to-erasure patterns</div>
+          <div class="rm-cap">HIPAA secure storage and audit log scaffolding</div>
+          <div class="rm-cap">PCI DSS payment form compliance patterns</div>
+          <div class="rm-cap">Privacy policy and App Store metadata generation</div>
         </div>
       </div>
+
     </div>
   </div>
 </section>
 
-<div class="divider"></div>
-
-<!-- ── CTA ──────────────────────────────────────────────────────────────────── -->
+<!-- ── CTA ────────────────────────────────────────────────────────────────── -->
 <section id="cta">
-  <div class="cta-glow"></div>
   <div class="container">
-    <div class="cta-content">
-      <div class="section-label" style="margin: 0 auto 24px;">Early Access</div>
-      <h2 class="cta-title">Ship Mobile Apps<br/><span class="grad">10× Faster</span></h2>
-      <p class="cta-sub">Join the early access program and be among the first teams to go from Figma to production in hours instead of weeks.</p>
-      <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-        <button class="btn-primary" style="font-size:1rem; padding:16px 40px;">
-          Request Early Access
-        </button>
-        <button class="btn-ghost" style="font-size:1rem; padding:16px 40px;" onclick="document.getElementById('dtc').scrollIntoView({behavior:'smooth'})">
-          See the Demo ↓
-        </button>
+    <div class="cta-inner">
+      <h2>Ship Mobile Apps<br/>10× Faster</h2>
+      <p>Join the early access program and go from Figma to production in hours, not weeks.</p>
+      <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn-cta-white">Request Early Access</button>
+        <button class="btn-cta-ghost" onclick="document.getElementById('dtc').scrollIntoView({behavior:'smooth'})">See the Demo ↓</button>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── Footer ───────────────────────────────────────────────────────────────── -->
+<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
 <footer>
   <div class="container">
-    <div class="footer-logo">
-      <div class="nav-logo-icon">⚡</div>
+    <div class="foot-logo">
+      <div class="nav-logo-mark">⚡</div>
       AppVelocity
     </div>
-    <div class="footer-links">
+    <div class="foot-links">
       <a href="#platform">Platform</a>
       <a href="#dtc">DesignToCode</a>
-      <a href="#architecture">Architecture</a>
+      <a href="#dataflow">Architecture</a>
       <a href="#roadmap">Roadmap</a>
     </div>
     <p>© 2025 AppVelocity. AI-Powered Mobile Development Platform.</p>
   </div>
 </footer>
 
-<!-- ── Interactive Pipeline JS ─────────────────────────────────────────────── -->
+<!-- ── JS ─────────────────────────────────────────────────────────────────── -->
 <script>
-const nodes = {
+/* ── Node data ────────────────────────────────────────────────────────────── */
+const NODE_DATA = {
   1: {
-    icon: '✅',
-    name: 'InputValidator',
-    subtitle: 'Gate keeper — validates every input before the workflow begins',
-    type: 'logic',
-    steps: [
-      'Parse Figma URL using parseFigmaUrl() — accepts full URL or bare file key',
-      'Check FIGMA_ACCESS_TOKEN environment variable is present and non-empty',
+    icon:'✅', name:'InputValidator', type:'Gate / Validation',
+    sub:'The workflow gatekeeper — validates every input before execution begins',
+    steps:[
+      'Parse Figma URL via parseFigmaUrl() — accepts full URL or bare file key',
+      'Verify FIGMA_ACCESS_TOKEN environment variable is present and non-empty',
       'Validate targetFramework is one of: react-native, flutter, react-native-web',
-      'Accumulate all validation errors into errors[] (does not short-circuit on first error)',
-      'If errors present → route to END; if valid → route to PlannerAgent'
+      'Accumulate all errors into errors[] without short-circuiting on first failure',
+      'If errors present → route to END (early exit). If valid → route to PlannerAgent'
     ],
-    inputs: [
-      'figmaUrl — Figma file URL or bare file key',
-      'targetFramework — react-native | flutter | react-native-web',
-      'FIGMA_ACCESS_TOKEN environment variable',
-    ],
-    outputs: [
-      'errors[] — list of AgentError with code + recoverable flag',
-      'currentStep = "InputValidator"',
-      'logs[] — success entry or error entry with all codes',
-    ]
+    inputs:['figmaUrl — Figma file URL or bare file key','targetFramework — react-native | flutter | react-native-web','FIGMA_ACCESS_TOKEN — from environment variables'],
+    outputs:['errors[] — list of AgentError with code + recoverable flag','currentStep = "InputValidator"','logs[] — single success or error log entry']
   },
   2: {
-    icon: '🗺️',
-    name: 'PlannerAgent',
-    subtitle: 'LLM-powered strategist — analyzes the design and builds an execution plan',
-    type: 'llm',
-    steps: [
+    icon:'🗺️', name:'PlannerAgent', type:'LLM Reasoning',
+    sub:'Analyzes the design structure and produces an ordered execution strategy',
+    steps:[
       'Load the planner.txt system prompt from the prompts/ directory',
-      'Send Claude Sonnet 4 an analysis request with the full workflow state context',
-      'Receive JSON ExecutionPlan with ordered screens, component list, and generation strategy',
-      'Parse and validate the response structure before storing in state',
-      'Log the plan summary including screen count and strategy'
+      'Send Claude Sonnet 4 an analysis request with figmaUrl, targetFramework, and options',
+      'Parse the JSON ExecutionPlan from the LLM response',
+      'Plan includes: ordered screen list, component catalogue, and generation strategy',
+      'Log plan summary (screen count, component count, strategy type)'
     ],
-    inputs: [
-      'figmaUrl — to include in the LLM context',
-      'targetFramework — so the plan is framework-specific',
-      'options — any user-provided generation preferences'
-    ],
-    outputs: [
-      'executionPlan — { screens[], components[], strategy, priority }',
-      'currentStep = "PlannerAgent"',
-      'logs[] — info entry with plan summary'
-    ]
+    inputs:['figmaUrl — included in LLM context for analysis','targetFramework — shapes the generation strategy','options — user-provided generation preferences'],
+    outputs:['executionPlan — { screens[], components[], strategy, priority }','currentStep = "PlannerAgent"','logs[] — info entry with plan summary']
   },
   3: {
-    icon: '🔍',
-    name: 'ResearcherAgent',
-    subtitle: 'Data fetcher — pulls the full Figma file and design tokens in parallel',
-    type: 'io',
-    steps: [
-      'Initialize FigmaClient with FIGMA_ACCESS_TOKEN (rate-limited, cached, auto-retry)',
+    icon:'🔍', name:'ResearcherAgent', type:'API I/O',
+    sub:'Fetches the full Figma file and design tokens in parallel',
+    steps:[
+      'Initialise FigmaClient with FIGMA_ACCESS_TOKEN (rate-limited, cached, auto-retry)',
       'Extract file key from figmaUrl using parseFigmaUrl()',
-      'Launch getFile() and getLocalVariables() in parallel using Promise.allSettled',
-      'Store FigmaFile in state (required) — throw if this call fails',
+      'Launch getFile() and getLocalVariables() in parallel via Promise.allSettled',
+      'Store FigmaFile in state — required (throw if this call fails)',
       'Store variablesResponse in state only if getLocalVariables() succeeded (optional)',
       'Log token count from variables if available'
     ],
-    inputs: [
-      'figmaUrl — to extract the file key',
-      'FIGMA_ACCESS_TOKEN — to authenticate Figma API requests'
-    ],
-    outputs: [
-      'figmaFile — full FigmaFile document tree, components, styles',
-      'variablesResponse — optional design token collection (if Figma variables enabled)',
-      'currentStep = "ResearcherAgent"',
-      'logs[] — success for file fetch, info for token count'
-    ]
+    inputs:['figmaUrl — to extract the Figma file key','FIGMA_ACCESS_TOKEN — to authenticate all Figma API calls'],
+    outputs:['figmaFile — full FigmaFile: document tree, components, styles','variablesResponse — optional design-token collection','currentStep = "ResearcherAgent"','logs[] — success + token count info entries']
   },
   4: {
-    icon: '🏗️',
-    name: 'IRBuilderAgent',
-    subtitle: 'Transformer — converts raw Figma data to a platform-agnostic IR',
-    type: 'transform',
-    steps: [
-      'Guard: throw if figmaFile is missing in state (ResearcherAgent must run first)',
-      'Extract fileKey from the figmaUrl in state',
-      'Call IRBuilder.build(figmaFile, fileKey, variablesResponse) to produce DesignIR',
+    icon:'🏗️', name:'IRBuilderAgent', type:'Data Transform',
+    sub:'Converts raw Figma data into a clean, platform-agnostic Design IR',
+    steps:[
+      'Guard: throw if figmaFile is absent — ResearcherAgent must run first',
+      'Extract fileKey from figmaUrl stored in state',
+      'Call IRBuilder.build(figmaFile, fileKey, variablesResponse)',
       'IRBuilder runs all parsers: tokens, auto-layout, components, assets, text styles',
-      'Store the resulting DesignIR in state for CriticAgent and GeneratorAgent'
+      'Store the resulting DesignIR in state for downstream agents'
     ],
-    inputs: [
-      'figmaFile — raw FigmaFile from ResearcherAgent',
-      'variablesResponse — optional design tokens from ResearcherAgent',
-      'figmaUrl — to extract the file key for IR metadata'
-    ],
-    outputs: [
-      'designIR — { screens[], components[], tokens, assets[], fileKey }',
-      'currentStep = "IRBuilderAgent"',
-      'logs[] — success entry with screen + component counts'
-    ]
+    inputs:['figmaFile — raw FigmaFile from ResearcherAgent','variablesResponse — optional design tokens','figmaUrl — to extract fileKey for IR metadata'],
+    outputs:['designIR — { screens[], components[], tokens, assets[], fileKey }','currentStep = "IRBuilderAgent"','logs[] — success entry with screen + component counts']
   },
   5: {
-    icon: '🔬',
-    name: 'CriticAgent',
-    subtitle: 'LLM-powered validator — checks IR quality, accessibility, and structure',
-    type: 'llm',
-    steps: [
-      'Guard: throw if designIR is missing (IRBuilderAgent must run first)',
+    icon:'🔬', name:'CriticAgent', type:'LLM Reasoning',
+    sub:'Validates IR quality, accessibility, and structural correctness before code generation',
+    steps:[
+      'Guard: throw if designIR is absent — IRBuilderAgent must run first',
       'Build an IR summary: screen count, element count, component count, token count',
-      'Load critic.txt system prompt and inject the IR summary via {{IR_SUMMARY}} placeholder',
-      'Send Claude Sonnet 4 a validation request for structure and accessibility issues',
+      'Load critic.txt and inject the IR summary via {{IR_SUMMARY}} placeholder',
+      'Send Claude Sonnet 4 a structured validation request',
       'Parse IRValidationResult: { valid, score, issues[{ severity, message, element }] }',
-      'If valid: route to GeneratorAgent. If invalid and retryCount < 2: increment retryCount → re-route to IRBuilderAgent. If retries exhausted: route to END.'
+      'If valid → GeneratorAgent. If invalid + retryCount < 2 → increment retryCount, re-route to IRBuilderAgent. If retries exhausted → END'
     ],
-    inputs: [
-      'designIR — the DesignIR to validate',
-      'retryCount — current retry count for the feedback loop',
-    ],
-    outputs: [
-      'validationResult — { valid, score, issues[] }',
-      'retryCount — incremented if validation failed',
-      'currentStep = "CriticAgent"',
-      'logs[] — success (score/100) or warning with error count'
-    ]
+    inputs:['designIR — the DesignIR to validate','retryCount — current retry count for the feedback loop'],
+    outputs:['validationResult — { valid, score, issues[] }','retryCount — incremented on failure','currentStep = "CriticAgent"','logs[] — success (score) or warning with error count']
   },
   6: {
-    icon: '⚙️',
-    name: 'GeneratorAgent',
-    subtitle: 'LLM code synthesizer — turns validated IR into idiomatic mobile code',
-    type: 'llm',
-    steps: [
-      'Load generator.txt system prompt with framework-specific templates',
-      'Walk the IR screen-by-screen per the ExecutionPlan ordering',
-      'For each screen: generate component file, stylesheet, and navigation entry',
-      'Generate shared theme.ts / theme.dart from IR token layer',
-      'Assemble CodeBundle: { files[], assets[], metadata }',
-      'Store final code bundle in state and emit completion log'
+    icon:'⚙️', name:'GeneratorAgent', type:'LLM Reasoning',
+    sub:'Synthesises idiomatic, production-ready mobile code from the validated IR',
+    steps:[
+      'Load generator.txt system prompt with framework-specific code templates',
+      'Walk IR screens in the order defined by ExecutionPlan',
+      'For each screen: generate component file, StyleSheet/ThemeData, and navigation entry',
+      'Generate shared theme.ts / theme.dart from the IR token layer',
+      'Assemble final CodeBundle: { files[], assets[], metadata }',
+      'Store bundle in state and emit completion log with file count'
     ],
-    inputs: [
-      'designIR — validated DesignIR from CriticAgent pass',
-      'executionPlan — ordering and strategy from PlannerAgent',
-      'targetFramework — react-native | flutter',
-      'validationResult — critic score/issues for context'
-    ],
-    outputs: [
-      'generatedCode — CodeBundle { files[], assets[], metadata }',
-      'currentStep = "GeneratorAgent"',
-      'logs[] — completion entry with file count and token usage'
-    ]
+    inputs:['designIR — validated IR from the CriticAgent pass','executionPlan — ordering and strategy from PlannerAgent','targetFramework — react-native | flutter','validationResult — critic score for generation context'],
+    outputs:['generatedCode — CodeBundle { files[], assets[], metadata }','currentStep = "GeneratorAgent"','logs[] — completion entry with file count and LLM token usage']
   }
 };
 
-let activeNode = null;
+/* ── Open / close node panel ──────────────────────────────────────────────── */
+let activeId = null;
 
-function selectNode(id) {
-  const detail = document.getElementById('node-detail');
+function openNode(id) {
+  const panel = document.getElementById('node-panel');
 
-  // Toggle off if same node clicked
-  if (activeNode === id) {
-    activeNode = null;
-    detail.className = 'node-detail';
-    document.querySelectorAll('.pipeline-node').forEach(n => n.classList.remove('active'));
+  if (activeId === id) {
+    activeId = null;
+    panel.className = 'node-panel';
+    document.querySelectorAll('.pipe-node').forEach(n => n.classList.remove('active'));
     return;
   }
 
-  activeNode = id;
-  const n = nodes[id];
+  activeId = id;
+  document.querySelectorAll('.pipe-node').forEach(n => n.classList.remove('active'));
+  document.getElementById('pn'+id).classList.add('active');
 
-  // Mark active node
-  document.querySelectorAll('.pipeline-node').forEach(el => el.classList.remove('active'));
-  document.getElementById('node-' + id).classList.add('active');
+  const d = NODE_DATA[id];
 
-  const typeLabel = n.type === 'llm' ? '<span style="background:rgba(139,92,246,0.2);border:1px solid rgba(139,92,246,0.35);color:#a78bfa;font-size:0.7rem;font-weight:700;letter-spacing:0.05em;padding:3px 10px;border-radius:100px;">🤖 LLM Call</span>'
-    : n.type === 'io' ? '<span style="background:rgba(6,182,212,0.15);border:1px solid rgba(6,182,212,0.3);color:#67e8f9;font-size:0.7rem;font-weight:700;letter-spacing:0.05em;padding:3px 10px;border-radius:100px;">🌐 API I/O</span>'
-    : n.type === 'transform' ? '<span style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#fcd34d;font-size:0.7rem;font-weight:700;letter-spacing:0.05em;padding:3px 10px;border-radius:100px;">🔄 Transform</span>'
-    : '<span style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#86efac;font-size:0.7rem;font-weight:700;letter-spacing:0.05em;padding:3px 10px;border-radius:100px;">✓ Validation</span>';
+  const typeBadgeColor =
+    d.type.includes('LLM')   ? 'background:#F5F3FF;color:#8B5CF6;border:1px solid #DDD6FE;' :
+    d.type.includes('API')   ? 'background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE;' :
+    d.type.includes('Trans') ? 'background:#FFFBEB;color:#F59E0B;border:1px solid #FDE68A;' :
+                               'background:#ECFDF5;color:#10B981;border:1px solid #A7F3D0;';
 
-  const stepsHtml = n.steps.map(s => `<li>${s}</li>`).join('');
-  const inputsHtml = n.inputs.map(i => `<li><span class="dot-in"></span>${i}</li>`).join('');
-  const outputsHtml = n.outputs.map(o => `<li><span class="dot-out"></span>${o}</li>`).join('');
+  const stepsHtml = d.steps.map(s => `<li>${s}</li>`).join('');
+  const inHtml    = d.inputs.map(i  => `<li><span class="io-dot-in"></span>${i}</li>`).join('');
+  const outHtml   = d.outputs.map(o => `<li><span class="io-dot-out"></span>${o}</li>`).join('');
 
-  detail.innerHTML = `
-    <div class="node-detail-header">
-      <div class="node-detail-icon">${n.icon}</div>
+  panel.innerHTML = `
+    <div class="panel-hdr">
+      <div class="panel-icon">${d.icon}</div>
       <div style="flex:1">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-          <div class="node-detail-title">Node ${id} — ${n.name}</div>
-          ${typeLabel}
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="panel-title">Node ${id} — ${d.name}</div>
+          <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.05em;padding:3px 10px;border-radius:100px;${typeBadgeColor}">${d.type}</span>
         </div>
-        <div class="node-detail-subtitle">${n.subtitle}</div>
+        <div class="panel-sub">${d.sub}</div>
       </div>
-      <span class="close-detail" onclick="selectNode(${id})">✕ Close</span>
+      <span class="panel-close" onclick="openNode(${id})">✕ Close</span>
     </div>
     <div>
-      <div class="node-section-title">What it does</div>
-      <ol class="node-steps">${stepsHtml}</ol>
+      <div class="panel-sec-title">What it does</div>
+      <ol class="step-list">${stepsHtml}</ol>
     </div>
     <div>
-      <div class="node-section-title" style="margin-bottom:16px;">State I/O</div>
-      <div style="margin-bottom:20px;">
-        <div class="node-section-title" style="color:#67e8f9;">Reads from state</div>
-        <ul class="node-io-list">${inputsHtml}</ul>
+      <div class="panel-sec-title" style="margin-bottom:14px;">State I/O</div>
+      <div style="margin-bottom:16px;">
+        <div class="panel-sec-title" style="color:#3B82F6;">Reads from state</div>
+        <ul class="io-list">${inHtml}</ul>
       </div>
       <div>
-        <div class="node-section-title" style="color:#86efac;">Writes to state</div>
-        <ul class="node-io-list">${outputsHtml}</ul>
+        <div class="panel-sec-title" style="color:#10B981;">Writes to state</div>
+        <ul class="io-list">${outHtml}</ul>
       </div>
     </div>
   `;
 
-  detail.className = 'node-detail visible';
-  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  panel.className = 'node-panel open';
+  setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
 }
 
-// Intersection Observer for fade-up animations on scroll
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.style.opacity = '1';
-      entry.target.style.transform = 'translateY(0)';
+/* ── Draw retry arc SVG ───────────────────────────────────────────────────── */
+function drawRetryArc() {
+  const row  = document.getElementById('pipe-row');
+  const n4   = document.getElementById('pn4');
+  const n5   = document.getElementById('pn5');
+  const wrap = document.getElementById('retryWrap');
+  const svg  = document.getElementById('retrySvg');
+
+  if (!row || !n4 || !n5) return;
+
+  const rowRect  = row.getBoundingClientRect();
+  const n4Rect   = n4.getBoundingClientRect();
+  const n5Rect   = n5.getBoundingClientRect();
+  const wrapRect = wrap.getBoundingClientRect();
+
+  // Center x of each node circle relative to the wrap element
+  const x4 = n4Rect.left + n4Rect.width / 2 - wrapRect.left;
+  const x5 = n5Rect.left + n5Rect.width / 2 - wrapRect.left;
+
+  const y1 = 4;   // start/end y near top of wrap
+  const cy = 44;  // arc peak y
+
+  // Cubic bezier: from x5 top → arc down → to x4 top (right to left, retry)
+  const pathD = `M ${x5},${y1} C ${x5},${cy} ${x4},${cy} ${x4},${y1}`;
+
+  svg.innerHTML = `
+    <defs>
+      <marker id="retryHead2" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto">
+        <path d="M8,0 L8,8 L0,4 z" fill="#EF4444"/>
+      </marker>
+    </defs>
+    <path d="${pathD}"
+      fill="none" stroke="#EF4444" stroke-width="2"
+      stroke-dasharray="5,4"
+      marker-end="url(#retryHead2)"
+      style="animation: none;"
+    />
+  `;
+}
+
+window.addEventListener('load',   drawRetryArc);
+window.addEventListener('resize', drawRetryArc);
+
+/* ── Scroll-reveal ────────────────────────────────────────────────────────── */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
     }
   });
-}, { threshold: 0.1 });
+}, { threshold: 0.08 });
 
-document.querySelectorAll('.agent-card, .arch-card, .future-card, .data-box').forEach(el => {
+document.querySelectorAll('.agent-card, .arch-card, .roadmap-card, .df-box').forEach(el => {
   el.style.opacity = '0';
-  el.style.transform = 'translateY(24px)';
+  el.style.transform = 'translateY(20px)';
   el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-  observer.observe(el);
+  io.observe(el);
 });
 </script>
 </body>

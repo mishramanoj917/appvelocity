@@ -1,0 +1,36 @@
+{
+  "recommendations": [
+    // ── Core ────────────────────────────────────────────────────────────────
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+
+    // ── Tailwind + CSS ───────────────────────────────────────────────────────
+    "bradlc.vscode-tailwindcss",
+    "csstools.postcss",
+
+    // ── Testing ──────────────────────────────────────────────────────────────
+    "vitest.explorer",
+
+    // ── Git & GitHub ─────────────────────────────────────────────────────────
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+    "github.copilot",
+    "github.copilot-chat",
+
+    // ── DX / productivity ────────────────────────────────────────────────────
+    "usernamehw.errorlens",
+    "christian-kohler.path-intellisense",
+    "streetsidesoftware.code-spell-checker",
+    "ms-azuretools.vscode-docker",
+    "mikestead.dotenv",
+    "redhat.vscode-yaml",
+
+    // ── Next.js ──────────────────────────────────────────────────────────────
+    "pkief.material-icon-theme",
+
+    // ── Monorepo ─────────────────────────────────────────────────────────────
+    "zixuanchen.vitest-explorer",
+    "antfu.vite"
+  ]
+}

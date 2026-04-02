@@ -1,0 +1,9 @@
+{
+  "name": "@appvelocity/agent-design-to-code-generators",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": { "build": "tsc", "dev": "tsc --watch", "clean": "rm -rf dist" },
+  "dependencies": { "@appvelocity/shared-core": "workspace:*" },
+  "devDependencies": { "typescript": "^5.4.0", "@types/node": "^20.11.5" }
+}

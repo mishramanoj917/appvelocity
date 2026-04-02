@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+  }
+
+  * {
+    @apply border-gray-800;
+  }
+
+  body {
+    @apply bg-gray-950 text-gray-100;
+  }
+
+  /* Smooth scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-gray-700 hover:bg-gray-600;
+  }
+}
+
+@layer components {
+  /* Reusable card */
+  .av-card {
+    @apply rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-sm;
+  }
+
+  /* Agent status badge */
+  .av-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  /* Log stream output */
+  .av-log {
+    @apply font-mono text-xs leading-relaxed text-gray-300;
+  }
+}
+
+/* Streaming text cursor blink */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+.av-cursor::after {
+  content: '▋';
+  @apply ml-0.5 text-brand-400;
+  animation: blink 1s step-end infinite;
+}

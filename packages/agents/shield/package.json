@@ -1,0 +1,7 @@
+{
+  "name": "@appvelocity/agent-shield",
+  "version": "0.1.0",
+  "description": "Planned agent — not yet implemented",
+  "main": "./src/index.ts",
+  "dependencies": { "@appvelocity/shared-core": "workspace:*" }
+}

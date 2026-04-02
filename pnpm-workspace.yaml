@@ -1,0 +1,6 @@
+packages:
+  - 'packages/shared/*'
+  - 'packages/agents/*'
+  - 'packages/agents/*/*'
+  - 'packages/cli'
+  - 'packages/web'

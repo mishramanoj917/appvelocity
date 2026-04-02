@@ -1,0 +1,96 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    // ── Next.js Web App ───────────────────────────────────────────────────────
+    {
+      "name": "🌐 Web: Next.js Dev Server",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/.bin/next",
+      "args": ["dev", "--port", "3000"],
+      "cwd": "${workspaceFolder}/packages/web",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "pattern": "ready on port ([0-9]+)",
+        "uriFormat": "http://localhost:%s",
+        "action": "openExternally"
+      }
+    },
+
+    // ── DesignToCodeAgent ─────────────────────────────────────────────────────
+    {
+      "name": "🎨 Agent: DesignToCodeAgent",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["agent:design", "dev"],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "appvelocity:*"
+      },
+      "console": "integratedTerminal"
+    },
+
+    // ── CLI ───────────────────────────────────────────────────────────────────
+    {
+      "name": "⌨️  CLI: appvelocity",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/packages/cli/src/cli.ts",
+      "args": ["list"],
+      "runtimeArgs": ["--loader", "ts-node/esm"],
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "console": "integratedTerminal"
+    },
+
+    // ── Vitest ────────────────────────────────────────────────────────────────
+    {
+      "name": "🧪 Tests: Current File",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${relativeFile}"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "🧪 Tests: All Packages",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": ["run"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+
+    // ── Compound: full dev environment ────────────────────────────────────────
+    {
+      "name": "🚀 Full Stack: Web + Agent",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ],
+
+  "compounds": [
+    {
+      "name": "🚀 Full Dev (Web + DesignAgent)",
+      "configurations": [
+        "🌐 Web: Next.js Dev Server",
+        "🎨 Agent: DesignToCodeAgent"
+      ],
+      "stopAll": true
+    }
+  ]
+}

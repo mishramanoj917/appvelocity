@@ -1,0 +1,49 @@
+{
+  "name": "@appvelocity/platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AppVelocity – AI-Powered Mobile Development Acceleration Platform",
+  "workspaces": [
+    "packages/shared/*",
+    "packages/agents/*",
+    "packages/cli",
+    "packages/web"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@appvelocity/web",
+    "dev:agents": "turbo run dev --filter=@appvelocity/agent-*",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "prepare": "husky install",
+    "agent:design": "pnpm --filter @appvelocity/agent-design-to-code",
+    "agent:access": "pnpm --filter @appvelocity/agent-access",
+    "agent:shield": "pnpm --filter @appvelocity/agent-shield",
+    "agent:testiq": "pnpm --filter @appvelocity/agent-testiq",
+    "agent:perfect": "pnpm --filter @appvelocity/agent-perfect",
+    "agent:compliance": "pnpm --filter @appvelocity/agent-compliance",
+    "agent:devboost": "pnpm --filter @appvelocity/agent-devboost"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.5",
+    "turbo": "^2.0.0",
+    "prettier": "^3.2.4",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.1.0",
+  "lint-staged": {
+    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
+    "*.{md,json,yaml}": ["prettier --write"]
+  }
+}

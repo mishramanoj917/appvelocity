@@ -1,0 +1,73 @@
+{
+  // ── Editor ──────────────────────────────────────────────────────────────────
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
+  "editor.rulers": [100],
+  "editor.tabSize": 2,
+  "editor.wordWrap": "off",
+
+  // ── TypeScript ───────────────────────────────────────────────────────────────
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.suggest.autoImports": true,
+
+  // ── ESLint ───────────────────────────────────────────────────────────────────
+  "eslint.workingDirectories": [
+    { "pattern": "./packages/shared/*" },
+    { "pattern": "./packages/agents/*" },
+    { "pattern": "./packages/cli" },
+    { "pattern": "./packages/web" }
+  ],
+  "eslint.validate": ["typescript", "typescriptreact"],
+
+  // ── File exclusions (speed up search / intellisense) ────────────────────────
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/.turbo": true,
+    "**/coverage": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.next": true,
+    "**/pnpm-lock.yaml": true,
+    "**/.turbo": true
+  },
+
+  // ── Tailwind ─────────────────────────────────────────────────────────────────
+  "tailwindCSS.experimental.classRegex": [
+    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascriptreact"
+  },
+
+  // ── Terminal ─────────────────────────────────────────────────────────────────
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.cwd": "${workspaceFolder}",
+
+  // ── Test explorer ────────────────────────────────────────────────────────────
+  "vitest.enable": true,
+  "vitest.commandLine": "pnpm vitest",
+
+  // ── Git ──────────────────────────────────────────────────────────────────────
+  "git.enableSmartCommit": true,
+  "git.autofetch": true,
+
+  // ── File associations ────────────────────────────────────────────────────────
+  "files.associations": {
+    "*.css": "tailwindcss",
+    ".env*": "dotenv",
+    "turbo.json": "jsonc"
+  }
+}

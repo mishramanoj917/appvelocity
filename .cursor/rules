@@ -1,0 +1,115 @@
+# AppVelocity — Cursor AI Rules
+# This file gives Cursor deep context so every AI suggestion is on-brand.
+
+## Project Identity
+AppVelocity is a **monorepo** housing an AI-powered mobile development acceleration platform.
+It contains 7 specialized agents, a shared infrastructure layer, a Next.js 14 web dashboard,
+and a unified CLI. The active agent in development is **DesignToCodeAgent**.
+
+## Monorepo Layout (pnpm workspaces)
+```
+packages/
+  shared/core          → @appvelocity/shared-core   (AgentBase, types, logger)
+  shared/langgraph     → @appvelocity/shared-langgraph (LangGraph workflow layer)
+  shared/integrations  → @appvelocity/shared-integrations
+  shared/ui            → @appvelocity/shared-ui
+  shared/database      → @appvelocity/shared-database
+  agents/design-to-code/core       → Figma API client, IR builder
+  agents/design-to-code/workflow   → LangGraph planner/researcher/critic/generator
+  agents/design-to-code/generators → React Native, Flutter code generators
+  agents/access        → AccessAgent (planned)
+  agents/shield        → ShieldAgent (planned)
+  agents/perfect       → PerfectAgent (planned)
+  agents/testiq        → TestIQAgent (planned)
+  agents/devboost      → DevBoostAgent (planned)
+  agents/compliance    → ComplianceAgent (planned)
+  cli                  → @appvelocity/cli
+  web                  → @appvelocity/web (Next.js 14, Tailwind, App Router)
+```
+
+## Critical Conventions
+- **Language**: TypeScript 5.4+ strict mode everywhere. Never use `any` — use `unknown`.
+- **Package manager**: pnpm 9. Use `workspace:*` for internal deps.
+- **Build**: Turbo. Run `pnpm build` from root to build all; `pnpm dev` for watch mode.
+- **Imports**: Use `@appvelocity/shared-core` not relative paths across packages.
+- **Agent interface**: Every agent MUST extend `AgentBase` from `@appvelocity/shared-core`.
+- **Tests**: Vitest. Co-locate test files as `*.test.ts` beside the source.
+- **Commits**: Conventional commits — `feat(agent-name): ...`, `fix(web): ...`.
+
+## Agent Contract (never deviate from this)
+```typescript
+abstract class AgentBase {
+  abstract readonly name: string;
+  abstract readonly version: string;
+  abstract readonly description: string;
+  abstract readonly capabilities: string[];
+  abstract execute(input: AgentInput): Promise<AgentOutput>;
+  abstract validate(input: AgentInput): ValidationResult;
+  abstract estimateCost(input: AgentInput): CostEstimate;
+  getHealth(): AgentHealth { ... }
+}
+```
+- `AgentInput.action` is a string matching one of the agent's declared action IDs.
+- `AgentOutput.success` must always be set, even on partial failures.
+- Never throw from `execute()` — return `{ success: false, errors: [...] }`.
+
+## Web App (packages/web)
+- **Framework**: Next.js 14 App Router. Use Server Components by default.
+- **Styling**: Tailwind CSS. Use `av-card`, `av-badge`, `av-log` utility classes from globals.css.
+- **State**: `useState` / `useReducer` for client components. SWR for data fetching.
+- **Streaming**: Agent output uses Server-Sent Events. See `app/api/agents/stream/[jobId]/route.ts`.
+- **Agent config**: All 7 agents are defined in `lib/agents.config.ts`. Never hard-code agent data elsewhere.
+- **Agent registry**: `lib/agent-registry.ts` maps config → live instances. Wire new instances here.
+- **API routes**:
+  - `POST /api/agents/[agentId]` → launches a job, returns `{ jobId, streamUrl }`
+  - `GET  /api/agents/status/[jobId]` → polls job status
+  - `GET  /api/agents/stream/[jobId]` → SSE stream of logs/result
+
+## DesignToCodeAgent Workflow (LangGraph)
+```
+START → planner → researcher → critic → [score<80: researcher loop] → generator → finalizer → END
+```
+- Planner uses strong model (gpt-4o / claude-3-5-sonnet).
+- Researcher calls Figma REST API; rate-limited to 60 req/min; cached with LRU.
+- Critic scores on: token coverage (>90%), naming, layout fidelity, completeness, code quality.
+- Generator is staged: theme → atoms → molecules → organisms → screens → navigation → assets.
+- All intermediate state is stored in `WorkflowState` typed object.
+
+## Figma REST API (used by DesignToCodeAgent)
+- Auth: `X-Figma-Token: {token}` header.
+- File metadata: `GET /v1/files/:key`
+- Variables / tokens: `GET /v1/files/:key/variables/local`
+- Nodes: `GET /v1/files/:key/nodes?ids=comma,separated,ids`
+- Image exports: `GET /v1/images/:key?ids=...&format=svg`
+- Rate limit: ~60–100 req/min. Use `p-queue` with concurrency=5.
+
+## Environment Variables
+Defined in `.env.example` at repo root. Never commit `.env`.
+- `FIGMA_ACCESS_TOKEN` — required for DesignToCodeAgent
+- `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` — at least one required
+- `LLM_PROVIDER` — `openai` or `anthropic`
+- `REDIS_URL` — optional caching backend
+- `NEXT_PUBLIC_API_URL` — base URL for the web app (default: http://localhost:3000)
+
+## Code Style
+- Arrow functions for component callbacks.
+- Named exports for components (`export function Foo` not `export default`).
+- Default exports only for Next.js page/layout components.
+- `interface` for object shapes, `type` for unions/intersections.
+- Zod for all runtime validation at API boundaries.
+- `async/await` — never raw `.then()` chains.
+
+## What NOT to do
+- Never import from `../../packages/...` across package boundaries — use workspace aliases.
+- Never put agent business logic inside `packages/web`.
+- Never call the Figma API directly from the web layer — always go through the agent.
+- Never use `localStorage` or `sessionStorage` in server components.
+- Never skip the Critic agent loop — it is a non-negotiable quality gate.
+
+## Adding a New Agent (checklist)
+1. Add entry to `packages/web/lib/agents.config.ts`
+2. Create `packages/agents/<id>/` with `package.json`, `tsconfig.json`, `src/index.ts`
+3. Implement `AgentBase` interface
+4. Wire instance in `packages/web/lib/agent-registry.ts`
+5. Update `pnpm-workspace.yaml` if the new package path isn't covered
+6. Change `status` to `'active'` in `agents.config.ts`

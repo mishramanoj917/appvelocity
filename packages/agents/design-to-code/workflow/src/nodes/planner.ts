@@ -135,7 +135,7 @@ export async function plannerAgent(
   const systemPrompt = buildSystemPrompt(ctx, state.targetFramework);
 
   const response = await llm.chat({
-    model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6',
+    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
     system: systemPrompt,
     messages: [
       {

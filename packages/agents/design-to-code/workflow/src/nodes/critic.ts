@@ -172,7 +172,7 @@ export async function criticAgent(
   const systemPrompt = buildSystemPrompt(summary, state.retryCount);
 
   const response = await llm.chat({
-    model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6',
+    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
     system: systemPrompt,
     messages: [
       {

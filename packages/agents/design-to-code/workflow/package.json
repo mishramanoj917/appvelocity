@@ -22,6 +22,7 @@
   "dependencies": {
     "@appvelocity/shared-core": "workspace:*",
     "@appvelocity/agent-design-to-code-core": "workspace:*",
+    "@appvelocity/agent-design-to-code-generators": "workspace:*",
     "@langchain/langgraph": "^0.2.0",
     "@anthropic-ai/sdk": "^0.39.0"
   },

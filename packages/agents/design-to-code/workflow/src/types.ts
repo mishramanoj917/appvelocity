@@ -4,6 +4,7 @@
 
 import type { AgentError } from '@appvelocity/shared-core';
 import type { FigmaFile, DesignIR, FigmaVariablesResponse } from '@appvelocity/agent-design-to-code-core';
+import type { CodeBundle } from '@appvelocity/agent-design-to-code-generators';
 
 export type { AgentError };
 
@@ -63,25 +64,9 @@ export interface ValidationIssue {
   fixSuggestion?: string;
 }
 
-// ─── Code generation output ───────────────────────────────────────────────────
+// ─── Code generation output (canonical definitions live in generators package) ─
 
-export interface CodeBundle {
-  framework: 'react-native' | 'flutter';
-  files: CodeFile[];
-  assets: AssetFile[];
-  dependencies: Record<string, string>;
-}
-
-export interface CodeFile {
-  path: string;
-  content: string;
-  language: 'typescript' | 'dart';
-}
-
-export interface AssetFile {
-  path: string;
-  url: string;
-}
+export type { CodeBundle, CodeFile, AssetFile } from '@appvelocity/agent-design-to-code-generators';
 
 // ─── Logging ─────────────────────────────────────────────────────────────────
 

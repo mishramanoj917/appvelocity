@@ -3,6 +3,9 @@ const nextConfig = {
   // Transpile workspace packages so Next.js can resolve them
   transpilePackages: [
     '@appvelocity/shared-core',
+    '@appvelocity/agent-design-to-code-workflow',
+    '@appvelocity/agent-design-to-code-generators',
+    '@appvelocity/agent-design-to-code-core',
     '@appvelocity/agent-design-to-code',
     '@appvelocity/agent-access',
     '@appvelocity/agent-shield',
@@ -18,7 +21,7 @@ const nextConfig = {
     },
   },
   // Required for streaming responses from API routes
-  serverExternalPackages: ['@langchain/core', '@langchain/langgraph'],
+  serverExternalPackages: ['@langchain/core', '@langchain/langgraph', '@anthropic-ai/sdk'],
 };
 
 module.exports = nextConfig;

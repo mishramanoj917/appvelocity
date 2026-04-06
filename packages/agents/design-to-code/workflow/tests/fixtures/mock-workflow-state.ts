@@ -2,7 +2,7 @@
  * Test fixtures — minimal WorkflowState and related objects for unit tests.
  */
 
-import type { WorkflowState, IRValidationResult, ExecutionPlan } from '../../src/types.js';
+import type { WorkflowState, IRValidationResult, ExecutionPlan, CodeBundle } from '../../src/types.js';
 import type { FigmaFile, DesignIR } from '@appvelocity/agent-design-to-code-core';
 
 export const VALID_FIGMA_URL = 'https://www.figma.com/file/abc1234567890/MyApp';
@@ -113,6 +113,16 @@ export const mockValidationResult: IRValidationResult = {
   valid: true,
   score: 90,
   issues: [],
+};
+
+export const mockCodeBundle: CodeBundle = {
+  framework: 'react-native',
+  files: [
+    { path: 'src/screens/HomeScreen.tsx', content: '// HomeScreen', language: 'typescript' },
+    { path: 'src/tokens/tokens.ts',       content: '// tokens',     language: 'typescript' },
+  ],
+  assets: [],
+  dependencies: { react: '18.x', 'react-native': '0.74.x' },
 };
 
 export const mockFailedValidationResult: IRValidationResult = {

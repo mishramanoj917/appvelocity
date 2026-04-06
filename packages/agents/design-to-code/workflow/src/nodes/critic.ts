@@ -1,18 +1,162 @@
 /**
  * Node 5 — CriticAgent
- * Uses an LLM to validate the DesignIR quality and accessibility.
- * Returns a validation result; increments retryCount on failure.
+ *
+ * Evaluates the DesignIR produced by IRBuilderAgent for structural integrity,
+ * semantic quality, accessibility, and naming conventions.
+ *
+ * On failure the graph retries IRBuilderAgent (up to 2 times) before giving up.
+ *
+ * Input state:  designIR, retryCount
+ * Output state: validationResult, retryCount (incremented on failure), currentStep, logs
  */
 
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { createLLMClient } from '../utils/llm-client.js';
 import { makeLogEntry } from '../utils/logger.js';
 import type { WorkflowState, IRValidationResult } from '../types.js';
+import type { DesignIR, IRElement } from '@appvelocity/agent-design-to-code-core';
 
-async function loadPrompt(): Promise<string> {
-  return readFile(join(__dirname, '..', 'prompts', 'critic.txt'), 'utf-8');
+// ─── Context builder ──────────────────────────────────────────────────────────
+
+interface IRSummary {
+  fileName: string;
+  screens: Array<{
+    id: string;
+    name: string;
+    componentName: string;
+    dimensions: string;
+    elementCount: number;
+    elementTypes: Record<string, number>;
+    hasTextContent: boolean;
+    hasImages: boolean;
+  }>;
+  components: Array<{
+    id: string;
+    name: string;
+    atomicLevel: string;
+    variantCount: number;
+  }>;
+  tokens: {
+    colorCount: number;
+    typographyCount: number;
+    spacingCount: number;
+    radiiCount: number;
+  };
+  assetCount: number;
+  stats: DesignIR['meta']['stats'];
 }
+
+function countElementTypes(el: IRElement, acc: Record<string, number> = {}): Record<string, number> {
+  acc[el.type] = (acc[el.type] ?? 0) + 1;
+  for (const child of el.children) {
+    countElementTypes(child, acc);
+  }
+  return acc;
+}
+
+function hasType(el: IRElement, type: string): boolean {
+  if (el.type === type) return true;
+  return el.children.some((c) => hasType(c, type));
+}
+
+function buildIRSummary(ir: DesignIR): IRSummary {
+  return {
+    fileName: ir.fileName,
+    screens: ir.screens.map((s) => ({
+      id: s.id,
+      name: s.name,
+      componentName: s.componentName,
+      dimensions: `${s.width}×${s.height}`,
+      elementCount: Object.keys(s.elementIndex).length,
+      elementTypes: countElementTypes(s.root),
+      hasTextContent: hasType(s.root, 'text'),
+      hasImages: hasType(s.root, 'image'),
+    })),
+    components: ir.components.map((c) => ({
+      id: c.id,
+      name: c.name,
+      atomicLevel: c.atomicLevel,
+      variantCount: c.variants.length,
+    })),
+    tokens: {
+      colorCount: Object.keys(ir.tokens.colors).length,
+      typographyCount: Object.keys(ir.tokens.typography).length,
+      spacingCount: Object.keys(ir.tokens.spacing).length,
+      radiiCount: Object.keys(ir.tokens.radii).length,
+    },
+    assetCount: ir.assets.length,
+    stats: ir.meta.stats,
+  };
+}
+
+// ─── System prompt ─────────────────────────────────────────────────────────────
+
+function buildSystemPrompt(summary: IRSummary, retryCount: number): string {
+  const retryNote =
+    retryCount > 0
+      ? `\nNOTE: This is retry #${retryCount}. Be strict — only pass if the IR is genuinely usable.\n`
+      : '';
+
+  return `You are a design-to-code quality critic reviewing a DesignIR (Intermediate Representation) extracted from a Figma file.
+
+Your task: evaluate the IR for structural integrity, accessibility, naming conventions, and semantic clarity. Output a validation result that tells the code generator whether it is safe to proceed.
+${retryNote}
+## IR to Review
+\`\`\`json
+${JSON.stringify(summary, null, 2)}
+\`\`\`
+
+## Validation Criteria
+
+### ERRORS (set valid=false, score ≤ 50) — block code generation
+- A screen with 0 elements in elementIndex
+- A screen missing a componentName
+- A component with 0 variants
+- Circular component references
+- A screen wider than 2000px or taller than 5000px (likely a non-screen frame was included)
+
+### WARNINGS (reduce score 5–15 each) — allow generation but flag
+- Screen or component names containing special characters that will cause import errors (e.g. spaces, slashes not in camelCase)
+- Missing text content on a screen that appears to be a data-entry form
+- No color tokens defined (hardcoded colors will be used)
+- No typography tokens defined
+- Assets referenced but no URLs resolved (images will be placeholders)
+- Screen dimensions that don't match common mobile sizes (375, 390, 414, 360px width)
+
+### INFO — cosmetic, no score impact
+- Component atomicLevel is ambiguous
+- Fewer than 3 screens in a multi-page file
+- No spacing tokens defined
+
+## Scoring
+Start at 100. Subtract for each issue:
+- error: −25
+- warning: −10
+- info: 0
+
+Minimum score is 0. Set valid=true if score ≥ 60 AND no error-severity issues exist.
+
+## Output Format
+Respond with ONLY a valid JSON object matching this exact schema:
+
+{
+  "valid": true | false,
+  "score": <0–100>,
+  "issues": [
+    {
+      "severity": "error" | "warning" | "info",
+      "category": "structure" | "accessibility" | "naming" | "semantics",
+      "message": "<human-readable description>",
+      "nodeId": "<optional — figma node id if applicable>",
+      "fixSuggestion": "<optional — how to resolve>"
+    }
+  ]
+}
+
+If there are no issues, return "issues": [].
+Do NOT include any explanation, markdown, or keys outside the schema above.`;
+}
+
+// ─── Node ─────────────────────────────────────────────────────────────────────
 
 export async function criticAgent(
   state: WorkflowState
@@ -24,42 +168,29 @@ export async function criticAgent(
   }
 
   const llm = createLLMClient();
-  const prompt = await loadPrompt();
-
-  const irSummary = JSON.stringify(
-    {
-      screens: state.designIR.screens.map((s) => ({
-        id: s.id,
-        name: s.name,
-        elementCount: Object.keys(s.elementIndex).length,
-      })),
-      componentCount: state.designIR.components.length,
-      tokenCount: state.designIR.tokens.raw.length,
-      assetCount: state.designIR.assets.length,
-    },
-    null,
-    2
-  );
-
-  const systemPrompt = prompt.replace('{{IR_SUMMARY}}', irSummary);
+  const summary = buildIRSummary(state.designIR);
+  const systemPrompt = buildSystemPrompt(summary, state.retryCount);
 
   const response = await llm.chat({
-    model: 'claude-sonnet-4-6',
+    model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6',
     system: systemPrompt,
     messages: [
       {
         role: 'user',
-        content: 'Validate the IR structure and identify any issues.',
+        content: `Validate the DesignIR for "${state.designIR.fileName}" and return your assessment.`,
       },
     ],
     response_format: { type: 'json_object' },
+    max_tokens: 1024,
   });
 
+  // Throws on invalid JSON — caught by the graph's error boundary
   const validationResult: IRValidationResult = JSON.parse(
     response.content
   ) as IRValidationResult;
 
   const failed = !validationResult.valid;
+  const errorCount = validationResult.issues.filter((i) => i.severity === 'error').length;
 
   return {
     validationResult,
@@ -70,7 +201,7 @@ export async function criticAgent(
         validationResult.valid ? 'success' : 'warning',
         validationResult.valid
           ? `Validation passed (score: ${validationResult.score}/100)`
-          : `Validation failed (score: ${validationResult.score}/100) — ${validationResult.issues.filter((i) => i.severity === 'error').length} error(s)`
+          : `Validation failed (score: ${validationResult.score}/100) — ${errorCount} error(s), ${validationResult.issues.length - errorCount} warning(s)`
       ),
     ],
   };

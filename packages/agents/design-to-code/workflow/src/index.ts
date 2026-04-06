@@ -4,6 +4,7 @@
  */
 
 export { compiledWorkflow } from './graph.js';
+export { DesignToCodeAgent } from './agent.js';
 
 export type {
   WorkflowState,

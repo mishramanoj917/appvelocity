@@ -1,17 +1,55 @@
 /**
- * Node 6 — GeneratorAgent (Phase 3 stub)
- * Will synthesize framework-specific code from the DesignIR.
+ * Node 6 — GeneratorAgent
+ * Converts the validated DesignIR into a framework-specific CodeBundle
+ * by delegating to ReactNativeGenerator or FlutterGenerator.
  */
 
+import { ReactNativeGenerator, FlutterGenerator } from '@appvelocity/agent-design-to-code-generators';
+import type { GenerationScope } from '@appvelocity/agent-design-to-code-generators';
 import { makeLogEntry } from '../utils/logger.js';
 import type { WorkflowState } from '../types.js';
 
 export async function generatorAgent(
   state: WorkflowState
 ): Promise<Partial<WorkflowState>> {
-  void state; // Phase 3 will use state.designIR and state.executionPlan
+  if (!state.designIR) {
+    throw new Error(
+      'DesignIR not available in state. IRBuilderAgent must run before GeneratorAgent.'
+    );
+  }
+  if (!state.executionPlan) {
+    throw new Error(
+      'ExecutionPlan not available in state. PlannerAgent must run before GeneratorAgent.'
+    );
+  }
+
+  // Convert ExecutionPlan → GenerationScope (framework-agnostic subset)
+  const scope: GenerationScope = {
+    screens:    state.executionPlan.screens,
+    components: state.executionPlan.components,
+    priority:   state.executionPlan.priority,
+  };
+
+  const generator =
+    state.targetFramework === 'react-native'
+      ? new ReactNativeGenerator()
+      : new FlutterGenerator();
+
+  const result = generator.generate(state.designIR, scope, {
+    includeTests: state.options.includeTests,
+  });
+
+  const logs = [
+    makeLogEntry(
+      'success',
+      `Generated ${result.stats.fileCount} files — ${result.stats.screenCount} screen(s), ${result.stats.componentCount} component(s), ${result.stats.assetCount} asset(s)`
+    ),
+    ...result.warnings.map((w) => makeLogEntry('warning', w)),
+  ];
+
   return {
+    generatedCode: result.bundle,
     currentStep: 'GeneratorAgent',
-    logs: [makeLogEntry('info', 'GeneratorAgent not yet implemented (Phase 3)')],
+    logs,
   };
 }

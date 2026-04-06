@@ -18,7 +18,7 @@ import type { AgentBase } from '@appvelocity/shared-core';
 import { AGENTS, type AgentStatus } from './agents.config';
 
 // ─── Import live agent instances here as they are built ──────────────────────
-// import { DesignToCodeAgent } from '@appvelocity/agent-design-to-code';
+import { DesignToCodeAgent } from '@appvelocity/agent-design-to-code-workflow';
 
 interface RegistryEntry {
   name: string;
@@ -49,18 +49,7 @@ class AgentRegistry {
     }
 
     // ── Wire active agent instances here ─────────────────────────────────────
-    //
-    // Example (once DesignToCodeAgent is implemented):
-    //
-    // this.map.get('design-to-code')!.instance = new DesignToCodeAgent({
-    //   figmaToken: process.env.FIGMA_ACCESS_TOKEN!,
-    //   llmConfig: {
-    //     provider: process.env.LLM_PROVIDER as 'openai' | 'anthropic',
-    //     apiKey: process.env.OPENAI_API_KEY ?? process.env.ANTHROPIC_API_KEY!,
-    //   },
-    // });
-    //
-    // For now all agents remain 'planned' until their packages are built.
+    this.map.get('design-to-code')!.instance = new DesignToCodeAgent();
     // ─────────────────────────────────────────────────────────────────────────
   }
 

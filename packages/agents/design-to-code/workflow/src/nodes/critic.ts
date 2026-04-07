@@ -12,6 +12,7 @@
 
 import { createLLMClient } from '../utils/llm-client.js';
 import { makeLogEntry } from '../utils/logger.js';
+import { parseJsonResponse } from '../utils/parse-json.js';
 import type { WorkflowState, IRValidationResult } from '../types.js';
 import type { DesignIR, IRElement } from '@appvelocity/agent-design-to-code-core';
 
@@ -108,24 +109,27 @@ ${JSON.stringify(summary, null, 2)}
 ## Validation Criteria
 
 ### ERRORS (set valid=false, score ≤ 50) — block code generation
-- A screen with 0 elements in elementIndex
-- A screen missing a componentName
-- A component with 0 variants
+These are hard structural faults that make code generation impossible:
+- A screen with 0 elements in elementIndex AND no child structure at all
+- A screen missing a componentName (cannot produce a valid file name)
 - Circular component references
-- A screen wider than 2000px or taller than 5000px (likely a non-screen frame was included)
+- A screen wider than 2000px or taller than 5000px (desktop frame accidentally included)
 
-### WARNINGS (reduce score 5–15 each) — allow generation but flag
-- Screen or component names containing special characters that will cause import errors (e.g. spaces, slashes not in camelCase)
-- Missing text content on a screen that appears to be a data-entry form
-- No color tokens defined (hardcoded colors will be used)
-- No typography tokens defined
-- Assets referenced but no URLs resolved (images will be placeholders)
+### WARNINGS (severity="warning", reduce score 5–10 each) — allow generation but flag
+These reduce quality but generation can still proceed with fallbacks.
+IMPORTANT: ALL of the following must be rated "warning", never "error":
+- No color tokens defined (hardcoded colors will be used — acceptable for MVP)
+- No typography tokens defined (hardcoded styles will be used — acceptable for MVP)
+- No components defined despite component instances being used in screens (generator will inline styles)
+- Assets referenced but no URLs resolved (images will render as placeholders)
 - Screen dimensions that don't match common mobile sizes (375, 390, 414, 360px width)
+- Screen or component names containing spaces or special characters
 
 ### INFO — cosmetic, no score impact
 - Component atomicLevel is ambiguous
 - Fewer than 3 screens in a multi-page file
 - No spacing tokens defined
+- No radii tokens defined
 
 ## Scoring
 Start at 100. Subtract for each issue:
@@ -181,16 +185,48 @@ export async function criticAgent(
       },
     ],
     response_format: { type: 'json_object' },
-    max_tokens: 1024,
+    max_tokens: 2048,
   });
 
-  // Throws on invalid JSON — caught by the graph's error boundary
-  const validationResult: IRValidationResult = JSON.parse(
-    response.content
-  ) as IRValidationResult;
+  // Strips markdown fences if proxy ignores response_format, then parses
+  const rawResult = parseJsonResponse<IRValidationResult>(response.content);
+
+  // ── Post-process: demote "optional feature absent" issues from error → warning
+  // The LLM tends to classify missing tokens/components as errors even when
+  // these are optional Figma features (styles vs Variables API). Since the
+  // code generator handles these gracefully with fallbacks, they must not block.
+  const OPTIONAL_ABSENT_RE =
+    /no\s+(color|typography|spacing|radii|assets?|components?)\s.*(token|instance|url|definition|defined|are\s+defined)/i;
+
+  let demotedCount = 0;
+  const demotedIssues = rawResult.issues.map((issue) => {
+    if (issue.severity === 'error' && OPTIONAL_ABSENT_RE.test(issue.message)) {
+      demotedCount++;
+      return { ...issue, severity: 'warning' as const };
+    }
+    return issue;
+  });
+
+  // Only recompute score/valid when issues were actually demoted
+  let validationResult: IRValidationResult;
+  if (demotedCount > 0) {
+    const errorCount = demotedIssues.filter((i) => i.severity === 'error').length;
+    const warningCount = demotedIssues.filter((i) => i.severity === 'warning').length;
+    const recomputedScore = Math.max(0, 100 - errorCount * 25 - warningCount * 10);
+    validationResult = {
+      ...rawResult,
+      issues: demotedIssues,
+      score: recomputedScore,
+      // No blocking errors → valid. Score reflects quality but does not gate generation.
+      valid: errorCount === 0,
+    };
+  } else {
+    validationResult = rawResult;
+  }
 
   const failed = !validationResult.valid;
-  const errorCount = validationResult.issues.filter((i) => i.severity === 'error').length;
+  const finalErrorCount = validationResult.issues.filter((i) => i.severity === 'error').length;
+  const finalWarningCount = validationResult.issues.filter((i) => i.severity === 'warning').length;
 
   return {
     validationResult,
@@ -201,7 +237,7 @@ export async function criticAgent(
         validationResult.valid ? 'success' : 'warning',
         validationResult.valid
           ? `Validation passed (score: ${validationResult.score}/100)`
-          : `Validation failed (score: ${validationResult.score}/100) — ${errorCount} error(s), ${validationResult.issues.length - errorCount} warning(s)`
+          : `Validation failed (score: ${validationResult.score}/100) — ${finalErrorCount} error(s), ${finalWarningCount} warning(s)`
       ),
     ],
   };

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jobStore } from '../[agentId]/route';
+import { jobStore } from '../../[agentId]/route';
 
 /**
  * GET /api/agents/status/[jobId]

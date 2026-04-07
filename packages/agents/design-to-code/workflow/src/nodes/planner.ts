@@ -11,6 +11,7 @@
 import { parseFigmaUrl } from '@appvelocity/agent-design-to-code-core';
 import { createLLMClient } from '../utils/llm-client.js';
 import { makeLogEntry } from '../utils/logger.js';
+import { parseJsonResponse } from '../utils/parse-json.js';
 import type { WorkflowState, ExecutionPlan } from '../types.js';
 import type { FigmaFile, FigmaNode } from '@appvelocity/agent-design-to-code-core';
 
@@ -147,8 +148,8 @@ export async function plannerAgent(
     max_tokens: 512,
   });
 
-  // Throws on invalid JSON — caught by the graph's error boundary
-  const executionPlan: ExecutionPlan = JSON.parse(response.content) as ExecutionPlan;
+  // Strips markdown fences if proxy ignores response_format, then parses
+  const executionPlan = parseJsonResponse<ExecutionPlan>(response.content);
 
   return {
     executionPlan,

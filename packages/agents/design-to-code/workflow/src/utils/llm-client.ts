@@ -90,7 +90,7 @@ class ProxyLLMClient implements LLMClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
+        'x-api-key': this.apiKey,
       },
       body: JSON.stringify(body),
     });

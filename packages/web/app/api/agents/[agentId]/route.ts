@@ -4,7 +4,7 @@ import { agentRegistry } from '@/lib/agent-registry';
 
 const LaunchSchema = z.object({
   action: z.string(),
-  params: z.record(z.any()),
+  params: z.record(z.string(), z.any()),
   options: z
     .object({
       dryRun: z.boolean().optional(),
@@ -107,7 +107,7 @@ export async function GET(
 // ---------------------------------------------------------------------------
 export type JobStatus = 'running' | 'complete' | 'failed';
 
-interface Job {
+export interface Job {
   jobId: string;
   agentId: string;
   status: JobStatus;
@@ -153,5 +153,8 @@ class InMemoryJobStore {
   }
 }
 
-// Singleton exported for use in status + stream routes
-export const jobStore = new InMemoryJobStore();
+// Singleton exported for use in status + stream routes.
+// Attached to globalThis so it survives Next.js hot-module reloads in dev,
+// which would otherwise recreate the module and lose all in-flight jobs.
+const _global = globalThis as typeof globalThis & { __jobStore?: InMemoryJobStore };
+export const jobStore = _global.__jobStore ?? (_global.__jobStore = new InMemoryJobStore());

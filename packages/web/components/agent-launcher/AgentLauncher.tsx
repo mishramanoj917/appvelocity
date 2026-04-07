@@ -15,22 +15,13 @@ type JobState =
 
 export function AgentLauncher({ agent }: Props) {
   const isAvailable = agent.status === 'active' || agent.status === 'beta';
+  const firstAction = agent.actions?.[0];
 
-  if (!isAvailable || !agent.actions?.length) {
-    return (
-      <div className="av-card border-dashed text-center">
-        <p className="text-sm text-gray-500">
-          {agent.name} is not yet available.{' '}
-          <span className="text-gray-400">Check back in a future release.</span>
-        </p>
-      </div>
-    );
-  }
-
-  const [selectedAction, setSelectedAction] = useState(agent.actions[0]);
+  // Hooks must be called unconditionally — guard values are safe even when unavailable
+  const [selectedAction, setSelectedAction] = useState(firstAction!);
   const [params, setParams] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      agent.actions[0].params.map((p) => [p.key, String(p.defaultValue ?? '')])
+      (firstAction?.params ?? []).map((p) => [p.key, String(p.defaultValue ?? '')])
     )
   );
   const [job, setJob] = useState<JobState>({ phase: 'idle' });
@@ -43,6 +34,17 @@ export function AgentLauncher({ agent }: Props) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [job]);
+
+  if (!isAvailable || !agent.actions?.length) {
+    return (
+      <div className="av-card border-dashed text-center">
+        <p className="text-sm text-gray-500">
+          {agent.name} is not yet available.{' '}
+          <span className="text-gray-400">Check back in a future release.</span>
+        </p>
+      </div>
+    );
+  }
 
   function handleActionChange(actionId: string) {
     const action = agent.actions!.find((a) => a.id === actionId)!;

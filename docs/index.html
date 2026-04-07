@@ -4,1175 +4,837 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AppVelocity — AI-Powered Mobile Development Platform</title>
-  <meta name="description" content="Seven specialized AI agents that transform Figma designs into production-ready mobile code. From design to deployment in minutes, not weeks." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
   <style>
-    /* ─── Reset ───────────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
 
-    /* ─── Tokens ──────────────────────────────────────────────────────────── */
     :root {
-      --bg:         #F3F4F6;
-      --surface:    #FFFFFF;
-      --surface2:   #F9FAFB;
-      --border:     #E5E7EB;
-      --border-lt:  #F0F0F0;
-      --txt:        #111827;
-      --txt2:       #4B5563;
-      --muted:      #9CA3AF;
-      --primary:    #6366f1;
-      --primary-dk: #4F46E5;
-      --primary-lt: #EEF2FF;
-      --primary-bd: #C7D2FE;
-      --violet:     #8B5CF6;
-      --violet-lt:  #F5F3FF;
-      --green:      #10B981;
-      --green-lt:   #ECFDF5;
-      --amber:      #F59E0B;
-      --amber-lt:   #FFFBEB;
-      --blue:       #3B82F6;
-      --blue-lt:    #EFF6FF;
-      --red:        #EF4444;
-      --red-lt:     #FEF2F2;
-      --pink:       #EC4899;
-      --pink-lt:    #FDF2F8;
-      --cyan:       #06B6D4;
-      --cyan-lt:    #ECFEFF;
-      --sh-sm:      0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-      --sh-md:      0 4px 14px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
-      --sh-lg:      0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
-      --r:          12px;
-      --r-lg:       18px;
-      /* Node type palette */
-      --c-gate:       #10B981; --bg-gate:      #ECFDF5; --bd-gate:      #A7F3D0;
-      --c-llm:        #8B5CF6; --bg-llm:       #F5F3FF; --bd-llm:       #DDD6FE;
-      --c-io:         #3B82F6; --bg-io:        #EFF6FF; --bd-io:        #BFDBFE;
-      --c-transform:  #F59E0B; --bg-transform: #FFFBEB; --bd-transform: #FDE68A;
+      --bg:        #F3F4F6;
+      --surface:   #FFFFFF;
+      --border:    #E5E7EB;
+      --border-lt: #F0F0F0;
+      --txt:       #111827;
+      --txt2:      #4B5563;
+      --muted:     #9CA3AF;
+      /* Brand */
+      --brand:     #F15B40;
+      --brand-dk:  #d94a30;
+      --brand-lt:  #FFF1EE;
+      --brand-bd:  #FECDB8;
+      --navy:      #082340;
+      --navy-md:   #0d3a5c;
+      /* Semantic — consistent across page */
+      --green:     #10B981; --green-lt: #ECFDF5; --green-bd: #A7F3D0;
+      --amber:     #F59E0B; --amber-lt: #FFFBEB; --amber-bd: #FDE68A;
+      --blue:      #3B82F6; --blue-lt:  #EFF6FF; --blue-bd:  #BFDBFE;
+      --violet:    #7C3AED; --violet-lt:#F5F3FF; --violet-bd:#DDD6FE;
+      --red:       #EF4444; --red-lt:   #FEF2F2; --red-bd:   #FECACA;
+      --cyan:      #0891B2; --cyan-lt:  #ECFEFF; --cyan-bd:  #A5F3FC;
+      /* Shadows */
+      --sh-sm: 0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+      --sh-md: 0 4px 14px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
+      --sh-lg: 0 8px 32px rgba(0,0,0,.10),0 2px 8px rgba(0,0,0,.06);
+      --r: 12px; --r-lg: 18px;
     }
 
-    body {
-      background: var(--bg);
-      color: var(--txt);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      line-height: 1.6;
-      overflow-x: hidden;
-      font-size: 15px;
-    }
+    body { background:var(--bg); color:var(--txt); font-family:'Inter',sans-serif; line-height:1.6; overflow-x:hidden; font-size:15px; }
+    a { color:inherit; text-decoration:none; }
+    .container { max-width:1200px; margin:0 auto; padding:0 28px; }
 
-    a { color: inherit; text-decoration: none; }
-    code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--primary-lt); color: var(--primary-dk); padding: 2px 6px; border-radius: 4px; }
-
-    /* ─── Typography ──────────────────────────────────────────────────────── */
-    h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; color: var(--txt); }
-    h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 800; letter-spacing: -0.025em; color: var(--txt); }
-    h3 { font-size: 1.15rem; font-weight: 700; color: var(--txt); }
-    p  { color: var(--txt2); }
-    .grad { background: linear-gradient(135deg, #6366f1 0%, #8B5CF6 50%, #EC4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-
-    /* ─── Layout ──────────────────────────────────────────────────────────── */
-    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
-    section { padding: 88px 0; }
-
-    /* ─── Pill / Label ────────────────────────────────────────────────────── */
-    .chip {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--primary); background: var(--primary-lt);
-      border: 1px solid var(--primary-bd);
-      border-radius: 100px; padding: 5px 14px;
-      margin-bottom: 20px;
-    }
-    .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); animation: blink 2s infinite; }
-
-    /* ─── Badge ───────────────────────────────────────────────────────────── */
-    .badge { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; }
-    .badge-active  { background: var(--green-lt);  color: var(--green);  border: 1px solid #A7F3D0; }
-    .badge-planned { background: var(--surface2);  color: var(--muted);  border: 1px solid var(--border); }
-    .badge-llm     { background: var(--violet-lt); color: var(--violet); border: 1px solid #DDD6FE; }
-
-    /* ─── Buttons ─────────────────────────────────────────────────────────── */
-    .btn-primary {
-      background: linear-gradient(135deg, #6366f1, #8B5CF6);
-      color: #fff; padding: 13px 30px; border-radius: 10px;
-      font-weight: 700; font-size: 0.9rem; border: none; cursor: pointer;
-      box-shadow: 0 4px 16px rgba(99,102,241,0.35);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
-    .btn-outline {
-      background: var(--surface); color: var(--txt);
-      padding: 13px 30px; border-radius: 10px;
-      font-weight: 600; font-size: 0.9rem;
-      border: 1.5px solid var(--border); cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .btn-outline:hover { border-color: var(--primary); background: var(--primary-lt); color: var(--primary-dk); }
-
-    /* ─── Divider ─────────────────────────────────────────────────────────── */
-    .divider { height: 1px; background: var(--border); }
-
-    /* ─── Nav ─────────────────────────────────────────────────────────────── */
+    /* ── NAV ──────────────────────────────────────────────────── */
     nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      height: 60px;
-      box-shadow: var(--sh-sm);
+      position:fixed; top:0; left:0; right:0; z-index:100;
+      background:rgba(255,255,255,0.96); backdrop-filter:blur(16px);
+      border-bottom:2px solid var(--brand); height:60px;
+      box-shadow:var(--sh-sm);
     }
-    .nav-inner { max-width: 1160px; margin: 0 auto; padding: 0 24px; height: 100%; display: flex; align-items: center; justify-content: space-between; }
-    .nav-logo { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 1rem; color: var(--txt); }
-    .nav-logo-mark { width: 30px; height: 30px; background: linear-gradient(135deg, #6366f1, #8B5CF6); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; }
-    .nav-links { display: flex; gap: 28px; }
-    .nav-links a { font-size: 0.85rem; font-weight: 500; color: var(--txt2); transition: color 0.18s; }
-    .nav-links a:hover { color: var(--txt); }
-    .nav-cta { background: var(--txt); color: #fff; padding: 7px 18px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; transition: opacity 0.18s; }
-    .nav-cta:hover { opacity: 0.8; }
+    .nav-inner { max-width:1200px; margin:0 auto; padding:0 28px; height:100%; display:flex; align-items:center; }
+    .nav-logo { display:flex; align-items:center; gap:10px; font-weight:800; font-size:1.05rem; color:var(--navy); }
 
-    /* ─── Hero ────────────────────────────────────────────────────────────── */
-    #hero {
-      padding-top: 140px; padding-bottom: 96px;
-      background: linear-gradient(160deg, #FAFBFF 0%, #F3F4F6 60%, #F0F4FF 100%);
-      position: relative; overflow: hidden;
+    /* ── HERO ─────────────────────────────────────────────────── */
+    #hero { padding-top:72px; background:var(--bg); }
+    .hero-wrap { padding:16px 28px 0; max-width:1200px; margin:0 auto; }
+    .hero-banner {
+      border-radius:18px; overflow:hidden; position:relative;
+      min-height:300px; display:flex; align-items:stretch;
+      background:linear-gradient(125deg,#2d1b69 0%,#6b2fa0 28%,#c0392b 58%,#e8621a 78%,#f5a623 100%);
+      box-shadow:0 8px 40px rgba(0,0,0,0.18);
     }
-    .hero-mesh {
-      position: absolute; inset: 0; pointer-events: none;
-      background-image:
-        radial-gradient(circle at 20% 30%, rgba(99,102,241,0.08) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(139,92,246,0.07) 0%, transparent 50%);
-    }
-    .hero-inner { position: relative; max-width: 800px; }
-    .hero-kicker { display: inline-flex; align-items: center; gap: 8px; background: var(--primary-lt); border: 1px solid var(--primary-bd); border-radius: 100px; padding: 5px 14px; font-size: 0.78rem; font-weight: 600; color: var(--primary-dk); margin-bottom: 28px; }
-    .hero-kicker-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
-    .hero-title { margin-bottom: 20px; }
-    .hero-sub { font-size: 1.1rem; color: var(--txt2); max-width: 580px; margin-bottom: 40px; line-height: 1.7; }
-    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 64px; }
-    .hero-stats { display: flex; gap: 48px; flex-wrap: wrap; }
-    .stat-val { font-size: 2.2rem; font-weight: 900; color: var(--primary); letter-spacing: -0.04em; }
-    .stat-lbl { font-size: 0.78rem; color: var(--muted); margin-top: 2px; font-weight: 500; }
+    .hero-content { flex:1; padding:36px 44px; position:relative; z-index:2; display:flex; flex-direction:column; justify-content:center; max-width:62%; }
+    .hero-visual  { width:38%; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+    .hero-visual-inner { width:100%; height:100%; display:flex; align-items:center; justify-content:center; gap:16px; padding:24px; }
+    .phone { width:130px; height:240px; background:rgba(255,255,255,0.10); border-radius:20px; border:1.5px solid rgba(255,255,255,0.22); box-shadow:0 16px 48px rgba(0,0,0,0.3); display:flex; flex-direction:column; padding:14px 10px; gap:7px; }
+    .ph-bar { height:7px; border-radius:4px; background:rgba(255,255,255,0.25); }
+    .ph-bar.w60{width:60%;} .ph-bar.w80{width:80%;} .ph-bar.w45{width:45%;}
+    .ph-block { height:52px; border-radius:10px; background:rgba(255,255,255,0.12); display:flex; flex-direction:column; gap:5px; padding:8px; }
+    .ph-line { height:4px; border-radius:2px; background:rgba(255,200,100,0.55); }
+    .ph-line.bl{background:rgba(130,180,255,0.55);} .ph-line.gl{background:rgba(100,230,160,0.55);}
+    .hero-badge-icon { width:52px; height:52px; border-radius:50%; background:rgba(241,91,64,0.25); border:1.5px solid rgba(241,91,64,0.5); display:flex; align-items:center; justify-content:center; font-size:1.4rem; box-shadow:0 4px 20px rgba(241,91,64,0.3); margin-bottom:8px; }
+    .hero-product-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .hero-pname { font-size:1rem; font-weight:800; color:#fff; }
+    .hero-pbadge { background:rgba(255,255,255,0.2); color:#fff; font-size:0.68rem; font-weight:700; letter-spacing:0.06em; padding:3px 10px; border-radius:100px; border:1px solid rgba(255,255,255,0.3); }
+    .hero-cat { font-size:0.8rem; color:rgba(255,255,255,0.65); margin-bottom:16px; font-weight:500; }
+    .hero-title { font-size:clamp(1.4rem,2.6vw,2rem); font-weight:900; color:#fff; line-height:1.22; margin-bottom:16px; letter-spacing:-0.02em; }
+    .hero-desc { font-size:0.875rem; color:rgba(255,255,255,0.82); line-height:1.68; }
 
-    /* ─── Agent cards ─────────────────────────────────────────────────────── */
-    #platform { background: var(--surface); }
-    .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(295px,1fr)); gap: 18px; margin-top: 48px; }
-    .agent-card {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 22px;
-      transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
-      position: relative; overflow: hidden;
-      box-shadow: var(--sh-sm);
-    }
-    .agent-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--ac, var(--primary)); opacity: 0; transition: opacity 0.22s; border-radius: var(--r-lg) var(--r-lg) 0 0; }
-    .agent-card:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); border-color: #D1D5DB; }
-    .agent-card:hover::after, .agent-card.highlight::after { opacity: 1; }
-    .agent-card.highlight { border-color: var(--primary-bd); }
-    .agent-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .agent-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; background: var(--bg); }
-    .agent-name { font-weight: 800; font-size: 1rem; color: var(--txt); margin-bottom: 5px; }
-    .agent-desc { font-size: 0.84rem; color: var(--txt2); line-height: 1.55; }
-    .agent-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
-    .tag { font-size: 0.68rem; color: var(--txt2); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-weight: 500; }
+    /* ── SHARED SECTION STYLES ────────────────────────────────── */
+    .section { padding:48px 0; }
+    .section.tight { padding-top:0; }
+    .card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--r-lg); padding:36px 40px; box-shadow:var(--sh-sm); }
+    .sec-label { display:inline-flex; align-items:center; gap:7px; font-size:0.7rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--brand); background:var(--brand-lt); border:1px solid var(--brand-bd); border-radius:100px; padding:4px 13px; margin-bottom:16px; }
+    .label-dot { width:6px; height:6px; border-radius:50%; background:var(--brand); animation:blink 2s infinite; }
+    .sec-title { font-size:1.4rem; font-weight:800; color:var(--txt); letter-spacing:-0.02em; margin-bottom:6px; }
+    .sec-sub { font-size:0.88rem; color:var(--txt2); }
 
-    /* ─── DTC section ─────────────────────────────────────────────────────── */
-    #dtc { background: var(--bg); }
-    .dtc-split { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; margin-bottom: 80px; }
-    @media(max-width:780px){ .dtc-split { grid-template-columns: 1fr; gap: 36px; } }
-    .feature-rows { margin-top: 28px; display: flex; flex-direction: column; gap: 13px; }
-    .feature-row { display: flex; gap: 12px; align-items: flex-start; }
-    .feature-check { width: 20px; height: 20px; border-radius: 50%; background: var(--green-lt); border: 1.5px solid #A7F3D0; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: var(--green); font-weight: 900; }
-    .feature-row p { font-size: 0.875rem; margin: 0; }
-    .code-card { background: var(--txt); border-radius: var(--r-lg); padding: 22px; box-shadow: var(--sh-lg); }
-    .code-dots { display: flex; gap: 6px; margin-bottom: 18px; }
-    .code-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .c-line { display: flex; gap: 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.9; }
-    .c-num { color: #4B5563; min-width: 20px; text-align: right; user-select: none; }
-    .kw  { color: #C792EA; } .fn  { color: #82AAFF; } .str { color: #C3E88D; }
-    .cm  { color: #546E7A; font-style: italic; } .type { color: #FFCB6B; }
-    .op  { color: #89DDFF; } .prop { color: #80CBC4; }
+    /* ── AGENT GRID ───────────────────────────────────────────── */
+    .agents-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-top:28px; }
+    .agent-tile { background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:16px 12px 14px; text-align:center; cursor:pointer; position:relative; transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s; box-shadow:var(--sh-sm); }
+    .agent-tile:hover { transform:translateY(-3px); box-shadow:var(--sh-md); }
+    .agent-tile.selected { border-color:var(--brand); background:var(--brand-lt); box-shadow:0 0 0 3px rgba(241,91,64,0.12),var(--sh-md); }
+    .at-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; margin:0 auto 10px; background:var(--bg); border:1px solid var(--border); transition:background 0.2s,border-color 0.2s; }
+    .agent-tile.selected .at-icon { background:#fff; border-color:var(--brand-bd); }
+    .at-name { font-size:0.72rem; font-weight:700; color:var(--txt); line-height:1.3; }
+    .agent-tile.selected .at-name { color:var(--brand-dk); }
+    .at-sub { font-size:0.61rem; color:var(--muted); margin-top:4px; line-height:1.3; }
+    .at-badge { display:inline-block; font-size:0.58rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; padding:2px 7px; border-radius:100px; margin-top:7px; }
+    .at-badge.live { background:var(--green-lt); color:var(--green); border:1px solid var(--green-bd); }
+    .at-badge.planned { background:#F3F4F6; color:var(--muted); border:1px solid var(--border); }
+    .at-arrow { display:none; position:absolute; bottom:-14px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:10px solid transparent; border-right:10px solid transparent; border-top:12px solid var(--brand); z-index:2; }
 
-    /* ─── Pipeline Infographic ────────────────────────────────────────────── */
-    .pipeline-section { margin-top: 0; }
-    .pipeline-heading { text-align: center; margin-bottom: 52px; }
-    .pipeline-heading p { margin-top: 10px; font-size: 1rem; }
+    /* ── DTC FEATURE CARD ─────────────────────────────────────── */
+    .dtc-card { background:var(--surface); border:1.5px solid var(--brand-bd); border-radius:var(--r-lg); padding:36px 40px; box-shadow:0 0 0 4px rgba(241,91,64,0.06),var(--sh-md); position:relative; overflow:hidden; }
+    .dtc-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--brand),#ff8c42,var(--amber)); }
+    .dtc-layout { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start; margin-top:24px; }
+    .dtc-features { display:flex; flex-direction:column; gap:14px; }
+    .dtc-row { display:flex; gap:12px; align-items:flex-start; }
+    .dtc-check { width:20px; height:20px; border-radius:50%; background:var(--brand-lt); border:1.5px solid var(--brand-bd); flex-shrink:0; margin-top:2px; display:flex; align-items:center; justify-content:center; font-size:0.58rem; color:var(--brand); font-weight:900; }
+    .dtc-row p { font-size:0.875rem; color:var(--txt2); margin:0; line-height:1.6; }
+    .dtc-row strong { color:var(--txt); font-weight:700; }
+    .tech-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:24px; }
+    .tc { display:inline-flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:100px; border:1.5px solid; }
+    .tc-orange { color:var(--brand);  background:var(--brand-lt);  border-color:var(--brand-bd); }
+    .tc-navy   { color:#fff;          background:var(--navy);       border-color:var(--navy); }
+    .tc-violet { color:var(--violet); background:var(--violet-lt);  border-color:var(--violet-bd); }
+    .tc-blue   { color:var(--blue);   background:var(--blue-lt);    border-color:var(--blue-bd); }
+    .tc-amber  { color:var(--amber);  background:var(--amber-lt);   border-color:var(--amber-bd); }
+    /* Right panel — navy stats */
+    .dtc-stats { background:var(--navy); border-radius:14px; padding:28px; display:flex; flex-direction:column; gap:0; }
+    .dtc-stats-lbl { font-size:0.68rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:18px; }
+    .dtc-stat-row { display:flex; align-items:center; gap:16px; padding:16px 0; border-bottom:1px solid rgba(255,255,255,0.07); }
+    .dtc-stat-row:last-child { border-bottom:none; padding-bottom:0; }
+    .dtc-stat-ic { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+    .dtc-stat-val { font-size:1.6rem; font-weight:900; letter-spacing:-0.04em; line-height:1; }
+    .dtc-stat-lbl { font-size:0.76rem; color:rgba(255,255,255,0.5); margin-top:3px; line-height:1.4; }
 
-    /* Node type colors (must be inside a rule block — appended to :root above) */
+    /* ── PIPELINE CARD ────────────────────────────────────────── */
+    .pipeline-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--r-lg); padding:40px; box-shadow:var(--sh-sm); }
+    .pipe-header { text-align:center; margin-bottom:40px; }
+    .pipe-title { font-size:1.45rem; font-weight:800; color:var(--txt); letter-spacing:-0.02em; }
+    .pipe-sub { font-size:0.9rem; color:var(--txt2); margin-top:8px; }
+    .pipe-badge { display:inline-block; font-size:0.68rem; font-weight:800; letter-spacing:0.14em; text-transform:uppercase; color:var(--brand); background:var(--brand-lt); border:1px solid var(--brand-bd); border-radius:100px; padding:4px 14px; margin-top:16px; }
 
-    .pipeline-diagram {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 40px 32px 32px;
-      box-shadow: var(--sh-md);
-      position: relative;
-    }
-
-    /* Legend */
-    .pipe-legend { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-bottom: 36px; }
-    .leg-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 600; color: var(--txt2); }
-    .leg-dot { width: 10px; height: 10px; border-radius: 50%; }
-
-    /* Nodes row */
-    .pipe-row { display: flex; align-items: flex-start; gap: 0; position: relative; }
-
-    .pipe-node {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-      cursor: pointer;
-      padding: 0 6px;
-    }
-
-    /* arrow connector between nodes */
-    .pipe-node:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      top: 36px; /* vertically center on circle */
-      left: calc(50% + 38px);
-      right: calc(-50% + 38px);
-      height: 2px;
-      background: linear-gradient(90deg, var(--border), var(--border));
-      z-index: 0;
-    }
-    .pipe-node:not(:last-child)::before {
-      content: '';
-      position: absolute;
-      top: 31px;
-      right: calc(-50% + 35px);
-      width: 0; height: 0;
-      border-top: 5px solid transparent;
-      border-bottom: 5px solid transparent;
-      border-left: 7px solid var(--muted);
-      z-index: 1;
-    }
-
-    .p-circle {
-      width: 72px; height: 72px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.7rem;
-      background: var(--node-bg, var(--bg));
-      border: 2px solid var(--node-bd, var(--border));
-      transition: transform 0.22s, box-shadow 0.22s;
-      position: relative; z-index: 2;
-      box-shadow: var(--sh-sm);
-    }
-    .pipe-node:hover .p-circle,
-    .pipe-node.active .p-circle {
-      transform: scale(1.12);
-      box-shadow: 0 0 0 4px var(--node-ring, rgba(99,102,241,0.15)), var(--sh-md);
-    }
-    .p-num {
-      position: absolute; top: -5px; right: -5px;
-      width: 20px; height: 20px; border-radius: 50%;
-      background: var(--node-c, var(--primary));
-      color: #fff; font-size: 0.6rem; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-      border: 2px solid #fff;
-      z-index: 3;
-    }
-    .p-name { font-size: 0.75rem; font-weight: 700; color: var(--txt); text-align: center; margin-top: 10px; line-height: 1.3; }
-    .p-type { font-size: 0.65rem; font-weight: 600; text-align: center; margin-top: 4px; padding: 2px 8px; border-radius: 100px; background: var(--node-bg); color: var(--node-c); border: 1px solid var(--node-bd); }
+    /* Node row */
+    .pipe-scroll { overflow-x:auto; padding-bottom:8px; }
+    .pipe-row { display:flex; align-items:flex-start; min-width:860px; position:relative; padding:12px 0 0; }
+    .p-node { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; cursor:pointer; padding:0 6px; }
+    .p-node:not(:last-child)::after { content:''; position:absolute; top:40px; left:calc(50% + 42px); right:calc(-50% + 42px); height:2px; background:var(--border); z-index:0; }
+    .p-node:not(:last-child)::before { content:''; position:absolute; top:35px; right:calc(-50% + 39px); width:0; height:0; border-top:5px solid transparent; border-bottom:5px solid transparent; border-left:7px solid var(--muted); z-index:1; }
+    .p-circle { width:80px; height:80px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; background:var(--node-bg,#F9FAFB); border:2px solid var(--node-bd,var(--border)); position:relative; z-index:2; box-shadow:var(--sh-sm); transition:transform 0.22s,box-shadow 0.22s,border-color 0.22s; }
+    .p-node:hover .p-circle, .p-node.active .p-circle { transform:scale(1.1); box-shadow:0 0 0 5px var(--node-ring,rgba(241,91,64,0.12)),var(--sh-md); }
+    .p-node.active .p-circle { border-color:var(--node-c,var(--brand)); }
+    .p-num { position:absolute; top:-4px; right:-4px; width:22px; height:22px; border-radius:50%; background:var(--node-c,var(--brand)); color:#fff; font-size:0.6rem; font-weight:800; display:flex; align-items:center; justify-content:center; border:2px solid #fff; z-index:3; }
+    .p-name { font-size:0.74rem; font-weight:700; color:var(--txt); text-align:center; margin-top:12px; line-height:1.3; }
+    .p-tag { font-size:0.62rem; font-weight:700; text-align:center; margin-top:5px; padding:2px 9px; border-radius:100px; background:var(--node-bg); color:var(--node-c); border:1px solid var(--node-bd); }
 
     /* Retry arc */
-    .retry-arc-wrap {
-      position: relative; margin-top: 18px; height: 54px;
-      display: flex; align-items: flex-start; justify-content: center;
-    }
-    .retry-arc-wrap svg { position: absolute; left: 0; top: 0; width: 100%; height: 54px; overflow: visible; }
-    .retry-label { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.7rem; font-weight: 600; color: var(--red); background: #FEF2F2; border: 1px solid #FECACA; border-radius: 100px; padding: 2px 10px; z-index: 2; }
+    .retry-zone { position:relative; margin-top:24px; height:64px; display:flex; align-items:flex-start; justify-content:center; }
+    .retry-zone svg { position:absolute; left:0; top:0; width:100%; height:64px; overflow:visible; }
+    .retry-tag { position:absolute; bottom:4px; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:0.72rem; font-weight:600; color:var(--red); background:var(--red-lt); border:1px solid var(--red-bd); border-radius:100px; padding:4px 16px; z-index:2; display:flex; align-items:center; gap:6px; }
+    .retry-tag::before { content:'↩ Auto-Retry'; font-weight:800; }
 
-    /* Conditional routing annotation */
-    .route-note { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
-    .route-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--txt2); }
-    .route-line { width: 24px; height: 2px; border-radius: 1px; }
-    .route-line.dashed { background: repeating-linear-gradient(90deg, currentColor 0, currentColor 4px, transparent 4px, transparent 8px); }
+    /* Legend */
+    .flow-legend { display:flex; gap:24px; flex-wrap:wrap; justify-content:center; margin-top:20px; }
+    .fl-item { display:flex; align-items:center; gap:7px; font-size:0.73rem; color:var(--txt2); font-weight:500; }
+    .fl-line { width:28px; height:2px; border-radius:1px; flex-shrink:0; }
 
-    /* Node detail panel */
-    .node-panel {
-      margin-top: 24px; display: none;
-      background: var(--bg); border: 1.5px solid var(--border);
-      border-radius: var(--r); padding: 28px;
-      animation: fadeUp 0.28s ease;
-    }
-    .node-panel.open { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; }
-    @media(max-width:720px){ .node-panel.open { grid-template-columns: 1fr; } }
-    .panel-hdr { grid-column: 1/-1; display: flex; align-items: center; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
-    .panel-icon { width: 52px; height: 52px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; background: var(--primary-lt); flex-shrink: 0; }
-    .panel-title { font-size: 1.2rem; font-weight: 800; color: var(--txt); }
-    .panel-sub { font-size: 0.84rem; color: var(--txt2); margin-top: 3px; }
-    .panel-close { margin-left: auto; font-size: 0.75rem; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 4px 12px; border-radius: 6px; cursor: pointer; transition: background 0.18s; flex-shrink: 0; }
-    .panel-close:hover { background: var(--border); }
-    .panel-sec-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 10px; }
-    .io-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
-    .io-list li { display: flex; gap: 9px; font-size: 0.84rem; color: var(--txt2); align-items: flex-start; }
-    .io-dot-in  { width: 8px; height: 8px; border-radius: 50%; background: var(--blue);  flex-shrink: 0; margin-top: 5px; }
-    .io-dot-out { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; margin-top: 5px; }
-    .step-list { list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 9px; }
-    .step-list li { counter-increment: s; display: flex; gap: 10px; font-size: 0.84rem; color: var(--txt2); align-items: flex-start; }
-    .step-list li::before { content: counter(s); min-width: 22px; height: 22px; border-radius: 50%; background: var(--primary-lt); border: 1.5px solid var(--primary-bd); color: var(--primary-dk); font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    /* Detail panel */
+    .node-panel { margin-top:28px; display:none; background:#FAFBFF; border:1.5px solid var(--border); border-radius:var(--r); padding:30px; animation:slideDown 0.25s ease; border-left:4px solid var(--brand); }
+    .node-panel.open { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+    @media(max-width:720px){ .node-panel.open{grid-template-columns:1fr;} }
+    .np-hdr { grid-column:1/-1; display:flex; align-items:flex-start; gap:16px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+    .np-icon { width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.7rem; background:var(--brand-lt); flex-shrink:0; }
+    .np-title { font-size:1.1rem; font-weight:800; color:var(--txt); }
+    .np-badge { font-size:0.68rem; font-weight:700; letter-spacing:0.05em; padding:3px 11px; border-radius:100px; }
+    .np-close { margin-left:auto; font-size:0.75rem; color:var(--muted); background:var(--surface); border:1px solid var(--border); padding:5px 13px; border-radius:6px; cursor:pointer; transition:background 0.18s; flex-shrink:0; white-space:nowrap; }
+    .np-close:hover { background:var(--border); color:var(--txt); }
+    .np-summary { font-size:0.86rem; color:var(--txt2); line-height:1.65; margin-top:6px; }
+    .np-sec { font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:12px; }
+    .np-steps { list-style:none; counter-reset:s; display:flex; flex-direction:column; gap:10px; }
+    .np-steps li { counter-increment:s; display:flex; gap:11px; font-size:0.84rem; color:var(--txt2); align-items:flex-start; line-height:1.55; }
+    .np-steps li::before { content:counter(s); min-width:24px; height:24px; border-radius:50%; background:var(--brand-lt); border:1.5px solid var(--brand-bd); color:var(--brand-dk); font-size:0.65rem; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .np-io { list-style:none; display:flex; flex-direction:column; gap:8px; }
+    .np-io li { display:flex; gap:9px; font-size:0.83rem; color:var(--txt2); align-items:flex-start; line-height:1.5; }
+    .io-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+    .io-in  { background:var(--blue); }
+    .io-out { background:var(--green); }
 
-    /* ─── Data Flow ───────────────────────────────────────────────────────── */
-    #dataflow { background: var(--surface); }
-    .df-grid { display: grid; grid-template-columns: 1fr 48px 1fr 48px 1fr; gap: 0; align-items: center; margin-top: 48px; }
-    @media(max-width:860px){ .df-grid { grid-template-columns: 1fr; gap: 16px; } .df-arr { display: none; } }
-    .df-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 24px; box-shadow: var(--sh-sm); }
-    .df-box-head { font-size: 0.8rem; font-weight: 800; color: var(--txt); display: flex; align-items: center; gap: 9px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .df-box-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
-    .df-item { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border-lt); font-size: 0.79rem; }
-    .df-item:last-child { border-bottom: none; }
-    .df-key { font-family: 'JetBrains Mono', monospace; color: var(--primary-dk); font-weight: 600; min-width: 76px; flex-shrink: 0; font-size: 0.74rem; }
-    .df-val { color: var(--txt2); }
-    .df-arr { display: flex; align-items: center; justify-content: center; color: var(--muted); }
-    .df-arr svg { width: 24px; height: 24px; }
+    /* ── ROADMAP ──────────────────────────────────────────────── */
+    .rm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(255px,1fr)); gap:16px; margin-top:28px; }
+    .rm-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--r-lg); padding:22px; box-shadow:var(--sh-sm); transition:transform 0.2s,box-shadow 0.2s; position:relative; overflow:hidden; }
+    .rm-card::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--ac,var(--brand)); opacity:0; transition:opacity 0.2s; }
+    .rm-card:hover { transform:translateY(-3px); box-shadow:var(--sh-lg); }
+    .rm-card:hover::after { opacity:1; }
+    .rm-hd { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .rm-ic { width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+    .rm-name { font-weight:800; font-size:0.92rem; color:var(--txt); }
+    .rm-phase { font-size:0.65rem; color:var(--muted); font-weight:600; margin-top:1px; }
+    .rm-desc { font-size:0.83rem; color:var(--txt2); line-height:1.55; margin-bottom:12px; }
+    .rm-caps { display:flex; flex-direction:column; gap:6px; }
+    .rm-cap { font-size:0.76rem; color:var(--txt2); display:flex; gap:7px; }
+    .rm-cap::before { content:'—'; color:var(--muted); flex-shrink:0; }
+    .bd-plan { background:#F3F4F6; color:var(--muted); border:1px solid var(--border); font-size:0.63rem; font-weight:700; padding:2px 9px; border-radius:100px; }
 
-    /* ─── Architecture ────────────────────────────────────────────────────── */
-    #architecture { background: var(--bg); }
-    .arch-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 48px; }
-    @media(max-width:760px){ .arch-grid { grid-template-columns: 1fr; } }
-    .arch-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 24px; box-shadow: var(--sh-sm); transition: transform 0.2s, box-shadow 0.2s; }
-    .arch-card:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); }
-    .arch-ic { font-size: 1.4rem; width: 44px; height: 44px; border-radius: 11px; background: var(--primary-lt); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
-    .arch-title { font-weight: 700; margin-bottom: 8px; }
-    .arch-desc { font-size: 0.84rem; color: var(--txt2); line-height: 1.6; }
+    /* ── FOOTER ───────────────────────────────────────────────── */
+    footer { background:var(--navy); color:rgba(255,255,255,0.45); padding:36px 0 24px; text-align:center; }
+    .foot-logo { display:flex; align-items:center; justify-content:center; gap:9px; color:#fff; font-weight:800; margin-bottom:10px; font-size:1rem; }
+    footer p { font-size:0.78rem; }
 
-    /* ─── Roadmap ─────────────────────────────────────────────────────────── */
-    #roadmap { background: var(--surface); }
-    .roadmap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px,1fr)); gap: 18px; margin-top: 48px; }
-    .roadmap-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-lg); padding: 22px; box-shadow: var(--sh-sm); transition: transform 0.2s, box-shadow 0.2s; }
-    .roadmap-card:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); }
-    .rm-hdr { display: flex; align-items: center; gap: 13px; margin-bottom: 13px; }
-    .rm-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
-    .rm-name { font-weight: 800; font-size: 0.95rem; color: var(--txt); }
-    .rm-phase { font-size: 0.68rem; color: var(--muted); font-weight: 600; margin-top: 1px; }
-    .rm-desc { font-size: 0.84rem; color: var(--txt2); line-height: 1.55; margin-bottom: 12px; }
-    .rm-caps { display: flex; flex-direction: column; gap: 6px; }
-    .rm-cap { font-size: 0.76rem; color: var(--txt2); display: flex; gap: 7px; align-items: flex-start; }
-    .rm-cap::before { content: '—'; color: var(--muted); flex-shrink: 0; }
+    /* ── ANIMATIONS ───────────────────────────────────────────── */
+    @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    @keyframes slideDown{ from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 
-    /* ─── CTA ─────────────────────────────────────────────────────────────── */
-    #cta {
-      background: linear-gradient(135deg, #6366f1 0%, #8B5CF6 100%);
-      padding: 96px 0;
-      text-align: center;
-      position: relative; overflow: hidden;
-    }
-    #cta::before {
-      content: ''; position: absolute; inset: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    }
-    .cta-inner { position: relative; }
-    #cta h2 { color: #fff; margin-bottom: 16px; }
-    #cta p { color: rgba(255,255,255,0.75); font-size: 1.05rem; max-width: 480px; margin: 0 auto 40px; }
-    .btn-cta-white { background: #fff; color: var(--primary-dk); padding: 14px 36px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.15); transition: transform 0.2s; }
-    .btn-cta-white:hover { transform: translateY(-2px); }
-    .btn-cta-ghost { background: transparent; color: #fff; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; border: 1.5px solid rgba(255,255,255,0.4); cursor: pointer; transition: background 0.2s; }
-    .btn-cta-ghost:hover { background: rgba(255,255,255,0.1); }
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
-    /* ─── Footer ──────────────────────────────────────────────────────────── */
-    footer { background: var(--txt); color: #9CA3AF; padding: 44px 0 28px; text-align: center; }
-    .foot-logo { display: flex; align-items: center; justify-content: center; gap: 9px; color: #fff; font-weight: 800; margin-bottom: 18px; }
-    .foot-links { display: flex; justify-content: center; gap: 28px; margin-bottom: 28px; flex-wrap: wrap; }
-    .foot-links a { font-size: 0.84rem; color: #6B7280; transition: color 0.2s; }
-    .foot-links a:hover { color: #fff; }
-    footer p { font-size: 0.8rem; }
-
-    /* ─── Animations ──────────────────────────────────────────────────────── */
-    @keyframes blink  { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes dash   { to{stroke-dashoffset:0} }
-
-    /* ─── Scrollbar ───────────────────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-    /* ─── Responsive helpers ──────────────────────────────────────────────── */
-    @media(max-width:640px){
-      section { padding: 64px 0; }
-      .nav-links { display: none; }
-      .hero-stats { gap: 28px; }
-    }
+    @media(max-width:900px) { .agents-grid{grid-template-columns:repeat(4,1fr);} .dtc-layout{grid-template-columns:1fr;} }
+    @media(max-width:600px) { .agents-grid{grid-template-columns:repeat(2,1fr);} .hero-visual{display:none;} .hero-content{max-width:100%;} }
   </style>
 </head>
 <body>
 
-<!-- ── NAV ────────────────────────────────────────────────────────────────── -->
+<!-- ═══════════════════════════════ NAV ═══════════════════════════════ -->
 <nav>
   <div class="nav-inner">
     <div class="nav-logo">
-      <div class="nav-logo-mark">⚡</div>
+      <svg width="26" height="34" viewBox="0 0 46 60" xmlns="http://www.w3.org/2000/svg" overflow="hidden">
+        <defs><clipPath id="nc"><rect x="1155" y="105" width="45" height="58"/></clipPath></defs>
+        <g transform="translate(-1154 -104)" clip-path="url(#nc)">
+          <path d="M35.048 12.61C35.048 10.85 33.621 9.423 31.86 9.423H11.461C9.7 9.423 8.274 10.85 8.274 12.61v.95l2.592.001c.293-1.052 1.257-1.826 2.404-1.826h16.78c1.38 0 2.498 1.118 2.498 2.498v13.772c.9-.617 1.734-1.25 2.499-1.894V12.61Z" fill="#F15B40" transform="matrix(1 0 0 1.163 1155 105)"/>
+          <path d="M10.772 21.53H8.274v13.53c.778.11 1.614.167 2.498.174V21.53Z" fill="#F15B40" transform="matrix(1 0 0 1.163 1155 105)"/>
+          <path d="M21.3 15.308h-4.841l-.421.134-.779-.798.064-.39v-5.69l-.046-.17.022-.29.024-.022.245-.035 4.034.001c.563 0 1.018-.456 1.018-1.018V1.018C20.786.455 20.33 0 19.768 0h-4.034C15.17 0 14.716.456 14.716 1.018v4.035l.019.196-.675.624-.238-.029H7.589c-.793 0-1.436.643-1.436 1.436v5.69c0 .793.643 1.436 1.436 1.436h5.69l.264-.026.188.194.774.801-.04.218v4.843c0 .675.547 1.222 1.222 1.222H21.3c.675 0 1.221-.547 1.221-1.222v-4.843c0-.675-.546-1.222-1.221-1.222Z" fill="#F15B40" transform="matrix(1 0 0 1.163 1155 105)"/>
+          <path d="M32.549 39.787c0 1.379-1.118 2.497-2.497 2.497H13.27c-1.38 0-2.498-1.118-2.498-2.497v-.391c-.872.036-1.707.031-2.498-.012v7.315c0 1.76 1.427 3.187 3.188 3.187h20.4c1.76 0 3.187-1.427 3.187-3.187V31.073a34.4 34.4 0 0 1-2.5 1.534V39.79Z" fill="#082340" transform="matrix(1 0 0 1.163 1155 105)"/>
+          <path d="M26.062 36.727C13.924 41.69 2.401 41.597.324 36.52c-.68-1.662-.264-3.65 1.026-5.745-.343 1.14-.343 2.21.047 3.164 1.917 4.692 12.564 4.777 23.776.193 11.216-4.583 19.072-12.637 17.155-17.324-.307-.76-.847-1.4-1.583-1.916 1.92.637 3.275 1.678 3.869 3.125C46.687 23.013 38.207 31.77 26.062 36.727Z" fill="#082340" transform="matrix(1 0 0 1.163 1155 105)"/>
+        </g>
+      </svg>
       AppVelocity
     </div>
-    <div class="nav-links">
-      <a href="#platform">Platform</a>
-      <a href="#dtc">DesignToCode</a>
-      <a href="#dataflow">Architecture</a>
-      <a href="#roadmap">Roadmap</a>
-    </div>
-    <a href="#cta" class="nav-cta">Get Early Access</a>
   </div>
 </nav>
 
-<!-- ── HERO ───────────────────────────────────────────────────────────────── -->
+<!-- ═══════════════════════════════ HERO ══════════════════════════════ -->
 <section id="hero">
-  <div class="hero-mesh"></div>
-  <div class="container">
-    <div class="hero-inner">
-      <div class="hero-kicker">
-        <span class="hero-kicker-dot"></span>
-        Phase 2 Complete &nbsp;·&nbsp; LangGraph Workflow Live
+  <div class="hero-wrap">
+    <div class="hero-banner">
+      <div class="hero-content">
+        <div class="hero-product-row">
+          <span class="hero-pname">AppVelocity-Platform</span>
+          <span class="hero-pbadge">Platform</span>
+        </div>
+        <div class="hero-cat">Industry Accelerator · Mobile Development</div>
+        <h1 class="hero-title">AI-Powered Platform for Mobile Teams to Ship 10x Faster</h1>
+        <p class="hero-desc">AppVelocity is a multi-agent AI platform that automates the entire mobile development lifecycle. Deploy 7 specialized agents covering design-to-code transformation, accessibility compliance, security hardening, and performance optimization — delivering production-ready React Native and Flutter apps in hours, not months.</p>
       </div>
-      <h1 class="hero-title">
-        Build Mobile Apps<br/>
-        <span class="grad">10× Faster with AI</span>
-      </h1>
-      <p class="hero-sub">
-        Seven specialized AI agents that transform Figma designs into production-ready React Native and Flutter code — with full design fidelity, built-in accessibility, and zero manual effort.
-      </p>
-      <div class="hero-actions">
-        <button class="btn-primary" onclick="document.getElementById('dtc').scrollIntoView({behavior:'smooth'})">See How It Works →</button>
-        <button class="btn-outline" onclick="document.getElementById('platform').scrollIntoView({behavior:'smooth'})">Explore Platform</button>
-      </div>
-      <div class="hero-stats">
-        <div><div class="stat-val">7</div><div class="stat-lbl">AI Agents</div></div>
-        <div><div class="stat-val">90%</div><div class="stat-lbl">Faster Delivery</div></div>
-        <div><div class="stat-val">4</div><div class="stat-lbl">Target Frameworks</div></div>
-        <div><div class="stat-val">100%</div><div class="stat-lbl">Design Fidelity</div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ── PLATFORM OVERVIEW ──────────────────────────────────────────────────── -->
-<section id="platform">
-  <div class="container">
-    <div class="chip"><span class="chip-dot"></span>Platform</div>
-    <h2>Seven Agents, <span class="grad">One Platform</span></h2>
-    <p style="max-width:540px; margin-top:12px;">Each agent is purpose-built for a specific phase of mobile development — from design parsing to regulatory compliance.</p>
-
-    <div class="agents-grid">
-
-      <div class="agent-card highlight" style="--ac:#6366f1;">
-        <div class="agent-hdr">
-          <div class="agent-icon" style="background:#EEF2FF;">🎨</div>
-          <span class="badge badge-active">Active</span>
-        </div>
-        <div class="agent-name">DesignToCodeAgent</div>
-        <div class="agent-desc">Full 6-node LangGraph workflow — Figma → IR → production React Native &amp; Flutter code with design tokens and accessibility.</div>
-        <div class="agent-tags">
-          <span class="tag">Figma API</span><span class="tag">LangGraph</span><span class="tag">React Native</span><span class="tag">Flutter</span><span class="tag">Design IR</span>
-        </div>
-      </div>
-
-      <div class="agent-card" style="--ac:#10B981;">
-        <div class="agent-hdr">
-          <div class="agent-icon" style="background:#ECFDF5;">♿</div>
-          <span class="badge badge-planned">Planned</span>
-        </div>
-        <div class="agent-name">AccessAgent</div>
-        <div class="agent-desc">Validates and remediates WCAG AA/AAA compliance — color contrast, focus order, screen reader labels.</div>
-        <div class="agent-tags">
-          <span class="tag">WCAG AA/AAA</span><span class="tag">Color Contrast</span><span class="tag">Screen Reader</span>
-        </div>
-      </div>
-
-      <div class="agent-card" style="--ac:#EF4444;">
-        <div class="agent-hdr">
-          <div class="agent-icon" style="background:#FEF2F2;">🛡️</div>
-          <span class="badge badge-planned">Planned</span>
-        </div>
-        <div class="agent-name">ShieldAgent</div>
-        <div class="agent-desc">Scans generated code for OWASP Mobile Top 10 vulnerabilities, exposed secrets, and insecure patterns.</div>
-        <div class="agent-tags">
-          <span class="tag">OWASP</span><span class="tag">Secret Detection</span><span class="tag">Static Analysis</span>
-        </div>
-      </div>
-
-      <div class="agent-card" style="--ac:#F59E0B;">
-        <div class="agent-hdr">
-          <div class="agent-icon" style="background:#FFFBEB;">⚡</div>
-          <span class="badge badge-planned">Planned</span>
-        </div>
-        <div class="agent-name">PerfectAgent</div>
-        <div class="agent-desc">Optimizes for 60fps — bundle size, lazy loading, image compression, re-render analysis.</div>
-        <div class="agent-tags">
-          <span class="tag">Bundle Analysis</span><span class="tag">Lazy Loading</span><span class="tag">60fps</span>
-        </div>
-      </div>
-
-      <div class="agent-card" style="--ac:#8B5CF6;">
-        <div class="agent-hdr">
-          <div class="agent-icon" style="background:#F5F3FF;">🧪</div>
-          <span class="badge badge-planned">Planned</span>
-        </div>
-        <div class="agent-name">TestIQAgent</div>
-        <div class="agent-desc">Auto-generates unit, integration, and E2E tests matched to the generated component structure.</div>
-        <div class="agent-tags">
-          <span class="tag">Jest</span><span class="tag">Detox E2E</span><span class="tag">Visual Regression</span>
-        </div>
-      </div>
-
-      <div class="agent-card" style="--ac:#06B6D4;">
-        <div class="agent-hdr">
-          <div class="agent-icon" style="background:#ECFEFF;">🚀</div>
-          <span class="badge badge-planned">Planned</span>
-        </div>
-        <div class="agent-name">DevBoostAgent</div>
-        <div class="agent-desc">Generates READMEs, CI/CD pipelines, API docs, and Fastlane lanes for instant developer onboarding.</div>
-        <div class="agent-tags">
-          <span class="tag">CI/CD Config</span><span class="tag">API Docs</span><span class="tag">Fastlane</span>
-        </div>
-      </div>
-
-      <div class="agent-card" style="--ac:#EC4899;">
-        <div class="agent-hdr">
-          <div class="agent-icon" style="background:#FDF2F8;">📋</div>
-          <span class="badge badge-planned">Planned</span>
-        </div>
-        <div class="agent-name">ComplianceAgent</div>
-        <div class="agent-desc">Ensures GDPR, HIPAA, and PCI DSS compliance patterns are baked into every generated app from day one.</div>
-        <div class="agent-tags">
-          <span class="tag">GDPR</span><span class="tag">HIPAA</span><span class="tag">PCI DSS</span>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ── DESIGN TO CODE DEEP DIVE ───────────────────────────────────────────── -->
-<section id="dtc">
-  <div class="container">
-    <div class="chip"><span class="chip-dot"></span>DesignToCodeAgent</div>
-
-    <!-- Split intro -->
-    <div class="dtc-split">
-      <div>
-        <h2>Figma URL In,<br/><span class="grad">Production Code Out</span></h2>
-        <p style="margin-top:14px; font-size:0.95rem; line-height:1.75;">Give the agent a Figma URL. It reads the design file, extracts tokens and components, builds a platform-agnostic IR, validates it with an LLM critic, then generates clean idiomatic mobile code — in minutes.</p>
-        <div class="feature-rows">
-          <div class="feature-row"><div class="feature-check">✓</div><p>Direct Figma API integration with design token extraction (colors, spacing, typography)</p></div>
-          <div class="feature-row"><div class="feature-check">✓</div><p>Platform-agnostic IR decouples design parsing from code generation — add SwiftUI or Jetpack Compose without touching Figma logic</p></div>
-          <div class="feature-row"><div class="feature-check">✓</div><p>LLM critic validates accessibility and structure before code is generated</p></div>
-          <div class="feature-row"><div class="feature-check">✓</div><p>Iterative retry loop — automatically rebuilds IR if critic validation fails (max 2×)</p></div>
-          <div class="feature-row"><div class="feature-check">✓</div><p>37 unit + integration tests · TypeScript strict · zero <code>any</code></p></div>
-        </div>
-      </div>
-      <div>
-        <div class="code-card">
-          <div class="code-dots">
-            <div class="code-dot" style="background:#FF5F57;"></div>
-            <div class="code-dot" style="background:#FFBD2E;"></div>
-            <div class="code-dot" style="background:#28C840;"></div>
+      <div class="hero-visual">
+        <div class="hero-visual-inner">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="hero-badge-icon">⚡</div>
+            <div class="phone">
+              <div class="ph-bar w80"></div>
+              <div class="ph-bar w60"></div>
+              <div class="ph-block">
+                <div class="ph-line" style="width:90%"></div>
+                <div class="ph-line bl" style="width:65%"></div>
+                <div class="ph-line gl" style="width:80%"></div>
+                <div class="ph-line" style="width:50%"></div>
+              </div>
+              <div class="ph-bar w45"></div>
+              <div class="ph-bar w80"></div>
+              <div class="ph-bar w60"></div>
+            </div>
           </div>
-          <div class="c-line"><span class="c-num">1</span><span class="cm">// Invoke the 6-node workflow</span></div>
-          <div class="c-line"><span class="c-num">2</span><span class="kw">const</span> <span class="prop">result</span> = <span class="kw">await</span> <span class="fn">compiledWorkflow</span>.<span class="fn">invoke</span>({</span></div>
-          <div class="c-line"><span class="c-num">3</span><span>&nbsp;&nbsp;<span class="prop">figmaUrl</span>: <span class="str">'https://figma.com/design/abc123'</span>,</span></div>
-          <div class="c-line"><span class="c-num">4</span><span>&nbsp;&nbsp;<span class="prop">targetFramework</span>: <span class="str">'react-native'</span>,</span></div>
-          <div class="c-line"><span class="c-num">5</span><span>&nbsp;&nbsp;<span class="prop">options</span>: { <span class="prop">accessibility</span>: <span class="kw">true</span>, <span class="prop">tokens</span>: <span class="kw">true</span> }</span></div>
-          <div class="c-line"><span class="c-num">6</span><span>});</span></div>
-          <div class="c-line"><span class="c-num">7</span><span>&nbsp;</span></div>
-          <div class="c-line"><span class="c-num">8</span><span class="cm">// Access the code bundle</span></div>
-          <div class="c-line"><span class="c-num">9</span><span><span class="kw">const</span> { <span class="prop">files</span> } = <span class="prop">result</span>.<span class="prop">generatedCode</span>;</span></div>
-          <div class="c-line"><span class="c-num">10</span><span class="cm">// → HomeScreen.tsx, theme.ts, navigation.ts</span></div>
-          <div style="margin-top:16px; padding-top:16px; border-top:1px solid #2d2d3d;">
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              <span style="font-size:0.68rem; background:#1a1a2e; color:#82AAFF; border:1px solid #2d2d3d; padding:3px 9px; border-radius:6px;">Claude Sonnet 4.6</span>
-              <span style="font-size:0.68rem; background:#1a1a2e; color:#C3E88D; border:1px solid #2d2d3d; padding:3px 9px; border-radius:6px;">LangGraph v0.2</span>
-              <span style="font-size:0.68rem; background:#1a1a2e; color:#FFCB6B; border:1px solid #2d2d3d; padding:3px 9px; border-radius:6px;">TypeScript strict</span>
-              <span style="font-size:0.68rem; background:#1a1a2e; color:#C792EA; border:1px solid #2d2d3d; padding:3px 9px; border-radius:6px;">37 tests passing</span>
+          <div style="display:flex;flex-direction:column;align-items:center;margin-top:30px;">
+            <div class="phone" style="height:200px;">
+              <div class="ph-bar w60"></div>
+              <div class="ph-block" style="height:72px;">
+                <div class="ph-line gl" style="width:100%"></div>
+                <div class="ph-line" style="width:70%"></div>
+                <div class="ph-line bl" style="width:85%"></div>
+                <div class="ph-line gl" style="width:55%"></div>
+                <div class="ph-line" style="width:90%"></div>
+              </div>
+              <div class="ph-bar w45"></div>
+              <div class="ph-bar w80"></div>
+            </div>
+            <div style="font-size:0.66rem;color:rgba(255,255,255,0.55);font-weight:600;letter-spacing:0.05em;margin-top:8px;">Generated in &lt;2 min</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════ 7 AGENTS GRID ═════════════════════════ -->
+<div class="section">
+  <div class="container">
+    <div class="card">
+      <div class="sec-label"><span class="label-dot"></span>Platform</div>
+      <div class="sec-title">Seven Intelligent Agents, One Unified Platform</div>
+      <div class="sec-sub">Each agent owns a critical phase of mobile development. Click any agent to explore its capabilities.</div>
+
+      <div class="agents-grid">
+        <div class="agent-tile selected" onclick="selectAgent(this)">
+          <div class="at-icon" style="background:#FFF1EE;border-color:#FECDB8;">🎨</div>
+          <div class="at-name">DesignToCode Agent</div>
+          <div class="at-sub">Figma → Production Code</div>
+          <span class="at-badge live">Live</span>
+          <div class="at-arrow"></div>
+        </div>
+        <div class="agent-tile" onclick="selectAgent(this)">
+          <div class="at-icon">♿</div>
+          <div class="at-name">Accessibility Agent</div>
+          <div class="at-sub">WCAG AA/AAA Compliance</div>
+          <span class="at-badge planned">Planned</span>
+          <div class="at-arrow"></div>
+        </div>
+        <div class="agent-tile" onclick="selectAgent(this)">
+          <div class="at-icon">🛡️</div>
+          <div class="at-name">Security Shield Agent</div>
+          <div class="at-sub">OWASP Vulnerability Scan</div>
+          <span class="at-badge planned">Planned</span>
+          <div class="at-arrow"></div>
+        </div>
+        <div class="agent-tile" onclick="selectAgent(this)">
+          <div class="at-icon">⚡</div>
+          <div class="at-name">Performance Agent</div>
+          <div class="at-sub">60fps Optimization</div>
+          <span class="at-badge planned">Planned</span>
+          <div class="at-arrow"></div>
+        </div>
+        <div class="agent-tile" onclick="selectAgent(this)">
+          <div class="at-icon">🧪</div>
+          <div class="at-name">Test Intelligence Agent</div>
+          <div class="at-sub">Auto Test Generation</div>
+          <span class="at-badge planned">Planned</span>
+          <div class="at-arrow"></div>
+        </div>
+        <div class="agent-tile" onclick="selectAgent(this)">
+          <div class="at-icon">🚀</div>
+          <div class="at-name">DevOps Boost Agent</div>
+          <div class="at-sub">CI/CD &amp; Documentation</div>
+          <span class="at-badge planned">Planned</span>
+          <div class="at-arrow"></div>
+        </div>
+        <div class="agent-tile" onclick="selectAgent(this)">
+          <div class="at-icon">📋</div>
+          <div class="at-name">Compliance Agent</div>
+          <div class="at-sub">GDPR · HIPAA · PCI DSS</div>
+          <span class="at-badge planned">Planned</span>
+          <div class="at-arrow"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ DTC FEATURE CARD ══════════════════════════ -->
+<div class="section tight">
+  <div class="container">
+    <div class="dtc-card">
+      <div class="sec-label"><span class="label-dot"></span>DesignToCode Agent · Live Now</div>
+      <div class="sec-title">From Figma Design to Shippable App Code Automatically</div>
+      <div class="sec-sub" style="margin-top:6px;max-width:600px;">Hand the agent a Figma link and choose your target framework. It reads every layer, extracts your design system, validates for accessibility, self-corrects if needed, and delivers clean screens code in minutes not days.</div>
+
+      <div class="dtc-layout">
+        <!-- Left: feature list -->
+        <div>
+          <div class="dtc-features">
+            <div class="dtc-row">
+              <div class="dtc-check">✓</div>
+              <p><strong>Automatic Design Token Extraction</strong> — Colors, typography, spacing, and component variants pulled directly from your Figma variables. No manual handoff, no spec documents.</p>
+            </div>
+            <div class="dtc-row">
+              <div class="dtc-check">✓</div>
+              <p><strong>Framework-Agnostic Architecture</strong> — A platform-neutral layer separates design parsing from code generation. Adding SwiftUI or Jetpack Compose is a new output plugin, not a rebuild.</p>
+            </div>
+            <div class="dtc-row">
+              <div class="dtc-check">✓</div>
+              <p><strong>Built-in Accessibility Validation</strong> — An AI reviewer checks every screen for WCAG compliance before writing a single line of code. Problems caught at design time cost a fraction of production fixes.</p>
+            </div>
+            <div class="dtc-row">
+              <div class="dtc-check">✓</div>
+              <p><strong>Self-Healing Quality Loop</strong> — If the AI reviewer identifies issues, the agent automatically rebuilds the design model and retries. Up to two auto-corrections per run, with full audit trail.</p>
+            </div>
+            <div class="dtc-row">
+              <div class="dtc-check">✓</div>
+              <p><strong>Enterprise-Grade Reliability</strong> — Automated tests, TypeScript strict mode, and zero untyped values across the entire codebase. Ready for developer adoption from day one.</p>
+            </div>
+          </div>
+
+          <div class="tech-chips">
+            <span class="tc tc-navy">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/><path d="M8 12l3 3 5-5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Claude Sonnet
+            </span>
+            <span class="tc tc-violet">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1.5" fill="var(--violet)" opacity="0.5"/><rect x="13" y="3" width="8" height="8" rx="1.5" fill="var(--violet)" opacity="0.8"/><rect x="3" y="13" width="8" height="8" rx="1.5" fill="var(--violet)" opacity="0.8"/><rect x="13" y="13" width="8" height="8" rx="1.5" fill="var(--violet)" opacity="0.5"/></svg>
+              GPT-4o
+            </span>
+            <span class="tc tc-blue">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              LangGraph
+            </span>
+            <span class="tc tc-orange">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="18" rx="2" stroke="var(--brand)" stroke-width="1.5"/><path d="M8 10h8M8 14h5" stroke="var(--brand)" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Figma API
+            </span>
+            <span class="tc tc-amber">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="var(--amber)" stroke-width="1.5" stroke-linecap="round"/></svg>
+              Feedback Loop
+            </span>
+          </div>
+        </div>
+
+        <!-- Right: navy stats panel -->
+        <div class="dtc-stats">
+          <div class="dtc-stats-lbl">Business Impact</div>
+
+          <div class="dtc-stat-row">
+            <div class="dtc-stat-ic" style="background:rgba(241,91,64,0.2);">⚡</div>
+            <div>
+              <div class="dtc-stat-val" style="color:#ff8c60;">10×</div>
+              <div class="dtc-stat-lbl">Faster time-to-first-build compared to manual development</div>
+            </div>
+          </div>
+
+          <div class="dtc-stat-row">
+            <div class="dtc-stat-ic" style="background:rgba(16,185,129,0.2);">🎯</div>
+            <div>
+              <div class="dtc-stat-val" style="color:#34d399;">100%</div>
+              <div class="dtc-stat-lbl">Design fidelity — pixel-perfect output from your Figma tokens</div>
+            </div>
+          </div>
+
+          <div class="dtc-stat-row">
+            <div class="dtc-stat-ic" style="background:rgba(245,158,11,0.2);">🛠️</div>
+            <div>
+              <div class="dtc-stat-val" style="color:#fbbf24;">4</div>
+              <div class="dtc-stat-lbl">Output frameworks — React Native, Flutter, SwiftUI, Compose</div>
             </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- ── PIPELINE INFOGRAPHIC ────────────────────────────────────────────── -->
-    <div class="pipeline-section">
-      <div class="pipeline-heading">
-        <div class="chip" style="display:inline-flex; margin:0 auto 16px;">Workflow Orchestration</div>
-        <h2>6-Node <span class="grad">LangGraph Pipeline</span></h2>
-        <p>Click any node to inspect its inputs, outputs, and responsibilities.</p>
+<!-- ═══════════════════════ PIPELINE CARD ═════════════════════════════ -->
+<div class="section tight">
+  <div class="container">
+    <div class="pipeline-card">
+      <div class="pipe-header">
+        <div class="sec-label" style="display:inline-flex;"><span class="label-dot"></span>Workflow Orchestration</div>
+        <div class="pipe-title">How DesignToCode Agent Works — Step by Step</div>
+        <div class="pipe-sub">Six intelligent stages work in sequence to turn a Figma link into shippable mobile code.<br/>Click any stage to see exactly what happens — and why it matters.</div>
+        <div class="pipe-badge">6-STAGE AI PIPELINE · POWERED BY LANGGRAPH</div>
       </div>
 
-      <div class="pipeline-diagram">
-
-        <!-- Legend -->
-        <div class="pipe-legend">
-          <div class="leg-item"><div class="leg-dot" style="background:#10B981;"></div> Gate / Validation</div>
-          <div class="leg-item"><div class="leg-dot" style="background:#8B5CF6;"></div> LLM Reasoning</div>
-          <div class="leg-item"><div class="leg-dot" style="background:#3B82F6;"></div> API I/O</div>
-          <div class="leg-item"><div class="leg-dot" style="background:#F59E0B;"></div> Data Transform</div>
-        </div>
-
-        <!-- Nodes -->
+      <div class="pipe-scroll">
         <div class="pipe-row" id="pipe-row">
 
-          <div class="pipe-node" id="pn1" onclick="openNode(1)"
-            style="--node-c:#10B981; --node-bg:#ECFDF5; --node-bd:#A7F3D0; --node-ring:rgba(16,185,129,0.15);">
-            <div class="p-circle"><span class="p-num">1</span>✅</div>
-            <div class="p-name">Input<br/>Validator</div>
-            <div class="p-type">Gate</div>
+          <div class="p-node" id="pn1" onclick="openNode(1)"
+            style="--node-c:#10B981;--node-bg:#ECFDF5;--node-bd:#A7F3D0;--node-ring:rgba(16,185,129,0.14);">
+            <div class="p-circle"><span class="p-num">1</span>🔒</div>
+            <div class="p-name">Input Guard</div>
+            <div class="p-tag">Quality Gate</div>
           </div>
 
-          <div class="pipe-node" id="pn2" onclick="openNode(2)"
-            style="--node-c:#8B5CF6; --node-bg:#F5F3FF; --node-bd:#DDD6FE; --node-ring:rgba(139,92,246,0.15);">
-            <div class="p-circle"><span class="p-num">2</span>🗺️</div>
-            <div class="p-name">Planner<br/>Agent</div>
-            <div class="p-type">LLM</div>
+          <div class="p-node" id="pn2" onclick="openNode(2)"
+            style="--node-c:#7C3AED;--node-bg:#F5F3FF;--node-bd:#DDD6FE;--node-ring:rgba(124,58,237,0.14);">
+            <div class="p-circle"><span class="p-num">2</span>🧭</div>
+            <div class="p-name">Strategy Planner</div>
+            <div class="p-tag">AI Reasoning</div>
           </div>
 
-          <div class="pipe-node" id="pn3" onclick="openNode(3)"
-            style="--node-c:#3B82F6; --node-bg:#EFF6FF; --node-bd:#BFDBFE; --node-ring:rgba(59,130,246,0.15);">
-            <div class="p-circle"><span class="p-num">3</span>🔍</div>
-            <div class="p-name">Researcher<br/>Agent</div>
-            <div class="p-type">API I/O</div>
+          <div class="p-node" id="pn3" onclick="openNode(3)"
+            style="--node-c:#3B82F6;--node-bg:#EFF6FF;--node-bd:#BFDBFE;--node-ring:rgba(59,130,246,0.14);">
+            <div class="p-circle"><span class="p-num">3</span>📥</div>
+            <div class="p-name">Design Fetcher</div>
+            <div class="p-tag">Figma API</div>
           </div>
 
-          <div class="pipe-node" id="pn4" onclick="openNode(4)"
-            style="--node-c:#F59E0B; --node-bg:#FFFBEB; --node-bd:#FDE68A; --node-ring:rgba(245,158,11,0.15);">
-            <div class="p-circle"><span class="p-num">4</span>🏗️</div>
-            <div class="p-name">IR Builder<br/>Agent</div>
-            <div class="p-type">Transform</div>
+          <div class="p-node" id="pn4" onclick="openNode(4)"
+            style="--node-c:#F59E0B;--node-bg:#FFFBEB;--node-bd:#FDE68A;--node-ring:rgba(245,158,11,0.14);">
+            <div class="p-circle"><span class="p-num">4</span>🔀</div>
+            <div class="p-name">Design Interpreter</div>
+            <div class="p-tag">Transform</div>
           </div>
 
-          <div class="pipe-node" id="pn5" onclick="openNode(5)"
-            style="--node-c:#8B5CF6; --node-bg:#F5F3FF; --node-bd:#DDD6FE; --node-ring:rgba(139,92,246,0.15);">
-            <div class="p-circle"><span class="p-num">5</span>🔬</div>
-            <div class="p-name">Critic<br/>Agent</div>
-            <div class="p-type">LLM</div>
+          <div class="p-node" id="pn5" onclick="openNode(5)"
+            style="--node-c:#7C3AED;--node-bg:#F5F3FF;--node-bd:#DDD6FE;--node-ring:rgba(124,58,237,0.14);">
+            <div class="p-circle"><span class="p-num">5</span>🔍</div>
+            <div class="p-name">Quality Reviewer</div>
+            <div class="p-tag">AI Reasoning</div>
           </div>
 
-          <div class="pipe-node" id="pn6" onclick="openNode(6)"
-            style="--node-c:#8B5CF6; --node-bg:#F5F3FF; --node-bd:#DDD6FE; --node-ring:rgba(139,92,246,0.15);">
+          <div class="p-node" id="pn6" onclick="openNode(6)"
+            style="--node-c:#F15B40;--node-bg:#FFF1EE;--node-bd:#FECDB8;--node-ring:rgba(241,91,64,0.14);">
             <div class="p-circle"><span class="p-num">6</span>⚙️</div>
-            <div class="p-name">Generator<br/>Agent</div>
-            <div class="p-type">LLM</div>
+            <div class="p-name">Code Generator</div>
+            <div class="p-tag">AI Synthesis</div>
           </div>
 
-        </div><!-- /pipe-row -->
-
-        <!-- Retry arc (SVG drawn by JS after layout) -->
-        <div class="retry-arc-wrap" id="retryWrap">
-          <svg id="retrySvg" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <marker id="retryHead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
-                <path d="M0,0 L0,8 L8,4 z" fill="#EF4444"/>
-              </marker>
-            </defs>
-            <!-- path drawn by JS -->
-          </svg>
-          <span class="retry-label">↩ Retry loop — CriticAgent → IRBuilderAgent (max 2×, on validation failure)</span>
         </div>
-
-        <!-- Routing key -->
-        <div class="route-note" style="margin-top:12px;">
-          <div class="route-item">
-            <div class="route-line" style="background:#10B981;"></div>
-            <span>Valid input → PlannerAgent</span>
-          </div>
-          <div class="route-item">
-            <div class="route-line" style="background:#EF4444; height:2px; border-top:2px dashed #EF4444; background:none;"></div>
-            <span>Invalid input → END (early exit)</span>
-          </div>
-          <div class="route-item">
-            <div class="route-line" style="background:#10B981;"></div>
-            <span>Critic pass → GeneratorAgent</span>
-          </div>
-          <div class="route-item">
-            <div class="route-line" style="background:#F59E0B;"></div>
-            <span>Critic fail + retries exhausted → END</span>
-          </div>
-        </div>
-
-        <!-- Detail panel -->
-        <div class="node-panel" id="node-panel"></div>
-
-      </div><!-- /pipeline-diagram -->
-    </div><!-- /pipeline-section -->
-
-  </div>
-</section>
-
-<div class="divider"></div>
-
-<!-- ── DATA FLOW ──────────────────────────────────────────────────────────── -->
-<section id="dataflow">
-  <div class="container">
-    <div class="chip"><span class="chip-dot"></span>Data Model</div>
-    <h2>Figma → IR → <span class="grad">Production Code</span></h2>
-    <p style="max-width:560px; margin-top:12px;">A platform-agnostic Intermediate Representation is the key architectural insight — it decouples design parsing from code generation, making new output targets trivial to add.</p>
-
-    <div class="df-grid">
-      <!-- Stage 1 -->
-      <div class="df-box">
-        <div class="df-box-head">
-          <div class="df-box-icon" style="background:#EFF6FF;">📐</div>
-          Raw Figma Data
-        </div>
-        <div class="df-item"><span class="df-key">document</span><span class="df-val">DOCUMENT → CANVAS → FRAME node tree</span></div>
-        <div class="df-item"><span class="df-key">components</span><span class="df-val">Shared component &amp; component-set defs</span></div>
-        <div class="df-item"><span class="df-key">variables</span><span class="df-val">Design tokens — colors, spacing, type</span></div>
-        <div class="df-item"><span class="df-key">styles</span><span class="df-val">Text, fill, stroke, effect style maps</span></div>
-        <div class="df-item"><span class="df-key">layoutMode</span><span class="df-val">AUTO / HORIZONTAL / VERTICAL (Auto Layout)</span></div>
-        <div class="df-item"><span class="df-key">fills</span><span class="df-val">Solid, gradient, image paint defs</span></div>
       </div>
 
-      <!-- Arrow 1 -->
-      <div class="df-arr">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12h14M12 5l7 7-7 7"/>
-        </svg>
+      <!-- Retry arc -->
+      <div class="retry-zone" id="retryWrap">
+        <svg id="retrySvg" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="retry-tag">&nbsp;Quality Reviewer triggers Design Interpreter to rebuild — up to 2 automatic corrections per run</div>
       </div>
 
-      <!-- Stage 2 -->
-      <div class="df-box" style="border-color:#FDE68A;">
-        <div class="df-box-head">
-          <div class="df-box-icon" style="background:#FFFBEB;">🔷</div>
-          Design IR
-        </div>
-        <div class="df-item"><span class="df-key">screens[]</span><span class="df-val">Screen defs with element index map</span></div>
-        <div class="df-item"><span class="df-key">components[]</span><span class="df-val">Reusable component definitions</span></div>
-        <div class="df-item"><span class="df-key">tokens</span><span class="df-val">Normalized colors, spacing, typography</span></div>
-        <div class="df-item"><span class="df-key">assets[]</span><span class="df-val">Images, icons, exported assets</span></div>
-        <div class="df-item"><span class="df-key">layout.flex</span><span class="df-val">direction, gap, padding, alignment</span></div>
-        <div class="df-item"><span class="df-key">a11y</span><span class="df-val">Semantic roles, labels, focus order</span></div>
+      <!-- Legend -->
+      <div class="flow-legend">
+        <div class="fl-item"><div class="fl-line" style="background:var(--green);"></div>All inputs valid → continues to next stage</div>
+        <div class="fl-item"><div class="fl-line" style="height:2px;width:28px;border-top:2px dashed var(--red);"></div>Inputs invalid → stopped with clear explanation</div>
+        <div class="fl-item"><div class="fl-line" style="background:var(--green);"></div>Quality passed → proceeds to code generation</div>
+        <div class="fl-item"><div class="fl-line" style="background:var(--red);"></div>Quality failed → auto-retried (max 2×)</div>
       </div>
 
-      <!-- Arrow 2 -->
-      <div class="df-arr">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12h14M12 5l7 7-7 7"/>
-        </svg>
-      </div>
-
-      <!-- Stage 3 -->
-      <div class="df-box" style="border-color:#A7F3D0;">
-        <div class="df-box-head">
-          <div class="df-box-icon" style="background:#ECFDF5;">💻</div>
-          Generated Code
-        </div>
-        <div class="df-item"><span class="df-key">screens/</span><span class="df-val">HomeScreen.tsx · ProfileScreen.tsx</span></div>
-        <div class="df-item"><span class="df-key">components/</span><span class="df-val">Button.tsx · Card.tsx · Avatar.tsx</span></div>
-        <div class="df-item"><span class="df-key">theme.ts</span><span class="df-val">Color, spacing &amp; typography tokens</span></div>
-        <div class="df-item"><span class="df-key">navigation.ts</span><span class="df-val">React Navigation / Flutter Navigator</span></div>
-        <div class="df-item"><span class="df-key">styles</span><span class="df-val">StyleSheet.create (RN) · ThemeData (Flutter)</span></div>
-        <div class="df-item"><span class="df-key">assets/</span><span class="df-val">Optimized images, icon components</span></div>
-      </div>
+      <!-- Detail panel -->
+      <div class="node-panel" id="node-panel"></div>
     </div>
-
   </div>
-</section>
+</div>
 
-<div class="divider"></div>
-
-<!-- ── ARCHITECTURE CARDS ─────────────────────────────────────────────────── -->
-<section id="architecture">
+<!-- ═══════════════════════════ ROADMAP ═══════════════════════════════ -->
+<div class="section tight">
   <div class="container">
-    <div class="chip"><span class="chip-dot"></span>System Design</div>
-    <h2>Key <span class="grad">Architectural Decisions</span></h2>
-    <p style="max-width:520px; margin-top:12px;">The technology choices that make AppVelocity fast, reliable, and extensible.</p>
+    <div class="card">
+      <div class="sec-label"><span class="label-dot"></span>Roadmap</div>
+      <div class="sec-title">What's Coming Next</div>
+      <div class="sec-sub">DesignToCode Agent is live. Six more agents are fully designed and ready for rollout — each built on the same battle-tested LangGraph foundation.</div>
 
-    <div class="arch-grid">
-      <div class="arch-card">
-        <div class="arch-ic">🔗</div>
-        <div class="arch-title">LangGraph State Machine</div>
-        <div class="arch-desc">Each node operates on a shared <code>WorkflowState</code> with append-reducer semantics for logs and errors. Conditional edges handle retry loops and routing — all type-safe via <code>Annotation.Root</code>.</div>
-      </div>
-      <div class="arch-card">
-        <div class="arch-ic">📦</div>
-        <div class="arch-title">pnpm Monorepo</div>
-        <div class="arch-desc">Turborepo build cache + pnpm workspaces. Each agent lives in <code>packages/agents/*</code> with independent versioning and test suites. Shared types flow through <code>@appvelocity/shared-core</code>.</div>
-      </div>
-      <div class="arch-card">
-        <div class="arch-ic">🤖</div>
-        <div class="arch-title">Swappable LLM Client</div>
-        <div class="arch-desc">A <code>LLMClient</code> interface wraps Anthropic's SDK with JSON-mode support and a <code>setLLMClient()</code> test hook. Switch to GPT-4o or any provider by implementing two methods.</div>
-      </div>
-      <div class="arch-card">
-        <div class="arch-ic">⚡</div>
-        <div class="arch-title">Real-time SSE Streaming</div>
-        <div class="arch-desc">The Next.js dashboard streams workflow events via Server-Sent Events. Every log entry, progress tick, and code bundle is pushed to the browser in real-time — no polling required.</div>
-      </div>
-      <div class="arch-card">
-        <div class="arch-ic">🛡️</div>
-        <div class="arch-title">Rate Limiting &amp; Caching</div>
-        <div class="arch-desc">FigmaClient uses p-queue to enforce Figma's 60 req/min API limit, LRU cache with 5-min TTL, and axios-retry with exponential backoff to handle transient failures.</div>
-      </div>
-      <div class="arch-card">
-        <div class="arch-ic">🧪</div>
-        <div class="arch-title">78+ Tests, Strict Types</div>
-        <div class="arch-desc">Vitest with module mocking isolates each node. Integration tests exercise the full LangGraph graph. TypeScript strict mode with zero <code>any</code> across all packages.</div>
+      <div class="rm-grid">
+        <div class="rm-card" style="--ac:var(--green);">
+          <div class="rm-hd">
+            <div class="rm-ic" style="background:var(--green-lt);border:1.5px solid var(--green-bd);">♿</div>
+            <div><div class="rm-name">Accessibility Agent</div><div class="rm-phase">Phase 3 · WCAG Compliance</div></div>
+            <span class="bd-plan" style="margin-left:auto;">Planned</span>
+          </div>
+          <div class="rm-desc">Every generated screen automatically validated against WCAG AA/AAA — so your apps are inclusive from day one, not retrofitted at the end.</div>
+          <div class="rm-caps">
+            <div class="rm-cap">Color contrast checked across every text and background pair</div>
+            <div class="rm-cap">Screen reader labels injected into all interactive elements</div>
+            <div class="rm-cap">Focus order and keyboard navigation paths verified</div>
+          </div>
+        </div>
+
+        <div class="rm-card" style="--ac:var(--red);">
+          <div class="rm-hd">
+            <div class="rm-ic" style="background:var(--red-lt);border:1.5px solid var(--red-bd);">🛡️</div>
+            <div><div class="rm-name">Security Shield Agent</div><div class="rm-phase">Phase 4 · Security Hardening</div></div>
+            <span class="bd-plan" style="margin-left:auto;">Planned</span>
+          </div>
+          <div class="rm-desc">AI-powered static analysis catches OWASP Mobile Top 10 vulnerabilities before your code reaches a reviewer — or production.</div>
+          <div class="rm-caps">
+            <div class="rm-cap">Hardcoded secrets and exposed API credentials flagged instantly</div>
+            <div class="rm-cap">Insecure storage and network configuration patterns detected</div>
+            <div class="rm-cap">XSS and injection vulnerability patterns matched and blocked</div>
+          </div>
+        </div>
+
+        <div class="rm-card" style="--ac:var(--amber);">
+          <div class="rm-hd">
+            <div class="rm-ic" style="background:var(--amber-lt);border:1.5px solid var(--amber-bd);">⚡</div>
+            <div><div class="rm-name">Performance Agent</div><div class="rm-phase">Phase 4 · Speed Optimization</div></div>
+            <span class="bd-plan" style="margin-left:auto;">Planned</span>
+          </div>
+          <div class="rm-desc">Automatically tunes generated code for 60fps smoothness, minimal bundle size, and fast cold starts across iOS and Android.</div>
+          <div class="rm-caps">
+            <div class="rm-cap">Bundle analysis with targeted tree-shaking applied automatically</div>
+            <div class="rm-cap">List virtualisation and image lazy loading configured</div>
+            <div class="rm-cap">Re-render hotspots identified and memoized</div>
+          </div>
+        </div>
+
+        <div class="rm-card" style="--ac:var(--violet);">
+          <div class="rm-hd">
+            <div class="rm-ic" style="background:var(--violet-lt);border:1.5px solid var(--violet-bd);">🧪</div>
+            <div><div class="rm-name">Test Intelligence Agent</div><div class="rm-phase">Phase 5 · Automated Testing</div></div>
+            <span class="bd-plan" style="margin-left:auto;">Planned</span>
+          </div>
+          <div class="rm-desc">Generates a complete test suite that mirrors the exact component structure — test coverage that grows automatically with your codebase.</div>
+          <div class="rm-caps">
+            <div class="rm-cap">Jest unit tests for every component and screen generated</div>
+            <div class="rm-cap">Detox E2E scenarios covering all navigation flows</div>
+            <div class="rm-cap">Visual regression baselines captured on first run</div>
+          </div>
+        </div>
+
+        <div class="rm-card" style="--ac:var(--cyan);">
+          <div class="rm-hd">
+            <div class="rm-ic" style="background:var(--cyan-lt);border:1.5px solid var(--cyan-bd);">🚀</div>
+            <div><div class="rm-name">DevOps Boost Agent</div><div class="rm-phase">Phase 5 · Developer Experience</div></div>
+            <span class="bd-plan" style="margin-left:auto;">Planned</span>
+          </div>
+          <div class="rm-desc">From zero to deployable in one run — generates CI/CD pipelines, READMEs, API docs, and Fastlane automation alongside your app code.</div>
+          <div class="rm-caps">
+            <div class="rm-cap">GitHub Actions and Bitrise pipelines configured automatically</div>
+            <div class="rm-cap">Fastlane lanes for App Store and Play Store releases</div>
+            <div class="rm-cap">Swagger/OpenAPI docs generated from integration patterns</div>
+          </div>
+        </div>
+
+        <div class="rm-card" style="--ac:#EC4899;">
+          <div class="rm-hd">
+            <div class="rm-ic" style="background:#FDF2F8;border:1.5px solid #FBCFE8;">📋</div>
+            <div><div class="rm-name">Compliance Agent</div><div class="rm-phase">Phase 6 · Regulatory Readiness</div></div>
+            <span class="bd-plan" style="margin-left:auto;">Planned</span>
+          </div>
+          <div class="rm-desc">Regulatory compliance baked into the first line of code — not bolted on at the end when it's expensive and disruptive to fix.</div>
+          <div class="rm-caps">
+            <div class="rm-cap">GDPR consent flows and data subject rights scaffolded</div>
+            <div class="rm-cap">HIPAA PHI handling and encryption patterns applied</div>
+            <div class="rm-cap">PCI DSS secure payment integration patterns enforced</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</section>
+</div>
 
-<div class="divider"></div>
-
-<!-- ── ROADMAP ────────────────────────────────────────────────────────────── -->
-<section id="roadmap">
-  <div class="container">
-    <div class="chip"><span class="chip-dot"></span>Roadmap</div>
-    <h2>What's <span class="grad">Coming Next</span></h2>
-    <p style="max-width:520px; margin-top:12px;">DesignToCodeAgent is live. The remaining six agents are architected and ready for implementation — each built on the same proven LangGraph foundation.</p>
-
-    <div class="roadmap-grid">
-
-      <div class="roadmap-card">
-        <div class="rm-hdr">
-          <div class="rm-icon" style="background:#ECFDF5; border:1.5px solid #A7F3D0;">♿</div>
-          <div>
-            <div class="rm-name">AccessAgent</div>
-            <div class="rm-phase">Phase 3 · WCAG Compliance</div>
-          </div>
-        </div>
-        <div class="rm-desc">Automatically validate and remediate accessibility issues — ensuring every generated app passes WCAG AA/AAA out of the box.</div>
-        <div class="rm-caps">
-          <div class="rm-cap">Color contrast validation across all text + background pairs</div>
-          <div class="rm-cap">Screen reader label injection for all interactive elements</div>
-          <div class="rm-cap">ARIA role mapping from Figma semantic annotations</div>
-          <div class="rm-cap">Focus order and keyboard navigation path analysis</div>
-        </div>
-      </div>
-
-      <div class="roadmap-card">
-        <div class="rm-hdr">
-          <div class="rm-icon" style="background:#FEF2F2; border:1.5px solid #FECACA;">🛡️</div>
-          <div>
-            <div class="rm-name">ShieldAgent</div>
-            <div class="rm-phase">Phase 4 · Security Hardening</div>
-          </div>
-        </div>
-        <div class="rm-desc">Static analysis and LLM-powered review to catch OWASP Mobile Top 10 vulnerabilities before anything ships to production.</div>
-        <div class="rm-caps">
-          <div class="rm-cap">Hardcoded secret and API credential detection</div>
-          <div class="rm-cap">Insecure AsyncStorage and Keychain usage patterns</div>
-          <div class="rm-cap">Network security config and SSL pinning checks</div>
-          <div class="rm-cap">XSS and injection vulnerability pattern matching</div>
-        </div>
-      </div>
-
-      <div class="roadmap-card">
-        <div class="rm-hdr">
-          <div class="rm-icon" style="background:#FFFBEB; border:1.5px solid #FDE68A;">⚡</div>
-          <div>
-            <div class="rm-name">PerfectAgent</div>
-            <div class="rm-phase">Phase 4 · Performance</div>
-          </div>
-        </div>
-        <div class="rm-desc">Profile and optimize for 60fps render performance, minimal bundle size, and fast cold-start times across iOS and Android.</div>
-        <div class="rm-caps">
-          <div class="rm-cap">Metro bundle analysis and tree-shaking hints</div>
-          <div class="rm-cap">FlatList / RecyclerView virtualisation patterns</div>
-          <div class="rm-cap">Image lazy loading and progressive loading setup</div>
-          <div class="rm-cap">Re-render analysis with useMemo/useCallback hints</div>
-        </div>
-      </div>
-
-      <div class="roadmap-card">
-        <div class="rm-hdr">
-          <div class="rm-icon" style="background:#F5F3FF; border:1.5px solid #DDD6FE;">🧪</div>
-          <div>
-            <div class="rm-name">TestIQAgent</div>
-            <div class="rm-phase">Phase 5 · Test Generation</div>
-          </div>
-        </div>
-        <div class="rm-desc">Generate a complete, realistic test suite that mirrors the component structure produced by DesignToCodeAgent.</div>
-        <div class="rm-caps">
-          <div class="rm-cap">Jest unit tests for every generated component</div>
-          <div class="rm-cap">Detox E2E scenarios for all navigation flows</div>
-          <div class="rm-cap">Visual regression baseline capture and comparison</div>
-          <div class="rm-cap">Mock data factories matched to screen data schemas</div>
-        </div>
-      </div>
-
-      <div class="roadmap-card">
-        <div class="rm-hdr">
-          <div class="rm-icon" style="background:#ECFEFF; border:1.5px solid #A5F3FC;">🚀</div>
-          <div>
-            <div class="rm-name">DevBoostAgent</div>
-            <div class="rm-phase">Phase 5 · DX Automation</div>
-          </div>
-        </div>
-        <div class="rm-desc">Accelerate developer onboarding and maintenance with AI-generated documentation, CI/CD pipelines, and semantic changelogs.</div>
-        <div class="rm-caps">
-          <div class="rm-cap">README, Storybook stories, and component API docs</div>
-          <div class="rm-cap">GitHub Actions CI/CD workflows</div>
-          <div class="rm-cap">Fastlane lanes for App Store and Play Store deployment</div>
-          <div class="rm-cap">Semantic changelogs from git diff + IR diff</div>
-        </div>
-      </div>
-
-      <div class="roadmap-card">
-        <div class="rm-hdr">
-          <div class="rm-icon" style="background:#FDF2F8; border:1.5px solid #FBCFE8;">📋</div>
-          <div>
-            <div class="rm-name">ComplianceAgent</div>
-            <div class="rm-phase">Phase 6 · Regulatory</div>
-          </div>
-        </div>
-        <div class="rm-desc">Ensure every generated app meets its target market's regulatory requirements — from GDPR to HIPAA — from the very first commit.</div>
-        <div class="rm-caps">
-          <div class="rm-cap">GDPR consent flow and right-to-erasure patterns</div>
-          <div class="rm-cap">HIPAA secure storage and audit log scaffolding</div>
-          <div class="rm-cap">PCI DSS payment form compliance patterns</div>
-          <div class="rm-cap">Privacy policy and App Store metadata generation</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- ── CTA ────────────────────────────────────────────────────────────────── -->
-<section id="cta">
-  <div class="container">
-    <div class="cta-inner">
-      <h2>Ship Mobile Apps<br/>10× Faster</h2>
-      <p>Join the early access program and go from Figma to production in hours, not weeks.</p>
-      <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap;">
-        <button class="btn-cta-white">Request Early Access</button>
-        <button class="btn-cta-ghost" onclick="document.getElementById('dtc').scrollIntoView({behavior:'smooth'})">See the Demo ↓</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── FOOTER ─────────────────────────────────────────────────────────────── -->
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════════ -->
 <footer>
   <div class="container">
     <div class="foot-logo">
-      <div class="nav-logo-mark">⚡</div>
+      <svg width="20" height="26" viewBox="0 0 46 60" xmlns="http://www.w3.org/2000/svg" overflow="hidden">
+        <defs><clipPath id="fc"><rect x="1155" y="105" width="45" height="58"/></clipPath></defs>
+        <g transform="translate(-1154 -104)" clip-path="url(#fc)">
+          <path d="M35.048 12.61C35.048 10.85 33.621 9.423 31.86 9.423H11.461C9.7 9.423 8.274 10.85 8.274 12.61v.95l2.592.001c.293-1.052 1.257-1.826 2.404-1.826h16.78c1.38 0 2.498 1.118 2.498 2.498v13.772c.9-.617 1.734-1.25 2.499-1.894V12.61Z" fill="#F15B40" transform="matrix(1 0 0 1.163 1155 105)"/>
+          <path d="M32.549 39.787c0 1.379-1.118 2.497-2.497 2.497H13.27c-1.38 0-2.498-1.118-2.498-2.497v-.391c-.872.036-1.707.031-2.498-.012v7.315c0 1.76 1.427 3.187 3.188 3.187h20.4c1.76 0 3.187-1.427 3.187-3.187V31.073a34.4 34.4 0 0 1-2.5 1.534V39.79Z" fill="rgba(255,255,255,0.65)" transform="matrix(1 0 0 1.163 1155 105)"/>
+        </g>
+      </svg>
       AppVelocity
     </div>
-    <div class="foot-links">
-      <a href="#platform">Platform</a>
-      <a href="#dtc">DesignToCode</a>
-      <a href="#dataflow">Architecture</a>
-      <a href="#roadmap">Roadmap</a>
-    </div>
-    <p>© 2025 AppVelocity. AI-Powered Mobile Development Platform.</p>
+    <p>© 2025 AppVelocity. Powered by Claude Sonnet &amp; LangGraph.</p>
   </div>
 </footer>
 
-<!-- ── JS ─────────────────────────────────────────────────────────────────── -->
 <script>
-/* ── Node data ────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════
+   NODE DATA — business + technical descriptions
+════════════════════════════════════════════ */
 const NODE_DATA = {
   1: {
-    icon:'✅', name:'InputValidator', type:'Gate / Validation',
-    sub:'The workflow gatekeeper — validates every input before execution begins',
+    icon:'🔒', name:'Input Guard', type:'Quality Gate',
+    typeStyle:'background:var(--green-lt);color:var(--green);border:1px solid var(--green-bd);',
+    summary:'The first checkpoint in the pipeline. Before any AI processing begins, this stage confirms that everything needed for a successful, cost-efficient run is in place — preventing wasted compute and unclear failures downstream.',
     steps:[
-      'Parse Figma URL via parseFigmaUrl() — accepts full URL or bare file key',
-      'Verify FIGMA_ACCESS_TOKEN environment variable is present and non-empty',
-      'Validate targetFramework is one of: react-native, flutter, react-native-web',
-      'Accumulate all errors into errors[] without short-circuiting on first failure',
-      'If errors present → route to END (early exit). If valid → route to PlannerAgent'
+      'Confirms a valid Figma design URL has been provided and is properly formatted',
+      'Verifies the chosen output framework is supported: React Native, Flutter, SwiftUI, or Jetpack Compose',
+      'If anything is missing or invalid, stops the pipeline immediately with a clear, actionable explanation',
+      'On success, passes a green-light signal to the Strategy Planner to begin AI processing'
     ],
-    inputs:['figmaUrl — Figma file URL or bare file key','targetFramework — react-native | flutter | react-native-web','FIGMA_ACCESS_TOKEN — from environment variables'],
-    outputs:['errors[] — list of AgentError with code + recoverable flag','currentStep = "InputValidator"','logs[] — single success or error log entry']
+    inputs:['Figma design URL — the link to the design file to process','Target framework — the mobile platform the team is building for'],
+    outputs:['Validation result — explicit pass or fail with human-readable reason','Structured inputs forwarded to Strategy Planner','Audit log entry with timestamp, inputs, and outcome']
   },
   2: {
-    icon:'🗺️', name:'PlannerAgent', type:'LLM Reasoning',
-    sub:'Analyzes the design structure and produces an ordered execution strategy',
+    icon:'🧭', name:'Strategy Planner', type:'AI Reasoning',
+    typeStyle:'background:var(--violet-lt);color:var(--violet);border:1px solid var(--violet-bd);',
+    summary:'Plans before acting. Uses AI to analyse the design scope and create a structured execution blueprint — so every downstream stage works with intent and context rather than repeating expensive operations blindly.',
     steps:[
-      'Load the planner.txt system prompt from the prompts/ directory',
-      'Send Claude Sonnet 4 an analysis request with figmaUrl, targetFramework, and options',
-      'Parse the JSON ExecutionPlan from the LLM response',
-      'Plan includes: ordered screen list, component catalogue, and generation strategy',
-      'Log plan summary (screen count, component count, strategy type)'
+      'Analyses the Figma URL to understand the design scope, number of screens, and component complexity',
+      'Identifies which screens and shared components need to be generated and in what order',
+      'Determines the optimal generation sequence to respect component dependencies and design hierarchy',
+      'Outputs a structured plan consumed by every subsequent stage in the pipeline'
     ],
-    inputs:['figmaUrl — included in LLM context for analysis','targetFramework — shapes the generation strategy','options — user-provided generation preferences'],
-    outputs:['executionPlan — { screens[], components[], strategy, priority }','currentStep = "PlannerAgent"','logs[] — info entry with plan summary']
+    inputs:['Validated Figma URL — confirmed clean by the Input Guard','Target framework — shapes how the plan sequences component generation'],
+    outputs:['Execution plan — ordered list of screens and components with dependency map','Complexity estimate — informs expected generation time and resource use','Strategic context carried forward to all downstream pipeline stages']
   },
   3: {
-    icon:'🔍', name:'ResearcherAgent', type:'API I/O',
-    sub:'Fetches the full Figma file and design tokens in parallel',
+    icon:'📥', name:'Design Fetcher', type:'Figma API',
+    typeStyle:'background:var(--blue-lt);color:var(--blue);border:1px solid var(--blue-bd);',
+    summary:'Retrieves the complete design system from Figma — every layer, token, component, and asset — using Figma\'s official API. Rate limiting, retry logic, and a 5-minute cache are built in to handle real-world API conditions reliably.',
     steps:[
-      'Initialise FigmaClient with FIGMA_ACCESS_TOKEN (rate-limited, cached, auto-retry)',
-      'Extract file key from figmaUrl using parseFigmaUrl()',
-      'Launch getFile() and getLocalVariables() in parallel via Promise.allSettled',
-      'Store FigmaFile in state — required (throw if this call fails)',
-      'Store variablesResponse in state only if getLocalVariables() succeeded (optional)',
-      'Log token count from variables if available'
+      'Extracts the unique file key from the Figma URL',
+      'Calls Figma\'s Document API to retrieve the full node tree — screens, frames, groups, and all nested elements',
+      'Calls Figma\'s Variables API to retrieve design token definitions: colors, spacing, and typography',
+      'Applies a 5-minute LRU cache and exponential backoff retry to handle rate limits and transient failures gracefully'
     ],
-    inputs:['figmaUrl — to extract the Figma file key','FIGMA_ACCESS_TOKEN — to authenticate all Figma API calls'],
-    outputs:['figmaFile — full FigmaFile: document tree, components, styles','variablesResponse — optional design-token collection','currentStep = "ResearcherAgent"','logs[] — success + token count info entries']
+    inputs:['Figma file URL — to extract the unique file key for the API calls','Execution plan — to understand which files and components are in scope'],
+    outputs:['Complete Figma document — the raw JSON tree of every design layer','Design token variables — the full color, spacing, and type system','Asset manifest — all images and icons referenced across screens']
   },
   4: {
-    icon:'🏗️', name:'IRBuilderAgent', type:'Data Transform',
-    sub:'Converts raw Figma data into a clean, platform-agnostic Design IR',
+    icon:'🔀', name:'Design Interpreter', type:'Transform',
+    typeStyle:'background:var(--amber-lt);color:var(--amber);border:1px solid var(--amber-bd);',
+    summary:'Translates raw Figma JSON into a clean, platform-neutral Intermediate Representation. This is the key architectural innovation — it decouples design understanding from code generation, making it trivial to add new output frameworks without re-engineering the parsing layer.',
     steps:[
-      'Guard: throw if figmaFile is absent — ResearcherAgent must run first',
-      'Extract fileKey from figmaUrl stored in state',
-      'Call IRBuilder.build(figmaFile, fileKey, variablesResponse)',
-      'IRBuilder runs all parsers: tokens, auto-layout, components, assets, text styles',
-      'Store the resulting DesignIR in state for downstream agents'
+      'Walks every Figma node and maps it to a standardised screen or component definition',
+      'Converts Auto Layout properties (direction, gap, padding, alignment) into universal flex rules applicable to any framework',
+      'Normalises design tokens into a platform-agnostic layer shared across all generated output files',
+      'Attaches accessibility metadata — semantic roles, ARIA labels, and focus order — to every interactive element'
     ],
-    inputs:['figmaFile — raw FigmaFile from ResearcherAgent','variablesResponse — optional design tokens','figmaUrl — to extract fileKey for IR metadata'],
-    outputs:['designIR — { screens[], components[], tokens, assets[], fileKey }','currentStep = "IRBuilderAgent"','logs[] — success entry with screen + component counts']
+    inputs:['Raw Figma document — the complete node tree from the Design Fetcher','Design token variables — for color, spacing, and typography normalisation'],
+    outputs:['Design IR — a structured, framework-neutral model of every screen and component','Normalised token layer — design system values ready for any target framework','Accessibility annotations — WCAG-aware metadata pre-wired into the IR']
   },
   5: {
-    icon:'🔬', name:'CriticAgent', type:'LLM Reasoning',
-    sub:'Validates IR quality, accessibility, and structural correctness before code generation',
+    icon:'🔍', name:'Quality Reviewer', type:'AI Reasoning',
+    typeStyle:'background:var(--violet-lt);color:var(--violet);border:1px solid var(--violet-bd);',
+    summary:'An AI-powered quality gate that reviews the Intermediate Representation before a single line of code is written. It catches structural problems, accessibility gaps, and design inconsistencies at the cheapest possible point — before generation.',
     steps:[
-      'Guard: throw if designIR is absent — IRBuilderAgent must run first',
-      'Build an IR summary: screen count, element count, component count, token count',
-      'Load critic.txt and inject the IR summary via {{IR_SUMMARY}} placeholder',
-      'Send Claude Sonnet 4 a structured validation request',
-      'Parse IRValidationResult: { valid, score, issues[{ severity, message, element }] }',
-      'If valid → GeneratorAgent. If invalid + retryCount < 2 → increment retryCount, re-route to IRBuilderAgent. If retries exhausted → END'
+      'Summarises the IR: screen count, component reuse rate, token coverage, and element density',
+      'Sends the summary to an AI model with a structured validation prompt covering quality, completeness, and accessibility',
+      'Scores the IR and generates a prioritised issue list (critical / warning / info)',
+      'On pass: routes to Code Generator. On fail: triggers Smart Retry back to Design Interpreter — up to 2 automatic corrections per run'
     ],
-    inputs:['designIR — the DesignIR to validate','retryCount — current retry count for the feedback loop'],
-    outputs:['validationResult — { valid, score, issues[] }','retryCount — incremented on failure','currentStep = "CriticAgent"','logs[] — success (score) or warning with error count']
+    inputs:['Design IR — the output from the Design Interpreter to be reviewed','Retry count — tracks how many automatic corrections have already been attempted'],
+    outputs:['Quality score — a numeric rating with specific issue callouts','Issue list — categorised by severity with element-level attribution','Routing decision — proceed to generation or trigger automatic retry']
   },
   6: {
-    icon:'⚙️', name:'GeneratorAgent', type:'LLM Reasoning',
-    sub:'Synthesises idiomatic, production-ready mobile code from the validated IR',
+    icon:'⚙️', name:'Code Generator', type:'AI Synthesis',
+    typeStyle:'background:var(--brand-lt);color:var(--brand);border:1px solid var(--brand-bd);',
+    summary:'The delivery stage — where your validated, quality-reviewed design model becomes clean, idiomatic, production-ready code. Every file your team needs to run, test, and ship the app is generated in a single, structured output bundle.',
     steps:[
-      'Load generator.txt system prompt with framework-specific code templates',
-      'Walk IR screens in the order defined by ExecutionPlan',
-      'For each screen: generate component file, StyleSheet/ThemeData, and navigation entry',
-      'Generate shared theme.ts / theme.dart from the IR token layer',
-      'Assemble final CodeBundle: { files[], assets[], metadata }',
-      'Store bundle in state and emit completion log with file count'
+      'Processes each screen in the order defined by the execution plan',
+      'Generates component files with correct framework-native styling — StyleSheet.create for React Native, ThemeData for Flutter',
+      'Creates a typed theme file containing all design tokens as named constants, shareable across the whole codebase',
+      'Assembles the navigation structure and wires all screens together with zero manual configuration'
     ],
-    inputs:['designIR — validated IR from the CriticAgent pass','executionPlan — ordering and strategy from PlannerAgent','targetFramework — react-native | flutter','validationResult — critic score for generation context'],
-    outputs:['generatedCode — CodeBundle { files[], assets[], metadata }','currentStep = "GeneratorAgent"','logs[] — completion entry with file count and LLM token usage']
+    inputs:['Validated Design IR — quality-approved by the Quality Reviewer','Execution plan — defines the generation order and component dependencies','Target framework — determines file structure, language, and component patterns'],
+    outputs:['Screen components — one file per screen, fully styled and wired','Shared components — reusable UI elements extracted from the design system','Theme file — all design tokens as typed, named constants','Navigation setup — routing configured and ready to run on first launch']
   }
 };
 
-/* ── Open / close node panel ──────────────────────────────────────────────── */
-let activeId = null;
+/* ════════════════════════════════════════════
+   PANEL OPEN / CLOSE
+════════════════════════════════════════════ */
+let activeNode = null;
 
 function openNode(id) {
   const panel = document.getElementById('node-panel');
-
-  if (activeId === id) {
-    activeId = null;
+  if (activeNode === id) {
+    activeNode = null;
     panel.className = 'node-panel';
-    document.querySelectorAll('.pipe-node').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.p-node').forEach(n => n.classList.remove('active'));
     return;
   }
-
-  activeId = id;
-  document.querySelectorAll('.pipe-node').forEach(n => n.classList.remove('active'));
-  document.getElementById('pn'+id).classList.add('active');
+  activeNode = id;
+  document.querySelectorAll('.p-node').forEach(n => n.classList.remove('active'));
+  document.getElementById('pn' + id).classList.add('active');
 
   const d = NODE_DATA[id];
-
-  const typeBadgeColor =
-    d.type.includes('LLM')   ? 'background:#F5F3FF;color:#8B5CF6;border:1px solid #DDD6FE;' :
-    d.type.includes('API')   ? 'background:#EFF6FF;color:#3B82F6;border:1px solid #BFDBFE;' :
-    d.type.includes('Trans') ? 'background:#FFFBEB;color:#F59E0B;border:1px solid #FDE68A;' :
-                               'background:#ECFDF5;color:#10B981;border:1px solid #A7F3D0;';
-
   const stepsHtml = d.steps.map(s => `<li>${s}</li>`).join('');
-  const inHtml    = d.inputs.map(i  => `<li><span class="io-dot-in"></span>${i}</li>`).join('');
-  const outHtml   = d.outputs.map(o => `<li><span class="io-dot-out"></span>${o}</li>`).join('');
+  const inHtml    = d.inputs.map(i  => `<li><span class="io-dot io-in"></span>${i}</li>`).join('');
+  const outHtml   = d.outputs.map(o => `<li><span class="io-dot io-out"></span>${o}</li>`).join('');
 
   panel.innerHTML = `
-    <div class="panel-hdr">
-      <div class="panel-icon">${d.icon}</div>
-      <div style="flex:1">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div class="panel-title">Node ${id} — ${d.name}</div>
-          <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.05em;padding:3px 10px;border-radius:100px;${typeBadgeColor}">${d.type}</span>
+    <div class="np-hdr">
+      <div class="np-icon">${d.icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+          <div class="np-title">Stage ${id} — ${d.name}</div>
+          <span class="np-badge" style="${d.typeStyle}">${d.type}</span>
         </div>
-        <div class="panel-sub">${d.sub}</div>
+        <div class="np-summary">${d.summary}</div>
       </div>
-      <span class="panel-close" onclick="openNode(${id})">✕ Close</span>
+      <span class="np-close" onclick="openNode(${id})">✕ Close</span>
     </div>
     <div>
-      <div class="panel-sec-title">What it does</div>
-      <ol class="step-list">${stepsHtml}</ol>
+      <div class="np-sec">What happens in this stage</div>
+      <ol class="np-steps">${stepsHtml}</ol>
     </div>
     <div>
-      <div class="panel-sec-title" style="margin-bottom:14px;">State I/O</div>
+      <div class="np-sec" style="margin-bottom:14px;">Inputs &amp; Outputs</div>
       <div style="margin-bottom:16px;">
-        <div class="panel-sec-title" style="color:#3B82F6;">Reads from state</div>
-        <ul class="io-list">${inHtml}</ul>
+        <div class="np-sec" style="color:var(--blue);margin-bottom:8px;">Reads</div>
+        <ul class="np-io">${inHtml}</ul>
       </div>
       <div>
-        <div class="panel-sec-title" style="color:#10B981;">Writes to state</div>
-        <ul class="io-list">${outHtml}</ul>
+        <div class="np-sec" style="color:var(--green);margin-bottom:8px;">Produces</div>
+        <ul class="np-io">${outHtml}</ul>
       </div>
     </div>
   `;
 
   panel.className = 'node-panel open';
-  setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
+  setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'nearest' }), 60);
 }
 
-/* ── Draw retry arc SVG ───────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════
+   RETRY ARC
+════════════════════════════════════════════ */
 function drawRetryArc() {
-  const row  = document.getElementById('pipe-row');
   const n4   = document.getElementById('pn4');
   const n5   = document.getElementById('pn5');
   const wrap = document.getElementById('retryWrap');
   const svg  = document.getElementById('retrySvg');
+  if (!n4 || !n5 || !wrap) return;
 
-  if (!row || !n4 || !n5) return;
+  const wR = wrap.getBoundingClientRect();
+  const n4R = n4.getBoundingClientRect();
+  const n5R = n5.getBoundingClientRect();
 
-  const rowRect  = row.getBoundingClientRect();
-  const n4Rect   = n4.getBoundingClientRect();
-  const n5Rect   = n5.getBoundingClientRect();
-  const wrapRect = wrap.getBoundingClientRect();
-
-  // Center x of each node circle relative to the wrap element
-  const x4 = n4Rect.left + n4Rect.width / 2 - wrapRect.left;
-  const x5 = n5Rect.left + n5Rect.width / 2 - wrapRect.left;
-
-  const y1 = 4;   // start/end y near top of wrap
-  const cy = 44;  // arc peak y
-
-  // Cubic bezier: from x5 top → arc down → to x4 top (right to left, retry)
-  const pathD = `M ${x5},${y1} C ${x5},${cy} ${x4},${cy} ${x4},${y1}`;
+  const x4 = n4R.left + n4R.width / 2 - wR.left;
+  const x5 = n5R.left + n5R.width / 2 - wR.left;
+  const y1 = 6, cy = 50;
 
   svg.innerHTML = `
     <defs>
-      <marker id="retryHead2" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto">
+      <marker id="rH" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto">
         <path d="M8,0 L8,8 L0,4 z" fill="#EF4444"/>
       </marker>
     </defs>
-    <path d="${pathD}"
-      fill="none" stroke="#EF4444" stroke-width="2"
-      stroke-dasharray="5,4"
-      marker-end="url(#retryHead2)"
-      style="animation: none;"
-    />
+    <path d="M ${x5},${y1} C ${x5},${cy} ${x4},${cy} ${x4},${y1}"
+      fill="none" stroke="#EF4444" stroke-width="2.5"
+      stroke-dasharray="6,4" marker-end="url(#rH)"/>
   `;
 }
-
-window.addEventListener('load',   drawRetryArc);
+window.addEventListener('load', drawRetryArc);
 window.addEventListener('resize', drawRetryArc);
 
-/* ── Scroll-reveal ────────────────────────────────────────────────────────── */
-const io = new IntersectionObserver((entries) => {
+/* ════════════════════════════════════════════
+   AGENT TILE SELECTION
+════════════════════════════════════════════ */
+function selectAgent(el) {
+  document.querySelectorAll('.agent-tile').forEach(t => {
+    t.classList.remove('selected');
+    t.querySelector('.at-arrow').style.display = 'none';
+  });
+  el.classList.add('selected');
+  el.querySelector('.at-arrow').style.display = 'block';
+}
+
+/* ════════════════════════════════════════════
+   SCROLL REVEAL
+════════════════════════════════════════════ */
+const revObs = new IntersectionObserver((entries) => {
   entries.forEach(e => {
     if (e.isIntersecting) {
       e.target.style.opacity = '1';
       e.target.style.transform = 'translateY(0)';
     }
   });
-}, { threshold: 0.08 });
+}, { threshold: 0.06 });
 
-document.querySelectorAll('.agent-card, .arch-card, .roadmap-card, .df-box').forEach(el => {
+document.querySelectorAll('.agent-tile, .rm-card, .dtc-stat-row').forEach(el => {
   el.style.opacity = '0';
-  el.style.transform = 'translateY(20px)';
-  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-  io.observe(el);
+  el.style.transform = 'translateY(18px)';
+  el.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+  revObs.observe(el);
 });
 </script>
 </body>

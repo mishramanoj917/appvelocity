@@ -89,7 +89,7 @@ export class DesignToCodeAgent extends AgentBase {
   estimateCost(_input: AgentInput): CostEstimate {
     return {
       estimatedDuration: 90,   // ~90 seconds for a typical run
-      estimatedTokens: 15000,  // 3 LLM calls (planner, critic, generator)
+      estimatedTokens: 15000,  // 3 LLM calls (generationPlanner, irValidator, codeGenerator)
       estimatedCost: 0.15,
       confidence: 'low',
     };

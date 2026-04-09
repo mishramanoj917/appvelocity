@@ -1,5 +1,5 @@
 /**
- * Node 5 — CriticAgent
+ * Node 5 — IRValidatorAgent
  *
  * Evaluates the DesignIR produced by IRBuilderAgent for structural integrity,
  * semantic quality, accessibility, and naming conventions.
@@ -162,12 +162,12 @@ Do NOT include any explanation, markdown, or keys outside the schema above.`;
 
 // ─── Node ─────────────────────────────────────────────────────────────────────
 
-export async function criticAgent(
+export async function irValidatorAgent(
   state: WorkflowState
 ): Promise<Partial<WorkflowState>> {
   if (!state.designIR) {
     throw new Error(
-      'DesignIR not available in state. IRBuilderAgent must run before CriticAgent.'
+      'DesignIR not available in state. IRBuilderAgent must run before IRValidatorAgent.'
     );
   }
 
@@ -231,7 +231,7 @@ export async function criticAgent(
   return {
     validationResult,
     retryCount: failed ? state.retryCount + 1 : state.retryCount,
-    currentStep: 'CriticAgent',
+    currentStep: 'IRValidatorAgent',
     logs: [
       makeLogEntry(
         validationResult.valid ? 'success' : 'warning',

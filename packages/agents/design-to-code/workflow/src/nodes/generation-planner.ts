@@ -1,5 +1,5 @@
 /**
- * Node 2 — PlannerAgent
+ * Node 2 — GenerationPlannerAgent
  *
  * Analyses the Figma file structure and produces an ExecutionPlan that tells
  * downstream nodes which screens and components to generate, in what order.
@@ -128,7 +128,7 @@ Respond with ONLY a valid JSON object matching this exact schema:
 
 // ─── Node ─────────────────────────────────────────────────────────────────────
 
-export async function plannerAgent(
+export async function generationPlannerAgent(
   state: WorkflowState
 ): Promise<Partial<WorkflowState>> {
   const llm = createLLMClient();
@@ -153,7 +153,7 @@ export async function plannerAgent(
 
   return {
     executionPlan,
-    currentStep: 'PlannerAgent',
+    currentStep: 'GenerationPlannerAgent',
     logs: [
       makeLogEntry(
         'success',

@@ -1,5 +1,5 @@
 /**
- * Node 6 — GeneratorAgent
+ * Node 6 — CodeGeneratorAgent
  * Converts the validated DesignIR into a framework-specific CodeBundle
  * by delegating to ReactNativeGenerator or FlutterGenerator.
  */
@@ -9,17 +9,17 @@ import type { GenerationScope } from '@appvelocity/agent-design-to-code-generato
 import { makeLogEntry } from '../utils/logger.js';
 import type { WorkflowState } from '../types.js';
 
-export async function generatorAgent(
+export async function codeGeneratorAgent(
   state: WorkflowState
 ): Promise<Partial<WorkflowState>> {
   if (!state.designIR) {
     throw new Error(
-      'DesignIR not available in state. IRBuilderAgent must run before GeneratorAgent.'
+      'DesignIR not available in state. IRBuilderAgent must run before CodeGeneratorAgent.'
     );
   }
   if (!state.executionPlan) {
     throw new Error(
-      'ExecutionPlan not available in state. PlannerAgent must run before GeneratorAgent.'
+      'ExecutionPlan not available in state. GenerationPlannerAgent must run before CodeGeneratorAgent.'
     );
   }
 
@@ -49,7 +49,7 @@ export async function generatorAgent(
 
   return {
     generatedCode: result.bundle,
-    currentStep: 'GeneratorAgent',
+    currentStep: 'CodeGeneratorAgent',
     logs,
   };
 }

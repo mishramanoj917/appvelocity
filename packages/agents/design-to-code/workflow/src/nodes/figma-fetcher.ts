@@ -1,5 +1,5 @@
 /**
- * Node 3 — ResearcherAgent
+ * Node 3 — FigmaFetcherAgent
  * Fetches the Figma file and design variables using the FigmaClient.
  */
 
@@ -7,7 +7,7 @@ import { FigmaClient, parseFigmaUrl } from '@appvelocity/agent-design-to-code-co
 import { makeLogEntry } from '../utils/logger.js';
 import type { WorkflowState } from '../types.js';
 
-export async function researcherAgent(
+export async function figmaFetcherAgent(
   state: WorkflowState
 ): Promise<Partial<WorkflowState>> {
   const client = new FigmaClient({
@@ -41,7 +41,7 @@ export async function researcherAgent(
   return {
     figmaFile,
     ...(variablesResponse ? { variablesResponse } : {}),
-    currentStep: 'ResearcherAgent',
+    currentStep: 'FigmaFetcherAgent',
     logs,
   };
 }

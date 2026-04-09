@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { researcherAgent } from '../../src/nodes/researcher.js';
+import { figmaFetcherAgent } from '../../src/nodes/figma-fetcher.js';
 import { makeBaseState } from '../fixtures/mock-workflow-state.js';
 
 // Inline mock data to avoid hoisting issues with vi.mock
@@ -31,32 +31,32 @@ vi.mock('@appvelocity/agent-design-to-code-core', async (importOriginal) => {
   };
 });
 
-describe('researcherAgent', () => {
+describe('figmaFetcherAgent', () => {
   beforeEach(() => {
     process.env.FIGMA_ACCESS_TOKEN = 'test-token';
   });
 
   it('stores the fetched FigmaFile in state', async () => {
-    const result = await researcherAgent(makeBaseState());
+    const result = await figmaFetcherAgent(makeBaseState());
 
     expect(result.figmaFile).toBeDefined();
     expect((result.figmaFile as unknown as typeof MOCK_FILE).name).toBe('MyApp');
   });
 
   it('stores variablesResponse when available', async () => {
-    const result = await researcherAgent(makeBaseState());
+    const result = await figmaFetcherAgent(makeBaseState());
 
     expect(result.variablesResponse).toBeDefined();
   });
 
-  it('sets currentStep to ResearcherAgent', async () => {
-    const result = await researcherAgent(makeBaseState());
+  it('sets currentStep to FigmaFetcherAgent', async () => {
+    const result = await figmaFetcherAgent(makeBaseState());
 
-    expect(result.currentStep).toBe('ResearcherAgent');
+    expect(result.currentStep).toBe('FigmaFetcherAgent');
   });
 
   it('emits a success log for file fetch and info log for tokens', async () => {
-    const result = await researcherAgent(makeBaseState());
+    const result = await figmaFetcherAgent(makeBaseState());
 
     const levels = result.logs!.map((l) => l.level);
     expect(levels).toContain('success');
@@ -73,7 +73,7 @@ describe('researcherAgent', () => {
         }) as never
     );
 
-    const result = await researcherAgent(makeBaseState());
+    const result = await figmaFetcherAgent(makeBaseState());
 
     expect(result.figmaFile).toBeDefined();
     expect(result.variablesResponse).toBeUndefined();

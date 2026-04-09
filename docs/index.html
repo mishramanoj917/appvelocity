@@ -466,14 +466,14 @@
          <div class="p-node" id="pn3" onclick="openNode(2)"
             style="--node-c:#3B82F6;--node-bg:#EFF6FF;--node-bd:#BFDBFE;--node-ring:rgba(59,130,246,0.14);">
             <div class="p-circle"><span class="p-num">2</span>📥</div>
-            <div class="p-name">Design Fetcher</div>
+            <div class="p-name">Figma Fetcher</div>
             <div class="p-tag">Figma API</div>
           </div>
 
           <div class="p-node" id="pn2" onclick="openNode(3)"
             style="--node-c:#7C3AED;--node-bg:#F5F3FF;--node-bd:#DDD6FE;--node-ring:rgba(124,58,237,0.14);">
             <div class="p-circle"><span class="p-num">3</span>🧭</div>
-            <div class="p-name">Strategy Planner</div>
+            <div class="p-name">Generation Planner</div>
             <div class="p-tag">AI Reasoning</div>
           </div>
 
@@ -487,7 +487,7 @@
           <div class="p-node" id="pn5" onclick="openNode(5)"
             style="--node-c:#7C3AED;--node-bg:#F5F3FF;--node-bd:#DDD6FE;--node-ring:rgba(124,58,237,0.14);">
             <div class="p-circle"><span class="p-num">5</span>🔍</div>
-            <div class="p-name">Quality Reviewer</div>
+            <div class="p-name">IR Validator</div>
             <div class="p-tag">AI Reasoning</div>
           </div>
 
@@ -648,13 +648,13 @@ const NODE_DATA = {
       'Confirms a valid Figma design URL has been provided and is properly formatted',
       'Verifies the chosen output framework is supported: React Native, Flutter, SwiftUI, or Jetpack Compose',
       'If anything is missing or invalid, stops the pipeline immediately with a clear, actionable explanation',
-      'On success, passes a green-light signal to the Strategy Planner to begin AI processing'
+      'On success, passes a green-light signal to the Generation Planner to begin AI processing'
     ],
     inputs:['Figma design URL — the link to the design file to process','Target framework — the mobile platform the team is building for'],
-    outputs:['Validation result — explicit pass or fail with human-readable reason','Structured inputs forwarded to Strategy Planner','Audit log entry with timestamp, inputs, and outcome']
+    outputs:['Validation result — explicit pass or fail with human-readable reason','Structured inputs forwarded to Generation Planner','Audit log entry with timestamp, inputs, and outcome']
   },
   2: {
-    icon:'📥', name:'Design Fetcher', type:'Figma API',
+    icon:'📥', name:'Figma Fetcher', type:'Figma API',
     typeStyle:'background:var(--blue-lt);color:var(--blue);border:1px solid var(--blue-bd);',
     summary:'Retrieves the complete design system from Figma — every layer, token, component, and asset — using Figma\'s official API. Rate limiting, retry logic, and a 5-minute cache are built in to handle real-world API conditions reliably.',
     steps:[
@@ -663,11 +663,11 @@ const NODE_DATA = {
       'Calls Figma\'s Variables API to retrieve design token definitions: colors, spacing, and typography',
       'Applies a 5-minute LRU cache and exponential backoff retry to handle rate limits and transient failures gracefully'
     ],
-    inputs:['Figma file URL — to extract the unique file key for the API calls','Execution plan — to understand which files and components are in scope'],
+    inputs:['Figma file URL — to extract the unique file key for the API calls','Execution plan — from Generation Planner to understand which files and components are in scope'],
     outputs:['Complete Figma document — the raw JSON tree of every design layer','Design token variables — the full color, spacing, and type system','Asset manifest — all images and icons referenced across screens']
   },
   3: {
-    icon:'🧭', name:'Strategy Planner', type:'AI Reasoning',
+    icon:'🧭', name:'Generation Planner', type:'AI Reasoning',
     typeStyle:'background:var(--violet-lt);color:var(--violet);border:1px solid var(--violet-bd);',
     summary:'Plans before acting. Uses AI to analyse the design scope and create a structured execution blueprint — so every downstream stage works with intent and context rather than repeating expensive operations blindly.',
     steps:[
@@ -676,7 +676,7 @@ const NODE_DATA = {
       'Determines the optimal generation sequence to respect component dependencies and design hierarchy',
       'Outputs a structured plan consumed by every subsequent stage in the pipeline'
     ],
-    inputs:['Validated Figma URL — confirmed clean by the Input Guard','Target framework — shapes how the plan sequences component generation'],
+    inputs:['Validated Figma URL — confirmed clean by Input Guard','Target framework — shapes how the plan sequences component generation'],
     outputs:['Execution plan — ordered list of screens and components with dependency map','Complexity estimate — informs expected generation time and resource use','Strategic context carried forward to all downstream pipeline stages']
   },
   4: {
@@ -689,20 +689,20 @@ const NODE_DATA = {
       'Normalises design tokens into a platform-agnostic layer shared across all generated output files',
       'Attaches accessibility metadata — semantic roles, ARIA labels, and focus order — to every interactive element'
     ],
-    inputs:['Raw Figma document — the complete node tree from the Design Fetcher','Design token variables — for color, spacing, and typography normalisation'],
+    inputs:['Raw Figma document — the complete node tree from Figma Fetcher','Design token variables — for color, spacing, and typography normalisation'],
     outputs:['Design IR — a structured, framework-neutral model of every screen and component','Normalised token layer — design system values ready for any target framework','Accessibility annotations — WCAG-aware metadata pre-wired into the IR']
   },
   5: {
-    icon:'🔍', name:'Quality Reviewer', type:'AI Reasoning',
+    icon:'🔍', name:'IR Validator', type:'AI Reasoning',
     typeStyle:'background:var(--violet-lt);color:var(--violet);border:1px solid var(--violet-bd);',
     summary:'An AI-powered quality gate that reviews the Intermediate Representation before a single line of code is written. It catches structural problems, accessibility gaps, and design inconsistencies at the cheapest possible point — before generation.',
     steps:[
       'Summarises the IR: screen count, component reuse rate, token coverage, and element density',
       'Sends the summary to an AI model with a structured validation prompt covering quality, completeness, and accessibility',
       'Scores the IR and generates a prioritised issue list (critical / warning / info)',
-      'On pass: routes to Code Generator. On fail: triggers Smart Retry back to Design Interpreter — up to 2 automatic corrections per run'
+      'On pass: routes to Code Generator. On fail: triggers Smart Retry back to Design Interpreter — up to 2 automatic corrections per run by IR Validator'
     ],
-    inputs:['Design IR — the output from the Design Interpreter to be reviewed','Retry count — tracks how many automatic corrections have already been attempted'],
+    inputs:['Design IR — the output from Design Interpreter to be reviewed','Retry count — tracks how many automatic corrections have already been attempted'],
     outputs:['Quality score — a numeric rating with specific issue callouts','Issue list — categorised by severity with element-level attribution','Routing decision — proceed to generation or trigger automatic retry']
   },
   6: {
@@ -715,7 +715,7 @@ const NODE_DATA = {
       'Creates a typed theme file containing all design tokens as named constants, shareable across the whole codebase',
       'Assembles the navigation structure and wires all screens together with zero manual configuration'
     ],
-    inputs:['Validated Design IR — quality-approved by the Quality Reviewer','Execution plan — defines the generation order and component dependencies','Target framework — determines file structure, language, and component patterns'],
+    inputs:['Validated Design IR — quality-approved by IR Validator','Execution plan — defines the generation order and component dependencies','Target framework — determines file structure, language, and component patterns'],
     outputs:['Screen components — one file per screen, fully styled and wired','Shared components — reusable UI elements extracted from the design system','Theme file — all design tokens as typed, named constants','Navigation setup — routing configured and ready to run on first launch']
   }
 };

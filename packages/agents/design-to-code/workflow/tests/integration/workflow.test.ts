@@ -54,8 +54,8 @@ describe('compiledWorkflow (integration)', () => {
   it('runs the happy path: valid input → DesignIR → validation passes', async () => {
     setLLMClient(
       makeLLMForSequence([
-        JSON.stringify(mockExecutionPlan),  // planner
-        JSON.stringify(mockValidationResult), // critic
+        JSON.stringify(mockExecutionPlan),  // generationPlanner
+        JSON.stringify(mockValidationResult), // irValidator
       ])
     );
 
@@ -72,7 +72,7 @@ describe('compiledWorkflow (integration)', () => {
     expect(result.errors).toHaveLength(0);
     expect(result.designIR).toBeDefined();
     expect(result.validationResult?.valid).toBe(true);
-    expect(result.currentStep).toBe('GeneratorAgent');
+    expect(result.currentStep).toBe('CodeGeneratorAgent');
   });
 
   it('exits early on invalid input (missing token)', async () => {
@@ -96,9 +96,9 @@ describe('compiledWorkflow (integration)', () => {
   it('retries irBuilder when critic fails (once)', async () => {
     setLLMClient(
       makeLLMForSequence([
-        JSON.stringify(mockExecutionPlan),       // planner
-        JSON.stringify(mockFailedValidationResult), // critic call 1 → retry
-        JSON.stringify(mockValidationResult),    // critic call 2 → pass
+        JSON.stringify(mockExecutionPlan),       // generationPlanner
+        JSON.stringify(mockFailedValidationResult), // irValidator call 1 → retry
+        JSON.stringify(mockValidationResult),    // irValidator call 2 → pass
       ])
     );
 
@@ -118,10 +118,10 @@ describe('compiledWorkflow (integration)', () => {
   it('exits after max 2 retries when critic keeps failing', async () => {
     setLLMClient(
       makeLLMForSequence([
-        JSON.stringify(mockExecutionPlan),          // planner
-        JSON.stringify(mockFailedValidationResult), // critic 1
-        JSON.stringify(mockFailedValidationResult), // critic 2
-        JSON.stringify(mockFailedValidationResult), // critic 3 (after retry 2)
+        JSON.stringify(mockExecutionPlan),          // generationPlanner
+        JSON.stringify(mockFailedValidationResult), // irValidator 1
+        JSON.stringify(mockFailedValidationResult), // irValidator 2
+        JSON.stringify(mockFailedValidationResult), // irValidator 3 (after retry 2)
       ])
     );
 
@@ -154,7 +154,7 @@ describe('compiledWorkflow (integration)', () => {
       options: {},
     });
 
-    // Should have logs from: inputValidator, planner, researcher, irBuilder, critic, generator
+    // Should have logs from: inputValidator, figmaFetcher, generationPlanner, irBuilder, irValidator, codeGenerator
     expect(result.logs.length).toBeGreaterThanOrEqual(5);
   });
 });

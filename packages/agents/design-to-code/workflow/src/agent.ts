@@ -28,13 +28,14 @@ export class DesignToCodeAgent extends AgentBase {
   readonly name = 'DesignToCodeAgent';
   readonly version = '0.1.0';
   readonly description =
-    'Converts a Figma design URL into production-ready React Native or Flutter code via a 6-node LangGraph pipeline.';
+    'Converts a Figma design URL into production-ready React Native or Flutter code via an 8-node LangGraph pipeline.';
   readonly capabilities = [
     'Figma → DesignIR extraction',
     'React Native code generation',
     'Flutter code generation',
     'Design token extraction',
     'Component hierarchy analysis',
+    'Syntax validation and auto-fix (prettier / dart format)',
   ];
 
   async execute(input: AgentInput): Promise<AgentOutput> {

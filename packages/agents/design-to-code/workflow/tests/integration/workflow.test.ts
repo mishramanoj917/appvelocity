@@ -72,7 +72,8 @@ describe('compiledWorkflow (integration)', () => {
     expect(result.errors).toHaveLength(0);
     expect(result.designIR).toBeDefined();
     expect(result.validationResult?.valid).toBe(true);
-    expect(result.currentStep).toBe('CodeGeneratorAgent');
+    // Pipeline now ends at codeValidator (after codeGenerator)
+    expect(result.currentStep).toBe('CodeValidatorAgent');
   });
 
   it('exits early on invalid input (missing token)', async () => {
@@ -154,7 +155,7 @@ describe('compiledWorkflow (integration)', () => {
       options: {},
     });
 
-    // Should have logs from: inputValidator, figmaFetcher, generationPlanner, irBuilder, irValidator, codeGenerator
-    expect(result.logs.length).toBeGreaterThanOrEqual(5);
+    // Should have logs from: inputValidator, figmaFetcher, generationPlanner, irBuilder, irValidator, codeGenerator, codeValidator
+    expect(result.logs.length).toBeGreaterThanOrEqual(6);
   });
 });

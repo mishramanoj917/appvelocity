@@ -449,8 +449,8 @@
       <div class="pipe-header">
         <div class="sec-label" style="display:inline-flex;"><span class="label-dot"></span>Workflow Orchestration</div>
         <div class="pipe-title">How DesignToCode AI Works — Step by Step</div>
-        <div class="pipe-sub">Six intelligent agents work in sequence to turn a Figma link into shippable mobile code.<br/>Click any agent to see exactly what happens — and why it matters.</div>
-        <div class="pipe-badge">6-STAGE AGENTIC PIPELINE · POWERED BY LANGGRAPH</div>
+        <div class="pipe-sub">Eight intelligent agents work in sequence to turn a Figma link into shippable mobile code.<br/>Click any agent to see exactly what happens — and why it matters.</div>
+        <div class="pipe-badge">8-STAGE AGENTIC PIPELINE · POWERED BY LANGGRAPH</div>
       </div>
 
       <div class="pipe-scroll">
@@ -463,14 +463,14 @@
             <div class="p-tag">Quality Gate</div>
           </div>
 
-         <div class="p-node" id="pn3" onclick="openNode(2)"
+          <div class="p-node" id="pn2" onclick="openNode(2)"
             style="--node-c:#3B82F6;--node-bg:#EFF6FF;--node-bd:#BFDBFE;--node-ring:rgba(59,130,246,0.14);">
             <div class="p-circle"><span class="p-num">2</span>📥</div>
             <div class="p-name">Figma Fetcher</div>
             <div class="p-tag">Figma API</div>
           </div>
 
-          <div class="p-node" id="pn2" onclick="openNode(3)"
+          <div class="p-node" id="pn3" onclick="openNode(3)"
             style="--node-c:#7C3AED;--node-bg:#F5F3FF;--node-bd:#DDD6FE;--node-ring:rgba(124,58,237,0.14);">
             <div class="p-circle"><span class="p-num">3</span>🧭</div>
             <div class="p-name">Generation Planner</div>
@@ -498,13 +498,27 @@
             <div class="p-tag">AI Synthesis</div>
           </div>
 
+          <div class="p-node" id="pn7" onclick="openNode(7)"
+            style="--node-c:#0D9488;--node-bg:#F0FDFA;--node-bd:#99F6E4;--node-ring:rgba(13,148,136,0.14);">
+            <div class="p-circle"><span class="p-num">7</span>✅</div>
+            <div class="p-name">Code Validator</div>
+            <div class="p-tag">Static Analysis</div>
+          </div>
+
+          <div class="p-node" id="pn8" onclick="openNode(8)"
+            style="--node-c:#EA580C;--node-bg:#FFF7ED;--node-bd:#FDBA74;--node-ring:rgba(234,88,12,0.14);">
+            <div class="p-circle"><span class="p-num">8</span>🔧</div>
+            <div class="p-name">Code Fixer</div>
+            <div class="p-tag">Auto-Fix</div>
+          </div>
+
         </div>
       </div>
 
       <!-- Retry arc -->
       <div class="retry-zone" id="retryWrap">
         <svg id="retrySvg" xmlns="http://www.w3.org/2000/svg"></svg>
-        <div class="retry-tag">&nbsp;Quality Reviewer triggers Design Interpreter to rebuild — up to 2 automatic corrections per run</div>
+        <div class="retry-tag"><span style="color:#EF4444">↺</span>&nbsp;IR Validator triggers Design Interpreter to rebuild — up to 2 automatic corrections per run&nbsp;&nbsp;·&nbsp;&nbsp;<span style="color:#0EA5E9">↺</span>&nbsp;Code Validator triggers Code Fixer to auto-fix — up to 2 automatic corrections per run</div>
       </div>
 
       <!-- Legend -->
@@ -717,6 +731,33 @@ const NODE_DATA = {
     ],
     inputs:['Validated Design IR — quality-approved by IR Validator','Execution plan — defines the generation order and component dependencies','Target framework — determines file structure, language, and component patterns'],
     outputs:['Screen components — one file per screen, fully styled and wired','Shared components — reusable UI elements extracted from the design system','Theme file — all design tokens as typed, named constants','Navigation setup — routing configured and ready to run on first launch']
+  },
+  7: {
+    icon:'✅', name:'Code Validator', type:'Static Analysis',
+    typeStyle:'background:#F0FDFA;color:#0D9488;border:1px solid #99F6E4;',
+    summary:'A zero-LLM quality gate that inspects every generated source file using deterministic AST parsing and framework-native CLI tools. It catches syntax errors, import problems, and formatting violations before any code reaches the developer — with no hallucination risk.',
+    steps:[
+      'Parses every TypeScript / JSX file with @babel/parser to detect syntax errors, unbalanced braces, and invalid JSX structure',
+      'Runs dart analyze on Flutter projects to surface compile-time errors and linter violations via the official Dart CLI',
+      'Classifies each issue as critical (cannot be auto-fixed — needs human review) or fixable (a formatting tool can resolve it automatically)',
+      'On pass: routes to END and delivers the validated bundle. On fixable issues found: routes to Code Fixer — up to 2 automatic correction cycles'
+    ],
+    inputs:['Generated code bundle — all source files produced by Code Generator','Retry count — tracks how many auto-fix cycles have been attempted so far'],
+    outputs:['Code validation result — split into critical issues and fixable issues with file, line, and column attribution','Routing decision — deliver bundle, trigger auto-fix, or surface unresolvable errors to the caller']
+  },
+  8: {
+    icon:'🔧', name:'Code Fixer', type:'Auto-Fix',
+    typeStyle:'background:#FFF7ED;color:#EA580C;border:1px solid #FDBA74;',
+    summary:'Applies deterministic, tool-driven fixes to every generated source file without invoking an LLM. By delegating to industry-standard formatters, it eliminates an entire class of cosmetic and stylistic issues automatically — so developers receive clean, consistent code on first open.',
+    steps:[
+      'Writes the in-memory code bundle to a temporary directory isolated from the host project',
+      'Runs prettier --write on React Native projects to normalise indentation, line length, semicolons, and quote style across all TypeScript and JSX files',
+      'Runs eslint --fix with a minimal inline ruleset to resolve no-extra-semi, prefer-const, and eqeqeq violations',
+      'Runs dart format and dart fix --apply on Flutter projects to apply the official Dart style guide and apply all auto-applicable lint fixes',
+      'Reads the corrected files back from disk, updates the in-memory bundle, and increments the retry counter before routing back to Code Validator for re-check'
+    ],
+    inputs:['Code bundle — the generated files flagged with fixable issues by Code Validator','Retry count — incremented by this node to enforce the maximum two-cycle limit'],
+    outputs:['Updated code bundle — source files rewritten with all auto-fixable issues resolved','Incremented retry count — consumed by Code Validator to decide whether to attempt another cycle or surface remaining errors']
   }
 };
 
@@ -781,28 +822,48 @@ function openNode(id) {
 function drawRetryArc() {
   const n4   = document.getElementById('pn4');
   const n5   = document.getElementById('pn5');
+  const n7   = document.getElementById('pn7');
+  const n8   = document.getElementById('pn8');
   const wrap = document.getElementById('retryWrap');
   const svg  = document.getElementById('retrySvg');
   if (!n4 || !n5 || !wrap) return;
 
-  const wR = wrap.getBoundingClientRect();
+  const wR  = wrap.getBoundingClientRect();
   const n4R = n4.getBoundingClientRect();
   const n5R = n5.getBoundingClientRect();
+  const x4  = n4R.left + n4R.width / 2 - wR.left;
+  const x5  = n5R.left + n5R.width / 2 - wR.left;
+  const y1  = 6, cy = 50;
 
-  const x4 = n4R.left + n4R.width / 2 - wR.left;
-  const x5 = n5R.left + n5R.width / 2 - wR.left;
-  const y1 = 6, cy = 50;
-
-  svg.innerHTML = `
+  // IR-validation retry arc (red): IR Validator → Design Interpreter
+  let markup = `
     <defs>
       <marker id="rH" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto">
         <path d="M8,0 L8,8 L0,4 z" fill="#EF4444"/>
+      </marker>
+      <marker id="rH2" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto">
+        <path d="M8,0 L8,8 L0,4 z" fill="#0EA5E9"/>
       </marker>
     </defs>
     <path d="M ${x5},${y1} C ${x5},${cy} ${x4},${cy} ${x4},${y1}"
       fill="none" stroke="#EF4444" stroke-width="2.5"
       stroke-dasharray="6,4" marker-end="url(#rH)"/>
   `;
+
+  // Code-validation retry arc (blue): Code Fixer → Code Validator
+  if (n7 && n8) {
+    const n7R = n7.getBoundingClientRect();
+    const n8R = n8.getBoundingClientRect();
+    const x7  = n7R.left + n7R.width / 2 - wR.left;
+    const x8  = n8R.left + n8R.width / 2 - wR.left;
+    markup += `
+      <path d="M ${x8},${y1} C ${x8},${cy} ${x7},${cy} ${x7},${y1}"
+        fill="none" stroke="#0EA5E9" stroke-width="2.5"
+        stroke-dasharray="6,4" marker-end="url(#rH2)"/>
+    `;
+  }
+
+  svg.innerHTML = markup;
 }
 window.addEventListener('load', drawRetryArc);
 window.addEventListener('resize', drawRetryArc);

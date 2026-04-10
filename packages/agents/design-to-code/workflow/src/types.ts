@@ -30,9 +30,13 @@ export interface WorkflowState {
   // Output (final deliverable)
   generatedCode?: CodeBundle;
 
+  // Code validation (populated by codeValidator / codeFixer)
+  codeValidationResult?: CodeValidationResult;
+
   // Error tracking
   errors: AgentError[];
   retryCount: number;
+  codeValidationRetryCount: number;
 
   // Progress tracking
   currentStep: string;
@@ -62,6 +66,30 @@ export interface ValidationIssue {
   message: string;
   nodeId?: string;
   fixSuggestion?: string;
+}
+
+// ─── Code validation ──────────────────────────────────────────────────────────
+
+export interface CodeIssue {
+  severity: 'error' | 'warning';
+  /** syntax = parse/compile error; lint = style/logic rule; format = whitespace/indentation; import = missing or unused */
+  type: 'syntax' | 'lint' | 'format' | 'import';
+  file: string;
+  line?: number;
+  column?: number;
+  message: string;
+  /** true = a deterministic tool (prettier / dart format) can auto-fix this */
+  fixable: boolean;
+  /** ESLint rule name or Dart diagnostic code, when available */
+  rule?: string;
+}
+
+export interface CodeValidationResult {
+  valid: boolean;
+  fixableIssues: CodeIssue[];
+  criticalIssues: CodeIssue[];
+  framework: 'react-native' | 'flutter';
+  checkedFiles: number;
 }
 
 // ─── Code generation output (canonical definitions live in generators package) ─

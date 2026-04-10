@@ -11,6 +11,8 @@ export type {
   ExecutionPlan,
   IRValidationResult,
   ValidationIssue,
+  CodeIssue,
+  CodeValidationResult,
   CodeBundle,
   CodeFile,
   AssetFile,
@@ -28,3 +30,5 @@ export { figmaFetcherAgent } from './nodes/figma-fetcher.js';
 export { irBuilderAgent } from './nodes/ir-builder.js';
 export { irValidatorAgent } from './nodes/ir-validator.js';
 export { codeGeneratorAgent } from './nodes/code-generator.js';
+export { codeValidatorAgent } from './nodes/code-validator.js';
+export { codeFixerAgent } from './nodes/code-fixer.js';

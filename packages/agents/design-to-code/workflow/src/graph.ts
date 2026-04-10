@@ -1,12 +1,17 @@
 /**
  * LangGraph StateGraph definition for the DesignToCode workflow.
  *
- * Nodes: inputValidator → figmaFetcher → generationPlanner → irBuilder → irValidator → codeGenerator
- * Retry loop: irValidator → irBuilder (max 2 retries on validation failure)
+ * Nodes: inputValidator → figmaFetcher → generationPlanner → irBuilder → irValidator → codeGenerator → codeValidator → codeFixer → END
+ *
+ * Retry loops:
+ *   irValidator  → irBuilder     (max 2 retries on IR validation failure)
+ *   codeValidator → codeFixer    (max 2 retries when fixable code issues are found)
  *
  * Node ordering rationale:
  *   figmaFetcher runs BEFORE generationPlanner so that generationPlannerAgent has the actual
  *   FigmaFile structure (pages, screens, component IDs) to reason over.
+ *   codeValidator runs AFTER codeGenerator to ensure deterministic syntax / lint checks
+ *   before the bundle is returned to the caller.
  */
 
 import { StateGraph, Annotation, END, START } from '@langchain/langgraph';
@@ -17,6 +22,8 @@ import { figmaFetcherAgent } from './nodes/figma-fetcher.js';
 import { irBuilderAgent } from './nodes/ir-builder.js';
 import { irValidatorAgent } from './nodes/ir-validator.js';
 import { codeGeneratorAgent } from './nodes/code-generator.js';
+import { codeValidatorAgent } from './nodes/code-validator.js';
+import { codeFixerAgent } from './nodes/code-fixer.js';
 
 // ─── Error-boundary wrapper ───────────────────────────────────────────────────
 // Catches any node-level exception and injects it into state.errors so the
@@ -63,12 +70,17 @@ export const WorkflowAnnotation = Annotation.Root({
   executionPlan: Annotation<WorkflowState['executionPlan']>(),
   validationResult: Annotation<WorkflowState['validationResult']>(),
   generatedCode: Annotation<WorkflowState['generatedCode']>(),
+  codeValidationResult: Annotation<WorkflowState['codeValidationResult']>(),
   // Append reducers so each node contributes new entries without overwriting
   errors: Annotation<AgentError[]>({
     reducer: (current, update) => [...current, ...update],
     default: () => [],
   }),
   retryCount: Annotation<number>({
+    reducer: (_, update) => update,
+    default: () => 0,
+  }),
+  codeValidationRetryCount: Annotation<number>({
     reducer: (_, update) => update,
     default: () => 0,
   }),
@@ -88,6 +100,8 @@ export const compiledWorkflow = new StateGraph(WorkflowAnnotation)
   .addNode('irBuilder',         withErrorBoundary('irBuilder',         irBuilderAgent))
   .addNode('irValidator',       withErrorBoundary('irValidator',       irValidatorAgent))
   .addNode('codeGenerator',     withErrorBoundary('codeGenerator',     codeGeneratorAgent))
+  .addNode('codeValidator',     withErrorBoundary('codeValidator',     codeValidatorAgent))
+  .addNode('codeFixer',         withErrorBoundary('codeFixer',         codeFixerAgent))
   .addEdge(START, 'inputValidator')
   // After inputValidator: bail on errors, else fetch Figma data first
   .addConditionalEdges('inputValidator', (state) =>
@@ -110,5 +124,19 @@ export const compiledWorkflow = new StateGraph(WorkflowAnnotation)
     }
     return state.validationResult?.valid ? 'codeGenerator' : END;
   })
-  .addEdge('codeGenerator', END)
+  // codeGenerator → codeValidator (always validate before returning to caller)
+  .addConditionalEdges('codeGenerator', (state) =>
+    state.errors.length > 0 ? END : 'codeValidator'
+  )
+  // codeValidator → codeFixer when fixable issues remain and budget allows; else END
+  .addConditionalEdges('codeValidator', (state) => {
+    if (state.errors.length > 0) return END;
+    const cv = state.codeValidationResult;
+    if (cv && cv.fixableIssues.length > 0 && state.codeValidationRetryCount < 2) {
+      return 'codeFixer';
+    }
+    return END;
+  })
+  // codeFixer always loops back to re-validate the fixed bundle
+  .addEdge('codeFixer', 'codeValidator')
   .compile();

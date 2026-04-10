@@ -14,27 +14,33 @@ Phase 2 builds the **LangGraph multi-agent workflow** that orchestrates the Desi
 - **WorkflowState:** Shared state object passed to every node
 - **Conditional Edges:** Dynamic routing based on node output (e.g., retry on validation failure)
 
-## Workflow Nodes (6 total)
+## Workflow Nodes (8 total)
 
 ```
 START
   ↓
-1. InputValidator (validate Figma URL + API keys)
+1. inputValidator      — validate Figma URL, API token, target framework
   ↓ [valid?]
-2. PlannerAgent (LLM: analyze file structure, create ExecutionPlan)
+2. figmaFetcherAgent   — FigmaClient: fetch file document + design variables
   ↓
-3. ResearcherAgent (FigmaClient: fetch file + variables)
+3. generationPlannerAgent — LLM: analyse design scope, build ExecutionPlan
   ↓
-4. IRBuilderAgent (IRBuilder: transform data → DesignIR)
+4. irBuilderAgent      — IRBuilder: transform Figma JSON → DesignIR
   ↓
-5. CriticAgent (LLM: validate IR quality, accessibility)
+5. irValidatorAgent    — LLM: validate IR quality, accessibility, completeness
   ↓ [pass?]
-6. GeneratorAgent (LLM: synthesize code from IR)
+6. codeGeneratorAgent  — deterministic: synthesise framework code from DesignIR
+  ↓
+7. codeValidatorAgent  — AST + CLI: validate generated files (zero LLM calls)
+  ↓ [fixable issues?]
+8. codeFixerAgent      — prettier / eslint / dart format: auto-fix and re-validate
   ↓
 END
 ```
 
-**Retry Loop:** If CriticAgent fails, return to IRBuilderAgent (max 2 retries).
+**Retry Loops:**
+- If `irValidatorAgent` fails → return to `irBuilderAgent` (max 2 retries).
+- If `codeValidatorAgent` finds fixable issues → route to `codeFixerAgent` → re-validate (max 2 retries).
 
 ## WorkflowState Schema
 

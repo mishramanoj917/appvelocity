@@ -24,6 +24,8 @@ export interface DesignIR {
   components: IRComponent[];
   /** Asset references (icons, images) */
   assets: IRAsset[];
+  /** Non-fatal build warnings (e.g. inferred tokens, reconstructed layout) */
+  warnings: IRWarning[];
   /** Build metadata */
   meta: IRMeta;
 }
@@ -102,6 +104,7 @@ export type IRElementType =
   | 'view'
   | 'text'
   | 'image'
+  | 'imagebackground'
   | 'icon'
   | 'scrollview'
   | 'flatlist'
@@ -182,6 +185,21 @@ export interface IRAsset {
   slug: string;
   format: 'svg' | 'png' | 'jpg';
   url?: string;
+}
+
+// ─── Build warnings ───────────────────────────────────────────────────────────
+
+export type IRWarningCode =
+  | 'NO_TOKENS'
+  | 'TOKENS_INFERRED'
+  | 'ASSETS_DETECTED'
+  | 'LAYOUT_RECONSTRUCTED';
+
+export interface IRWarning {
+  code: IRWarningCode;
+  message: string;
+  /** Number of affected tokens / nodes, when applicable */
+  nodeCount?: number;
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────

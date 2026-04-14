@@ -101,6 +101,7 @@ export const mockDesignIR: DesignIR = {
   ],
   components: [],
   assets: [],
+  warnings: [],
   meta: {
     generatedAt: '2024-01-01T00:00:00Z',
     figmaVersion: '1',

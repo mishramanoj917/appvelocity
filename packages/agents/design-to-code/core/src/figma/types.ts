@@ -59,6 +59,12 @@ export interface FigmaNode {
   fills?: FigmaPaint[];
   strokes?: FigmaPaint[];
   effects?: FigmaEffect[];
+  // Corner radius
+  cornerRadius?: number;
+  topLeftRadius?: number;
+  topRightRadius?: number;
+  bottomRightRadius?: number;
+  bottomLeftRadius?: number;
   // Text
   characters?: string;
   style?: FigmaTypeStyle;
@@ -85,6 +91,8 @@ export interface FigmaPaint {
   visible?: boolean;
   opacity?: number;
   color?: FigmaColor;
+  /** Present when type === 'IMAGE'; identifies the placed raster image */
+  imageRef?: string;
 }
 
 export interface FigmaColor {

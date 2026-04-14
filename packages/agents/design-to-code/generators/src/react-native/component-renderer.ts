@@ -81,6 +81,16 @@ export function renderElement(
       return `${pad}<Image\n${pad}  style={${styleRef}}\n${pad}  source={{ uri: '${uri}' }}\n${pad}  accessibilityLabel="${escapeAttr(alt)}"\n${pad}/>`;
     }
 
+    case 'imagebackground': {
+      // Image fill with overlaid children — use ImageBackground
+      const uri = el.image?.src ?? '';
+      const children = renderChildren(el.children, tokens, depth + 1, warnings);
+      if (children) {
+        return `${pad}<ImageBackground\n${pad}  style={${styleRef}}\n${pad}  source={{ uri: '${uri}' }}\n${pad}  resizeMode="cover"\n${pad}>\n${children}\n${pad}</ImageBackground>`;
+      }
+      return `${pad}<ImageBackground style={${styleRef}} source={{ uri: '${uri}' }} resizeMode="cover" />`;
+    }
+
     case 'icon': {
       // Rendered as an Image for maximum compatibility
       const uri = el.image?.src ?? '';
@@ -223,7 +233,8 @@ function detectImports(jsx: string): string[] {
   const tags: string[] = [];
   if (jsx.includes('<View'))            tags.push('View');
   if (jsx.includes('<Text'))            tags.push('Text');
-  if (jsx.includes('<Image'))           tags.push('Image');
+  if (jsx.includes('<Image'))            tags.push('Image');
+  if (jsx.includes('<ImageBackground')) tags.push('ImageBackground');
   if (jsx.includes('<TouchableOpacity')) tags.push('TouchableOpacity');
   if (jsx.includes('<ScrollView'))      tags.push('ScrollView');
   if (jsx.includes('<FlatList'))        tags.push('FlatList');

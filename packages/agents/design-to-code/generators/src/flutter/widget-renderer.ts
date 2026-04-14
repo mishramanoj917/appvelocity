@@ -81,6 +81,29 @@ export function renderElement(
         : `${pad}${inner}`;
     }
 
+    case 'imagebackground': {
+      // Image fill with overlaid children — DecorationImage inside Container
+      const uri = el.image?.src ?? '';
+      const children = el.children.map((c) => renderElement(c, depth + 1, warnings));
+      const childWidget = children.length === 0
+        ? `${indent(depth + 1)}const SizedBox.shrink()`
+        : children.length === 1
+          ? children[0]!
+          : `${indent(depth + 1)}Stack(\n${indent(depth + 2)}children: [\n${children.join(',\n')},\n${indent(depth + 2)}],\n${indent(depth + 1)})`;
+      const decorationImage = uri
+        ? `DecorationImage(\n${pad}    image: NetworkImage('${escapeStr(uri)}'),\n${pad}    fit: BoxFit.cover,\n${pad}  )`
+        : null;
+      const decorationStr = decorationImage
+        ? `BoxDecoration(\n${pad}  image: ${decorationImage},\n${pad})`
+        : 'BoxDecoration()';
+      return (
+        `${pad}Container(\n` +
+        `${pad}  decoration: ${decorationStr},\n` +
+        `${pad}  child: ${childWidget.trim()},\n` +
+        `${pad})`
+      );
+    }
+
     case 'touchable': {
       const child = renderChildren(el.children, depth + 1, warnings);
       return (

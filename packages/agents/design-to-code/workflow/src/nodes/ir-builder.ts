@@ -2,16 +2,17 @@
  * Node 4 — IRBuilderAgent
  * Transforms the fetched FigmaFile into a DesignIR using the core IRBuilder.
  *
- * For mobile frameworks (react-native, flutter) it applies a screen filter
- * that excludes clearly-desktop and design-system frames (width > MAX_MOBILE_WIDTH).
- * This prevents the CriticAgent from being blocked by desktop frames
- * that happen to sit alongside mobile screens in the same Figma file.
+ * Post-build steps:
+ *   1. Mobile screen filter — excludes desktop/design-system frames.
+ *   2. Asset URL resolution — calls GET /v1/images to obtain CDN export URLs
+ *      for any image nodes detected during IR construction.
+ *   3. IR warnings — non-fatal messages are surfaced as 'info' log entries.
  */
 
-import { IRBuilder, parseFigmaUrl } from '@appvelocity/agent-design-to-code-core';
+import { FigmaClient, IRBuilder, parseFigmaUrl } from '@appvelocity/agent-design-to-code-core';
 import { makeLogEntry } from '../utils/logger.js';
 import type { WorkflowState } from '../types.js';
-import type { IRScreen } from '@appvelocity/agent-design-to-code-core';
+import type { IRScreen, IRElement } from '@appvelocity/agent-design-to-code-core';
 
 /** Mobile screens are ≤ this width (px). Wider frames are desktop/design-system. */
 const MAX_MOBILE_WIDTH = 600;
@@ -34,8 +35,9 @@ export async function irBuilderAgent(
 
   const designIR = builder.build(state.figmaFile, fileKey, state.variablesResponse);
 
-  // Filter to mobile-sized screens for react-native / flutter targets
   const logs = [];
+
+  // ── 1. Mobile screen filter ─────────────────────────────────────────────────
   if (MOBILE_FRAMEWORKS.has(state.targetFramework)) {
     const all = designIR.screens.length;
     designIR.screens = (designIR.screens as IRScreen[]).filter(
@@ -52,10 +54,61 @@ export async function irBuilderAgent(
     }
   }
 
+  // ── 2. Asset URL resolution ─────────────────────────────────────────────────
+  if (designIR.assets.length > 0 && process.env.FIGMA_ACCESS_TOKEN) {
+    const client = new FigmaClient({
+      accessToken: process.env.FIGMA_ACCESS_TOKEN,
+      rateLimitPerMinute: 60,
+    });
+
+    try {
+      const nodeIds = designIR.assets.map((a) => a.nodeId);
+      const imagesResponse = await client.getImageExports(fileKey, nodeIds, {
+        format: 'png',
+        scale: 2,
+      });
+      const exportUrls = imagesResponse.images;
+
+      let resolved = 0;
+      for (const asset of designIR.assets) {
+        const url = exportUrls[asset.nodeId];
+        if (url) {
+          asset.url = url;
+          resolved++;
+        }
+      }
+
+      // Propagate resolved src into element image references
+      if (resolved > 0) {
+        const urlMap: Record<string, string> = Object.fromEntries(
+          Object.entries(exportUrls).filter((e): e is [string, string] => e[1] !== null)
+        );
+        updateImageSrcs(designIR.screens.map((s) => s.root), urlMap);
+        logs.push(
+          makeLogEntry(
+            'info',
+            `Resolved CDN export URLs for ${resolved}/${designIR.assets.length} image asset(s)`
+          )
+        );
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logs.push(
+        makeLogEntry('warning', `Asset URL resolution failed — continuing without image URLs: ${msg}`)
+      );
+    }
+  }
+
+  // ── 3. Surface IR warnings as log entries ───────────────────────────────────
+  for (const warning of (designIR.warnings ?? [])) {
+    logs.push(makeLogEntry('info', `[IR] ${warning.message}`));
+  }
+
   logs.push(
     makeLogEntry(
       'success',
-      `IR built: ${designIR.screens.length} screens, ${designIR.components.length} components, ${designIR.tokens.raw.length} tokens`
+      `IR built: ${designIR.screens.length} screens, ${designIR.components.length} components, ` +
+      `${designIR.assets.length} assets, ${designIR.meta.stats.tokenCount} tokens`
     )
   );
 
@@ -64,4 +117,23 @@ export async function irBuilderAgent(
     currentStep: 'IRBuilderAgent',
     logs,
   };
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Recursively walks an element tree and sets image.src from the resolved URL map.
+ */
+function updateImageSrcs(
+  roots: IRElement[],
+  urlMap: Record<string, string>
+): void {
+  const walk = (el: IRElement): void => {
+    if (el.image?.nodeId) {
+      const url = urlMap[el.image.nodeId];
+      if (url) el.image.src = url;
+    }
+    for (const child of el.children) walk(child);
+  };
+  for (const root of roots) walk(root);
 }

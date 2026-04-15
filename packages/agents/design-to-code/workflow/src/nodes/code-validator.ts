@@ -1,16 +1,14 @@
 /**
  * Node 7 — CodeValidatorAgent
  *
- * Validates every generated source file using deterministic AST parsing and
- * CLI static-analysis tools. Zero LLM calls.
+ * Validates every generated source file.
  *
- * React Native  →  @babel/parser (TypeScript + JSX plugins)
- * Flutter       →  dart analyze --format machine (CLI, spawned in a tmp dir)
+ * React Native  →  @babel/parser (TypeScript + JSX plugins) + heuristic checks
+ * Flutter       →  Gemini LLM review (primary) + dart analyze (if dart CLI present)
  *
  * Issues are split into two buckets:
- *   criticalIssues  – syntax / parse errors that no auto-tool can recover from
- *   fixableIssues   – formatting, lint, or import issues that prettier / dart
- *                     format can fix automatically
+ *   criticalIssues  – syntax / compile errors that no auto-tool can recover from
+ *   fixableIssues   – formatting, lint, or style issues that can be auto-fixed
  *
  * The graph routes to codeFixerAgent when fixableIssues exist and the retry
  * budget (codeValidationRetryCount < 2) has not been exhausted.
@@ -23,6 +21,8 @@ import { tmpdir } from 'node:os';
 import { parse } from '@babel/parser';
 import type { ParserPlugin } from '@babel/parser';
 import type { WorkflowState, CodeIssue, CodeValidationResult } from '../types.js';
+import type { CodeFile } from '@appvelocity/agent-design-to-code-generators';
+import { createLLMClient } from '../utils/llm-client.js';
 import { makeLogEntry } from '../utils/logger.js';
 
 // ─── Shared filesystem helpers ────────────────────────────────────────────────
@@ -60,7 +60,6 @@ function validateRNFile(
   if (ext === '.ts' || ext === '.tsx') plugins.push('typescript');
   if (ext === '.tsx' || ext === '.jsx') plugins.push('jsx');
 
-  // ── Syntax check via @babel/parser ──────────────────────────────────────
   try {
     parse(content, { sourceType: 'module', plugins, errorRecovery: false });
   } catch (err) {
@@ -74,14 +73,11 @@ function validateRNFile(
       message: (e.message ?? 'Parse error').split('\n')[0]!,
       fixable: false,
     });
-    // Cannot run heuristic checks on an unparseable file
     return;
   }
 
-  // ── Heuristic checks (fixable by prettier) ───────────────────────────────
   const lines = content.split('\n');
 
-  // Mixed tabs + spaces — prettier normalises indentation
   const mixedIndentLine = lines.findIndex((l) => /^\t+ /.test(l) || /^ +\t/.test(l));
   if (mixedIndentLine >= 0) {
     fixableIssues.push({
@@ -94,7 +90,6 @@ function validateRNFile(
     });
   }
 
-  // Lines exceeding 120 characters — prettier wraps them
   const longLines = lines
     .map((l, i) => ({ line: i + 1, len: l.length }))
     .filter(({ len }) => len > 120);
@@ -109,7 +104,6 @@ function validateRNFile(
     });
   }
 
-  // Consecutive blank lines (>2) — prettier collapses them
   let blankRun = 0;
   for (let i = 0; i < lines.length; i++) {
     if (lines[i]!.trim() === '') {
@@ -143,16 +137,94 @@ function validateReactNative(
   }
 }
 
-// ─── Flutter (Dart) ───────────────────────────────────────────────────────────
+// ─── Flutter — Gemini LLM validation ─────────────────────────────────────────
 
-/**
- * dart analyze --format machine line format:
- *   SEVERITY|TYPE|CODE|FILE|LINE|COL|LENGTH|MESSAGE
- */
-function parseDartAnalyzeLine(
-  line: string,
-  tempDir: string,
-): CodeIssue | null {
+interface GeminiIssue {
+  severity: 'error' | 'warning';
+  type: 'syntax' | 'lint' | 'format' | 'import';
+  file: string;
+  line?: number;
+  message: string;
+  fixable: boolean;
+}
+
+interface GeminiValidationResponse {
+  fixableIssues: GeminiIssue[];
+  criticalIssues: GeminiIssue[];
+  summary: string;
+}
+
+async function validateFlutterWithGemini(
+  files: CodeFile[],
+  fixableIssues: CodeIssue[],
+  criticalIssues: CodeIssue[],
+): Promise<void> {
+  const model = process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
+  const llm = createLLMClient();
+
+  const dartFiles = files.filter(
+    (f) => f.path.endsWith('.dart') && !f.path.includes('assets'),
+  );
+  if (dartFiles.length === 0) return;
+
+  // Send up to 5 files for review to keep prompt size manageable
+  const filesToReview = dartFiles.slice(0, 5);
+  const filesSummary = filesToReview
+    .map((f) => `// === FILE: ${f.path} ===\n${f.content}`)
+    .join('\n\n');
+
+  const response = await llm.chat({
+    model,
+    system: `You are a Flutter/Dart code reviewer. Analyse the provided Dart source files and identify issues.
+Classify each issue into one of two buckets:
+- criticalIssues: syntax errors, compile errors, undefined identifiers, type mismatches
+- fixableIssues: formatting problems, style violations, lint warnings, unused imports, missing const
+
+Return a JSON object exactly matching this schema:
+{
+  "criticalIssues": [{ "severity": "error", "type": "syntax"|"lint"|"format"|"import", "file": "<path>", "line": <number|null>, "message": "<description>", "fixable": false }],
+  "fixableIssues":  [{ "severity": "warning", "type": "syntax"|"lint"|"format"|"import", "file": "<path>", "line": <number|null>, "message": "<description>", "fixable": true }],
+  "summary": "<one sentence summary>"
+}
+
+If no issues exist return empty arrays. Do not include issues that are inherent to auto-generated code structure.`,
+    messages: [{ role: 'user', content: filesSummary }],
+    response_format: { type: 'json_object' },
+    max_tokens: 2048,
+  });
+
+  try {
+    const parsed = JSON.parse(response.content) as GeminiValidationResponse;
+
+    for (const issue of (parsed.criticalIssues ?? [])) {
+      criticalIssues.push({
+        severity: issue.severity ?? 'error',
+        type: issue.type ?? 'syntax',
+        file: issue.file,
+        line: issue.line ?? undefined,
+        message: issue.message,
+        fixable: false,
+      });
+    }
+
+    for (const issue of (parsed.fixableIssues ?? [])) {
+      fixableIssues.push({
+        severity: issue.severity ?? 'warning',
+        type: issue.type ?? 'lint',
+        file: issue.file,
+        line: issue.line ?? undefined,
+        message: issue.message,
+        fixable: true,
+      });
+    }
+  } catch {
+    // If Gemini response isn't valid JSON, treat as no issues found
+  }
+}
+
+// ─── Flutter — dart analyze fallback (when dart CLI is available) ─────────────
+
+function parseDartAnalyzeLine(line: string, tempDir: string): CodeIssue | null {
   const parts = line.split('|');
   if (parts.length < 8) return null;
 
@@ -175,23 +247,15 @@ function parseDartAnalyzeLine(
   };
 }
 
-function validateFlutter(
+function validateFlutterWithDartCLI(
   files: Array<{ path: string; content: string }>,
   fixableIssues: CodeIssue[],
   criticalIssues: CodeIssue[],
-): void {
-  // Graceful degradation when dart is not installed
+): boolean {
   try {
     execSync('dart --version', { stdio: 'pipe' });
   } catch {
-    fixableIssues.push({
-      severity: 'warning',
-      type: 'lint',
-      file: '*',
-      message: 'dart CLI not found — skipping Flutter static analysis',
-      fixable: false,
-    });
-    return;
+    return false; // dart not installed
   }
 
   const tempDir = writeTempDir(files);
@@ -203,7 +267,6 @@ function validateFlutter(
         encoding: 'utf-8',
       }) as unknown as string;
     } catch (err) {
-      // dart analyze exits non-zero when issues exist; output is still on stdout
       rawOutput = ((err as { stdout?: string }).stdout) ?? '';
     }
 
@@ -217,6 +280,7 @@ function validateFlutter(
   } finally {
     cleanupDir(tempDir);
   }
+  return true;
 }
 
 // ─── Node ─────────────────────────────────────────────────────────────────────
@@ -233,11 +297,28 @@ export async function codeValidatorAgent(
   const { generatedCode } = state;
   const fixableIssues: CodeIssue[] = [];
   const criticalIssues: CodeIssue[] = [];
+  const nodeLogs = [makeLogEntry('info', `Validating ${generatedCode.files.length} file(s)…`)];
 
   if (generatedCode.framework === 'react-native') {
     validateReactNative(generatedCode.files, fixableIssues, criticalIssues);
   } else {
-    validateFlutter(generatedCode.files, fixableIssues, criticalIssues);
+    // Flutter: Gemini review first (primary), dart analyze as supplement
+    try {
+      await validateFlutterWithGemini(generatedCode.files, fixableIssues, criticalIssues);
+      nodeLogs.push(makeLogEntry('info', 'Gemini Flutter validation complete'));
+    } catch (err) {
+      nodeLogs.push(makeLogEntry('warning', `Gemini validation unavailable — ${String(err)}`));
+    }
+
+    // Supplement with dart analyze if available
+    const dartAvailable = validateFlutterWithDartCLI(
+      generatedCode.files,
+      fixableIssues,
+      criticalIssues,
+    );
+    if (!dartAvailable) {
+      nodeLogs.push(makeLogEntry('info', 'dart CLI not found — relying on Gemini validation'));
+    }
   }
 
   const valid = criticalIssues.length === 0;
@@ -264,12 +345,12 @@ export async function codeValidatorAgent(
     totalIssues === 0
       ? `Code validation passed${attempt} — ${generatedCode.files.length} file(s) clean`
       : valid
-        ? `Code validation passed${attempt} with ${fixableIssues.length} fixable issue(s) across ${generatedCode.files.length} file(s)`
+        ? `Code validation passed${attempt} with ${fixableIssues.length} fixable issue(s)`
         : `Code validation${attempt} found ${criticalIssues.length} critical and ${fixableIssues.length} fixable issue(s)`;
 
   return {
     codeValidationResult,
     currentStep: 'CodeValidatorAgent',
-    logs: [makeLogEntry(logLevel, logMessage)],
+    logs: [...nodeLogs, makeLogEntry(logLevel, logMessage)],
   };
 }

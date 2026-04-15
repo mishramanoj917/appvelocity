@@ -122,7 +122,11 @@ export const compiledWorkflow = new StateGraph(WorkflowAnnotation)
     if (!state.validationResult?.valid && state.retryCount < 2) {
       return 'irBuilder'; // retry
     }
-    return state.validationResult?.valid ? 'codeGenerator' : END;
+    // Always proceed to code generation after retries — even when the IR has
+    // quality issues.  The code generator handles imperfect IRs gracefully (per-screen
+    // try/catch) and always emits token files.  Silently routing to END here is what
+    // produced the "No files were generated" empty-bundle message.
+    return 'codeGenerator';
   })
   // codeGenerator → codeValidator (always validate before returning to caller)
   .addConditionalEdges('codeGenerator', (state) =>

@@ -21,13 +21,15 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@appvelocity/agent-design-to-code-core": "workspace:*",
     "@appvelocity/shared-core": "workspace:*",
-    "@appvelocity/agent-design-to-code-core": "workspace:*"
+    "handlebars": "^4.7.9"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
+    "@types/handlebars": "^4.1.0",
     "@types/node": "^20.11.5",
-    "vitest": "^1.6.0",
-    "@vitest/coverage-v8": "^1.6.0"
+    "@vitest/coverage-v8": "^1.6.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
   }
 }

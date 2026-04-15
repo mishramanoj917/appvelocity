@@ -175,8 +175,14 @@ export async function irValidatorAgent(
   const summary = buildIRSummary(state.designIR);
   const systemPrompt = buildSystemPrompt(summary, state.retryCount);
 
+  // Use Gemini for Flutter (better Dart widget pattern awareness in validation)
+  const model =
+    state.targetFramework === 'flutter'
+      ? (process.env.GEMINI_MODEL ?? 'gemini-2-0-flash')
+      : (process.env.OPENAI_MODEL ?? 'gpt-4o');
+
   const response = await llm.chat({
-    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    model,
     system: systemPrompt,
     messages: [
       {

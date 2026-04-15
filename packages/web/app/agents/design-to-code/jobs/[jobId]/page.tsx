@@ -30,7 +30,11 @@ interface GeneratedCode {
 interface AgentOutputData {
   generatedCode?: GeneratedCode;
   logs?: WorkflowLogEntry[];
-  validationResult?: { valid: boolean; score: number };
+  validationResult?: {
+    valid: boolean;
+    score: number;
+    issues?: Array<{ severity: string; message: string; fixSuggestion?: string }>;
+  };
 }
 
 interface AgentOutput {
@@ -137,10 +141,65 @@ export default function JobResultPage({ params }: { params: { jobId: string } })
   const durationSec = ((job.updatedAt - job.createdAt) / 1000).toFixed(1);
 
   if (!generatedCode?.files.length) {
+    const irValidation = job.result?.data?.validationResult;
+    const irIssues = irValidation?.issues?.filter(
+      (i: { severity: string }) => i.severity === 'error'
+    ) ?? [];
     return (
       <PageLayout jobId={jobId}>
-        <div className="av-card text-sm text-gray-400">
-          No files were generated. The agent completed but produced an empty bundle.
+        <div className="av-card">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+              No files generated
+            </h2>
+            {irValidation && (
+              <span className="rounded-full bg-yellow-950 px-2 py-0.5 text-xs text-yellow-400">
+                IR score: {irValidation.score}/100
+              </span>
+            )}
+          </div>
+          <p className="mb-3 text-sm text-gray-400">
+            {irIssues.length > 0
+              ? 'The IR validator found structural issues that prevented code generation.'
+              : 'The agent completed but produced an empty bundle. Check the pipeline log below.'}
+          </p>
+          {irIssues.length > 0 && (
+            <ul className="mb-4 space-y-1">
+              {irIssues.map((issue: { message: string; fixSuggestion?: string }, i: number) => (
+                <li key={i} className="rounded bg-red-950/40 px-3 py-2 text-xs text-red-400">
+                  {issue.message}
+                  {issue.fixSuggestion && (
+                    <span className="ml-2 text-gray-500">→ {issue.fixSuggestion}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          {pipelineLogs.length > 0 && (
+            <div>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-600">
+                Pipeline Log
+              </h3>
+              <div className="max-h-48 overflow-y-auto rounded-lg bg-gray-950 p-3">
+                {pipelineLogs.map((entry: { level: string; message: string }, i: number) => (
+                  <div
+                    key={i}
+                    className={`av-log text-xs ${
+                      entry.level === 'error'
+                        ? 'text-red-400'
+                        : entry.level === 'success'
+                        ? 'text-green-400'
+                        : entry.level === 'warning'
+                        ? 'text-yellow-400'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    [{entry.level}] {entry.message}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </PageLayout>
     );

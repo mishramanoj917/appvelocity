@@ -135,8 +135,14 @@ export async function generationPlannerAgent(
   const ctx = buildFileContext(state.figmaUrl, state.figmaFile);
   const systemPrompt = buildSystemPrompt(ctx, state.targetFramework);
 
+  // Use Gemini for Flutter (better Dart/Flutter structural reasoning)
+  const model =
+    state.targetFramework === 'flutter'
+      ? (process.env.GEMINI_MODEL ?? 'gemini-2-0-flash')
+      : (process.env.OPENAI_MODEL ?? 'gpt-4o');
+
   const response = await llm.chat({
-    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    model,
     system: systemPrompt,
     messages: [
       {

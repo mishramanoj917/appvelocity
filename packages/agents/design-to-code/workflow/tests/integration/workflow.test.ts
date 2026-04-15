@@ -136,7 +136,10 @@ describe('compiledWorkflow (integration)', () => {
 
     expect(result.retryCount).toBeGreaterThanOrEqual(2);
     expect(result.validationResult?.valid).toBe(false);
-    expect(result.generatedCode).toBeUndefined();
+    // After exhausting retries the graph now proceeds to codeGenerator rather than
+    // silently terminating, so generatedCode should be populated (token files at minimum).
+    expect(result.generatedCode).toBeDefined();
+    expect(result.generatedCode?.files.length).toBeGreaterThan(0);
   });
 
   it('accumulates logs from all nodes', async () => {

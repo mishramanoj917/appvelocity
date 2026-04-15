@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { jobStore } from '../../[agentId]/route';
+import { jobStore } from '@/lib/job-store';
 
 /**
  * GET /api/agents/stream/[jobId]
@@ -44,6 +44,7 @@ export async function GET(
       // In production: subscribe to a Redis pub/sub channel instead
       let attempts = 0;
       const maxAttempts = 360; // 3 minutes at 500ms
+      let lastStepIndex = 0; // tracks which steps we've already emitted
 
       const poll = setInterval(() => {
         attempts++;
@@ -56,6 +57,13 @@ export async function GET(
           controller.close();
           return;
         }
+
+        // Emit any new pipeline steps since the last poll
+        const newSteps = current.steps.slice(lastStepIndex);
+        for (const step of newSteps) {
+          send('step', { step });
+        }
+        lastStepIndex += newSteps.length;
 
         if (current.status === 'complete') {
           send('complete', { result: current.result });
@@ -72,9 +80,6 @@ export async function GET(
           controller.close();
           return;
         }
-
-        // Still running – emit a heartbeat log
-        send('log', { message: `Agent running… (${attempts * 0.5}s elapsed)` });
       }, 500);
 
       // Clean up if the client disconnects

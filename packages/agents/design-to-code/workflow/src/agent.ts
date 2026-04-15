@@ -60,12 +60,28 @@ export class DesignToCodeAgent extends AgentBase {
       },
     };
 
-    try {
-      const finalState = await compiledWorkflow.invoke(initialState);
+    const onStep = input.context?.onStep;
 
-      const hasErrors = finalState.errors && finalState.errors.length > 0;
-      return this.buildOutput(!hasErrors, finalState, startTime,
-        hasErrors ? finalState.errors : undefined
+    try {
+      // Use stream() so we can emit per-node progress via onStep.
+      // streamMode: 'values' emits the full state snapshot after each node;
+      // the last snapshot is the final state.
+      let finalState: Partial<WorkflowState> = {};
+      let lastStep = '';
+
+      for await (const snapshot of await compiledWorkflow.stream(initialState, { streamMode: 'values' })) {
+        finalState = snapshot as WorkflowState;
+        const step = (finalState as WorkflowState).currentStep;
+        if (step && step !== lastStep) {
+          lastStep = step;
+          onStep?.(step);
+        }
+      }
+
+      const typedState = finalState as WorkflowState;
+      const hasErrors = typedState.errors && typedState.errors.length > 0;
+      return this.buildOutput(!hasErrors, typedState, startTime,
+        hasErrors ? typedState.errors : undefined
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

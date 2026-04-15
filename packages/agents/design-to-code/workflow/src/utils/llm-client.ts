@@ -47,10 +47,11 @@ class ProxyLLMClient implements LLMClient {
     this.apiUrl =
       process.env.LLM_API_URL ?? DEFAULT_API_URL;
 
-    // Both Anthropic and OpenAI keys point to the same shared proxy key
+    // All model keys point to the same shared proxy key
     this.apiKey =
       process.env.ANTHROPIC_API_KEY ??
       process.env.OPENAI_API_KEY ??
+      process.env.GEMINI_API_KEY ??
       '';
 
     if (!this.apiKey) {

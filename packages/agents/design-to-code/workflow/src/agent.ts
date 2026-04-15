@@ -28,13 +28,14 @@ export class DesignToCodeAgent extends AgentBase {
   readonly name = 'DesignToCodeAgent';
   readonly version = '0.1.0';
   readonly description =
-    'Converts a Figma design URL into production-ready React Native or Flutter code via a 6-node LangGraph pipeline.';
+    'Converts a Figma design URL into production-ready React Native or Flutter code via an 8-node LangGraph pipeline.';
   readonly capabilities = [
     'Figma → DesignIR extraction',
     'React Native code generation',
     'Flutter code generation',
     'Design token extraction',
     'Component hierarchy analysis',
+    'Syntax validation and auto-fix (prettier / dart format)',
   ];
 
   async execute(input: AgentInput): Promise<AgentOutput> {
@@ -59,12 +60,28 @@ export class DesignToCodeAgent extends AgentBase {
       },
     };
 
-    try {
-      const finalState = await compiledWorkflow.invoke(initialState);
+    const onStep = input.context?.onStep;
 
-      const hasErrors = finalState.errors && finalState.errors.length > 0;
-      return this.buildOutput(!hasErrors, finalState, startTime,
-        hasErrors ? finalState.errors : undefined
+    try {
+      // Use stream() so we can emit per-node progress via onStep.
+      // streamMode: 'values' emits the full state snapshot after each node;
+      // the last snapshot is the final state.
+      let finalState: Partial<WorkflowState> = {};
+      let lastStep = '';
+
+      for await (const snapshot of await compiledWorkflow.stream(initialState, { streamMode: 'values' })) {
+        finalState = snapshot as WorkflowState;
+        const step = (finalState as WorkflowState).currentStep;
+        if (step && step !== lastStep) {
+          lastStep = step;
+          onStep?.(step);
+        }
+      }
+
+      const typedState = finalState as WorkflowState;
+      const hasErrors = typedState.errors && typedState.errors.length > 0;
+      return this.buildOutput(!hasErrors, typedState, startTime,
+        hasErrors ? typedState.errors : undefined
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -89,7 +106,7 @@ export class DesignToCodeAgent extends AgentBase {
   estimateCost(_input: AgentInput): CostEstimate {
     return {
       estimatedDuration: 90,   // ~90 seconds for a typical run
-      estimatedTokens: 15000,  // 3 LLM calls (planner, critic, generator)
+      estimatedTokens: 15000,  // 3 LLM calls (generationPlanner, irValidator, codeGenerator)
       estimatedCost: 0.15,
       confidence: 'low',
     };

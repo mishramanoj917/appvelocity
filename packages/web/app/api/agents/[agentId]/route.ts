@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { agentRegistry } from '@/lib/agent-registry';
+import { jobStore } from '@/lib/job-store';
 
 const LaunchSchema = z.object({
   action: z.string(),
@@ -56,16 +57,22 @@ export async function POST(
   const jobId = crypto.randomUUID();
   const sessionId = crypto.randomUUID();
 
+  jobStore.create(jobId, agentId);
+
   // Fire-and-forget: execution tracked via job store
   agentEntry.instance!
     .execute({
       ...parsed.data,
-      context: { sessionId, projectId: request.headers.get('x-project-id') ?? undefined },
+      context: {
+        sessionId,
+        projectId: request.headers.get('x-project-id') ?? undefined,
+        // Called by the agent after each pipeline node — pushes step name into the job store
+        // so the SSE stream can relay it to the dashboard in real time.
+        onStep: (step: string) => jobStore.pushStep(jobId, step),
+      },
     })
     .then((result) => jobStore.complete(jobId, result))
     .catch((err: Error) => jobStore.fail(jobId, err.message));
-
-  jobStore.create(jobId, agentId);
 
   return NextResponse.json(
     {
@@ -101,60 +108,3 @@ export async function GET(
     capabilities: agentEntry.capabilities,
   });
 }
-
-// ---------------------------------------------------------------------------
-// Minimal in-memory job store (replace with Redis in production)
-// ---------------------------------------------------------------------------
-export type JobStatus = 'running' | 'complete' | 'failed';
-
-export interface Job {
-  jobId: string;
-  agentId: string;
-  status: JobStatus;
-  result?: unknown;
-  error?: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-class InMemoryJobStore {
-  private jobs = new Map<string, Job>();
-
-  create(jobId: string, agentId: string) {
-    this.jobs.set(jobId, {
-      jobId,
-      agentId,
-      status: 'running',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-  }
-
-  complete(jobId: string, result: unknown) {
-    const job = this.jobs.get(jobId);
-    if (job) {
-      job.status = 'complete';
-      job.result = result;
-      job.updatedAt = Date.now();
-    }
-  }
-
-  fail(jobId: string, error: string) {
-    const job = this.jobs.get(jobId);
-    if (job) {
-      job.status = 'failed';
-      job.error = error;
-      job.updatedAt = Date.now();
-    }
-  }
-
-  get(jobId: string): Job | undefined {
-    return this.jobs.get(jobId);
-  }
-}
-
-// Singleton exported for use in status + stream routes.
-// Attached to globalThis so it survives Next.js hot-module reloads in dev,
-// which would otherwise recreate the module and lose all in-flight jobs.
-const _global = globalThis as typeof globalThis & { __jobStore?: InMemoryJobStore };
-export const jobStore = _global.__jobStore ?? (_global.__jobStore = new InMemoryJobStore());

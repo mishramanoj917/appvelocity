@@ -22,6 +22,8 @@ export interface AgentContext {
   projectId?: string;
   sessionId: string;
   sharedState?: Record<string, unknown>;
+  /** Runtime-only: called by the agent after each pipeline node completes. Not serialized. */
+  onStep?: (step: string) => void;
 }
 
 export interface AgentOptions {

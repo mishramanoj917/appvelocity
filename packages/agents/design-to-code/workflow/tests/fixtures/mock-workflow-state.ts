@@ -2,7 +2,13 @@
  * Test fixtures — minimal WorkflowState and related objects for unit tests.
  */
 
-import type { WorkflowState, IRValidationResult, ExecutionPlan, CodeBundle } from '../../src/types.js';
+import type {
+  WorkflowState,
+  IRValidationResult,
+  ExecutionPlan,
+  CodeBundle,
+  CodeValidationResult,
+} from '../../src/types.js';
 import type { FigmaFile, DesignIR } from '@appvelocity/agent-design-to-code-core';
 
 export const VALID_FIGMA_URL = 'https://www.figma.com/file/abc1234567890/MyApp';
@@ -17,6 +23,7 @@ export function makeBaseState(
     options: {},
     errors: [],
     retryCount: 0,
+    codeValidationRetryCount: 0,
     currentStep: '',
     logs: [],
     ...overrides,
@@ -94,6 +101,7 @@ export const mockDesignIR: DesignIR = {
   ],
   components: [],
   assets: [],
+  warnings: [],
   meta: {
     generatedAt: '2024-01-01T00:00:00Z',
     figmaVersion: '1',
@@ -123,6 +131,41 @@ export const mockCodeBundle: CodeBundle = {
   ],
   assets: [],
   dependencies: { react: '18.x', 'react-native': '0.74.x' },
+};
+
+export const mockCodeValidationResult: CodeValidationResult = {
+  valid: true,
+  fixableIssues: [],
+  criticalIssues: [],
+  framework: 'react-native',
+  checkedFiles: 2,
+};
+
+export const mockFailedCodeValidationResult: CodeValidationResult = {
+  valid: false,
+  fixableIssues: [
+    {
+      severity: 'warning',
+      type: 'format',
+      file: 'src/screens/HomeScreen.tsx',
+      line: 3,
+      message: '2 line(s) exceed 120 characters',
+      fixable: true,
+    },
+  ],
+  criticalIssues: [
+    {
+      severity: 'error',
+      type: 'syntax',
+      file: 'src/screens/HomeScreen.tsx',
+      line: 5,
+      column: 1,
+      message: "Unexpected token (5:1)",
+      fixable: false,
+    },
+  ],
+  framework: 'react-native',
+  checkedFiles: 2,
 };
 
 export const mockFailedValidationResult: IRValidationResult = {

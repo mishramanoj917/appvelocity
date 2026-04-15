@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { generatorAgent } from '../../src/nodes/generator.js';
+import { codeGeneratorAgent } from '../../src/nodes/code-generator.js';
 import {
   makeBaseState,
   mockDesignIR,
@@ -22,25 +22,25 @@ vi.mock('@appvelocity/agent-design-to-code-generators', () => ({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('generatorAgent', () => {
+describe('codeGeneratorAgent', () => {
   beforeEach(() => {
     mockGenerate.mockClear();
   });
 
   it('throws when designIR is missing', async () => {
     const state = makeBaseState({ executionPlan: mockExecutionPlan });
-    await expect(generatorAgent(state)).rejects.toThrow('DesignIR');
+    await expect(codeGeneratorAgent(state)).rejects.toThrow('DesignIR');
   });
 
   it('throws when executionPlan is missing', async () => {
     const state = makeBaseState({ designIR: mockDesignIR });
-    await expect(generatorAgent(state)).rejects.toThrow('ExecutionPlan');
+    await expect(codeGeneratorAgent(state)).rejects.toThrow('ExecutionPlan');
   });
 
   it('calls ReactNativeGenerator when targetFramework is react-native', async () => {
     const { ReactNativeGenerator } = await import('@appvelocity/agent-design-to-code-generators');
     const state = makeBaseState({ designIR: mockDesignIR, executionPlan: mockExecutionPlan });
-    await generatorAgent(state);
+    await codeGeneratorAgent(state);
     expect(vi.mocked(ReactNativeGenerator)).toHaveBeenCalled();
   });
 
@@ -51,13 +51,13 @@ describe('generatorAgent', () => {
       designIR: mockDesignIR,
       executionPlan: mockExecutionPlan,
     });
-    await generatorAgent(state);
+    await codeGeneratorAgent(state);
     expect(vi.mocked(FlutterGenerator)).toHaveBeenCalled();
   });
 
   it('sets generatedCode in returned state', async () => {
     const state = makeBaseState({ designIR: mockDesignIR, executionPlan: mockExecutionPlan });
-    const result = await generatorAgent(state);
+    const result = await codeGeneratorAgent(state);
     expect(result.generatedCode).toMatchObject({
       framework: 'react-native',
       files: expect.any(Array),
@@ -66,15 +66,15 @@ describe('generatorAgent', () => {
     });
   });
 
-  it('sets currentStep to GeneratorAgent', async () => {
+  it('sets currentStep to CodeGeneratorAgent', async () => {
     const state = makeBaseState({ designIR: mockDesignIR, executionPlan: mockExecutionPlan });
-    const result = await generatorAgent(state);
-    expect(result.currentStep).toBe('GeneratorAgent');
+    const result = await codeGeneratorAgent(state);
+    expect(result.currentStep).toBe('CodeGeneratorAgent');
   });
 
   it('emits a success log with file count', async () => {
     const state = makeBaseState({ designIR: mockDesignIR, executionPlan: mockExecutionPlan });
-    const result = await generatorAgent(state);
+    const result = await codeGeneratorAgent(state);
     const levels = result.logs!.map((l) => l.level);
     expect(levels).toContain('success');
     expect(result.logs![0]!.message).toMatch(/2 files/);
@@ -87,14 +87,14 @@ describe('generatorAgent', () => {
       stats: { screenCount: 1, componentCount: 0, assetCount: 0, fileCount: 2 },
     });
     const state = makeBaseState({ designIR: mockDesignIR, executionPlan: mockExecutionPlan });
-    const result = await generatorAgent(state);
+    const result = await codeGeneratorAgent(state);
     const warnings = result.logs!.filter((l) => l.level === 'warning');
     expect(warnings).toHaveLength(2);
   });
 
   it('passes GenerationScope derived from executionPlan', async () => {
     const state = makeBaseState({ designIR: mockDesignIR, executionPlan: mockExecutionPlan });
-    await generatorAgent(state);
+    await codeGeneratorAgent(state);
     const [_ir, scope] = mockGenerate.mock.calls[0] as [unknown, { screens: string[]; priority: string }];
     expect(scope.screens).toEqual(mockExecutionPlan.screens);
     expect(scope.priority).toBe(mockExecutionPlan.priority);
@@ -106,7 +106,7 @@ describe('generatorAgent', () => {
       executionPlan: mockExecutionPlan,
       options: { includeTests: true },
     });
-    await generatorAgent(state);
+    await codeGeneratorAgent(state);
     const [_ir, _scope, opts] = mockGenerate.mock.calls[0] as [unknown, unknown, { includeTests?: boolean }];
     expect(opts?.includeTests).toBe(true);
   });

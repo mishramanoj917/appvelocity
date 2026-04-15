@@ -1,5 +1,5 @@
 /**
- * Node 5 — CriticAgent
+ * Node 5 — IRValidatorAgent
  *
  * Evaluates the DesignIR produced by IRBuilderAgent for structural integrity,
  * semantic quality, accessibility, and naming conventions.
@@ -162,12 +162,12 @@ Do NOT include any explanation, markdown, or keys outside the schema above.`;
 
 // ─── Node ─────────────────────────────────────────────────────────────────────
 
-export async function criticAgent(
+export async function irValidatorAgent(
   state: WorkflowState
 ): Promise<Partial<WorkflowState>> {
   if (!state.designIR) {
     throw new Error(
-      'DesignIR not available in state. IRBuilderAgent must run before CriticAgent.'
+      'DesignIR not available in state. IRBuilderAgent must run before IRValidatorAgent.'
     );
   }
 
@@ -175,8 +175,14 @@ export async function criticAgent(
   const summary = buildIRSummary(state.designIR);
   const systemPrompt = buildSystemPrompt(summary, state.retryCount);
 
+  // Use Gemini for Flutter (better Dart widget pattern awareness in validation)
+  const model =
+    state.targetFramework === 'flutter'
+      ? (process.env.GEMINI_MODEL ?? 'gemini-2-0-flash')
+      : (process.env.OPENAI_MODEL ?? 'gpt-4o');
+
   const response = await llm.chat({
-    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    model,
     system: systemPrompt,
     messages: [
       {
@@ -231,7 +237,7 @@ export async function criticAgent(
   return {
     validationResult,
     retryCount: failed ? state.retryCount + 1 : state.retryCount,
-    currentStep: 'CriticAgent',
+    currentStep: 'IRValidatorAgent',
     logs: [
       makeLogEntry(
         validationResult.valid ? 'success' : 'warning',

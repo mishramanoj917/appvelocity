@@ -11,6 +11,8 @@ export type {
   ExecutionPlan,
   IRValidationResult,
   ValidationIssue,
+  CodeIssue,
+  CodeValidationResult,
   CodeBundle,
   CodeFile,
   AssetFile,
@@ -23,8 +25,10 @@ export type {
 export { createLLMClient, setLLMClient } from './utils/llm-client.js';
 
 export { inputValidator } from './nodes/input-validator.js';
-export { plannerAgent } from './nodes/planner.js';
-export { researcherAgent } from './nodes/researcher.js';
+export { generationPlannerAgent } from './nodes/generation-planner.js';
+export { figmaFetcherAgent } from './nodes/figma-fetcher.js';
 export { irBuilderAgent } from './nodes/ir-builder.js';
-export { criticAgent } from './nodes/critic.js';
-export { generatorAgent } from './nodes/generator.js';
+export { irValidatorAgent } from './nodes/ir-validator.js';
+export { codeGeneratorAgent } from './nodes/code-generator.js';
+export { codeValidatorAgent } from './nodes/code-validator.js';
+export { codeFixerAgent } from './nodes/code-fixer.js';

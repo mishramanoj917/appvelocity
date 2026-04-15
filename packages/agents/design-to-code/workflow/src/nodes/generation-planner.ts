@@ -1,5 +1,5 @@
 /**
- * Node 2 — PlannerAgent
+ * Node 2 — GenerationPlannerAgent
  *
  * Analyses the Figma file structure and produces an ExecutionPlan that tells
  * downstream nodes which screens and components to generate, in what order.
@@ -128,15 +128,21 @@ Respond with ONLY a valid JSON object matching this exact schema:
 
 // ─── Node ─────────────────────────────────────────────────────────────────────
 
-export async function plannerAgent(
+export async function generationPlannerAgent(
   state: WorkflowState
 ): Promise<Partial<WorkflowState>> {
   const llm = createLLMClient();
   const ctx = buildFileContext(state.figmaUrl, state.figmaFile);
   const systemPrompt = buildSystemPrompt(ctx, state.targetFramework);
 
+  // Use Gemini for Flutter (better Dart/Flutter structural reasoning)
+  const model =
+    state.targetFramework === 'flutter'
+      ? (process.env.GEMINI_MODEL ?? 'gemini-2-0-flash')
+      : (process.env.OPENAI_MODEL ?? 'gpt-4o');
+
   const response = await llm.chat({
-    model: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    model,
     system: systemPrompt,
     messages: [
       {
@@ -153,7 +159,7 @@ export async function plannerAgent(
 
   return {
     executionPlan,
-    currentStep: 'PlannerAgent',
+    currentStep: 'GenerationPlannerAgent',
     logs: [
       makeLogEntry(
         'success',

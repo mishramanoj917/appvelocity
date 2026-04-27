@@ -26,6 +26,15 @@ export function parseJsonResponse<T = unknown>(raw: string): T {
         // fall through to throw below
       }
     }
+    // Truncation detection: response starts like JSON but never closes
+    const looksLikeJson = cleaned.trimStart().startsWith('{') || cleaned.trimStart().startsWith('[');
+    const isTruncated = looksLikeJson && !cleaned.includes('}') && !cleaned.includes(']');
+    if (isTruncated) {
+      throw new SyntaxError(
+        `LLM response was truncated (hit max_tokens limit) before JSON completed. ` +
+        `First 200 chars: ${raw.slice(0, 200)}`
+      );
+    }
     throw new SyntaxError(
       `LLM returned non-JSON response. First 200 chars: ${raw.slice(0, 200)}`
     );

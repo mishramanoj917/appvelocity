@@ -629,13 +629,16 @@ export class IRBuilder {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** "My Screen Name" → "MyScreenName" */
+/** "My Screen Name" → "MyScreenName", "1. Home" → "Screen1Home" */
 function toComponentName(name: string): string {
-  return name
+  const result = name
     .replace(/[^a-zA-Z0-9\s]/g, '')
     .split(/\s+/)
+    .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join('');
+  // JS identifiers cannot start with a digit — prefix with "Screen"
+  return /^\d/.test(result) ? `Screen${result}` : (result || 'Screen');
 }
 
 /** "Hero Image / Banner" → "hero_image_banner" */

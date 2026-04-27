@@ -1,33 +1,40 @@
 /**
- * LangGraph StateGraph definition for the DesignToCode workflow.
+ * LangGraph StateGraph — DesignToCode workflow (13 nodes).
  *
- * Nodes: inputValidator → figmaFetcher → generationPlanner → irBuilder → irValidator → codeGenerator → codeValidator → codeFixer → END
+ * Pipeline:
+ *   inputValidator → figmaFetcher → designAnalyzer → generationPlanner
+ *   → irBuilder → irValidator (↻ retry→irBuilder)
+ *   → codeGenerator → projectAssembler (project mode only)
+ *   → codeValidator → codeFixer (↻ retry→codeValidator)
+ *   → compilationValidator → compilationFixer (↻ retry→compilationValidator)
+ *   → projectZipper → END
  *
- * Retry loops:
- *   irValidator  → irBuilder     (max 2 retries on IR validation failure)
- *   codeValidator → codeFixer    (max 2 retries when fixable code issues are found)
+ * Non-fatal nodes:
+ *   designAnalyzer — vision LLM failure sets visualAnalysis=undefined, pipeline continues
  *
- * Node ordering rationale:
- *   figmaFetcher runs BEFORE generationPlanner so that generationPlannerAgent has the actual
- *   FigmaFile structure (pages, screens, component IDs) to reason over.
- *   codeValidator runs AFTER codeGenerator to ensure deterministic syntax / lint checks
- *   before the bundle is returned to the caller.
+ * Retry budgets:
+ *   irValidator → irBuilder:                  max 2 retries
+ *   codeValidator → codeFixer:                max 2 retries
+ *   compilationValidator → compilationFixer:  max 3 retries
  */
 
 import { StateGraph, Annotation, END, START } from '@langchain/langgraph';
 import type { AgentError, LogEntry, WorkflowState } from './types.js';
-import { inputValidator } from './nodes/input-validator.js';
-import { generationPlannerAgent } from './nodes/generation-planner.js';
-import { figmaFetcherAgent } from './nodes/figma-fetcher.js';
-import { irBuilderAgent } from './nodes/ir-builder.js';
-import { irValidatorAgent } from './nodes/ir-validator.js';
-import { codeGeneratorAgent } from './nodes/code-generator.js';
-import { codeValidatorAgent } from './nodes/code-validator.js';
-import { codeFixerAgent } from './nodes/code-fixer.js';
+import { inputValidator }          from './nodes/input-validator.js';
+import { figmaFetcherAgent }       from './nodes/figma-fetcher.js';
+import { designAnalyzerAgent }     from './nodes/design-analyzer.js';
+import { generationPlannerAgent }  from './nodes/generation-planner.js';
+import { irBuilderAgent }          from './nodes/ir-builder.js';
+import { irValidatorAgent }        from './nodes/ir-validator.js';
+import { codeGeneratorAgent }      from './nodes/code-generator.js';
+import { projectAssemblerAgent }   from './nodes/project-assembler.js';
+import { codeValidatorAgent }      from './nodes/code-validator.js';
+import { codeFixerAgent }          from './nodes/code-fixer.js';
+import { compilationValidatorAgent } from './nodes/compilation-validator.js';
+import { compilationFixerAgent }   from './nodes/compilation-fixer.js';
+import { projectZipperAgent }      from './nodes/project-zipper.js';
 
 // ─── Error-boundary wrapper ───────────────────────────────────────────────────
-// Catches any node-level exception and injects it into state.errors so the
-// graph can terminate gracefully instead of crashing the caller.
 
 type NodeFn = (state: WorkflowState) => Promise<Partial<WorkflowState>>;
 
@@ -58,20 +65,25 @@ function withErrorBoundary(nodeName: string, fn: NodeFn): NodeFn {
   };
 }
 
-// ─── State annotation (append reducers for arrays) ────────────────────────────
+// ─── State annotation ─────────────────────────────────────────────────────────
 
 export const WorkflowAnnotation = Annotation.Root({
-  figmaUrl: Annotation<string>(),
-  targetFramework: Annotation<WorkflowState['targetFramework']>(),
-  options: Annotation<WorkflowState['options']>(),
-  figmaFile: Annotation<WorkflowState['figmaFile']>(),
-  variablesResponse: Annotation<WorkflowState['variablesResponse']>(),
-  designIR: Annotation<WorkflowState['designIR']>(),
-  executionPlan: Annotation<WorkflowState['executionPlan']>(),
-  validationResult: Annotation<WorkflowState['validationResult']>(),
-  generatedCode: Annotation<WorkflowState['generatedCode']>(),
+  figmaUrl:             Annotation<string>(),
+  targetFramework:      Annotation<WorkflowState['targetFramework']>(),
+  generationMode:       Annotation<WorkflowState['generationMode']>(),
+  stateManagement:      Annotation<string>(),
+  options:              Annotation<WorkflowState['options']>(),
+  figmaFile:            Annotation<WorkflowState['figmaFile']>(),
+  variablesResponse:    Annotation<WorkflowState['variablesResponse']>(),
+  visualAnalysis:       Annotation<WorkflowState['visualAnalysis']>(),
+  designIR:             Annotation<WorkflowState['designIR']>(),
+  executionPlan:        Annotation<WorkflowState['executionPlan']>(),
+  validationResult:     Annotation<WorkflowState['validationResult']>(),
+  generatedCode:        Annotation<WorkflowState['generatedCode']>(),
+  projectBundle:        Annotation<WorkflowState['projectBundle']>(),
   codeValidationResult: Annotation<WorkflowState['codeValidationResult']>(),
-  // Append reducers so each node contributes new entries without overwriting
+  compilationResult:    Annotation<WorkflowState['compilationResult']>(),
+  zipBuffer:            Annotation<WorkflowState['zipBuffer']>(),
   errors: Annotation<AgentError[]>({
     reducer: (current, update) => [...current, ...update],
     default: () => [],
@@ -84,6 +96,10 @@ export const WorkflowAnnotation = Annotation.Root({
     reducer: (_, update) => update,
     default: () => 0,
   }),
+  compilationRetryCount: Annotation<number>({
+    reducer: (_, update) => update,
+    default: () => 0,
+  }),
   currentStep: Annotation<string>(),
   logs: Annotation<LogEntry[]>({
     reducer: (current, update) => [...current, ...update],
@@ -91,56 +107,87 @@ export const WorkflowAnnotation = Annotation.Root({
   }),
 });
 
-// ─── Graph definition (method-chaining preserves node name types) ─────────────
+// ─── Helper: has fatal errors ─────────────────────────────────────────────────
+
+const hasFatalErrors = (state: WorkflowState) => state.errors.length > 0;
+
+// ─── Graph ────────────────────────────────────────────────────────────────────
 
 export const compiledWorkflow = new StateGraph(WorkflowAnnotation)
-  .addNode('inputValidator',    withErrorBoundary('inputValidator',    inputValidator))
-  .addNode('figmaFetcher',      withErrorBoundary('figmaFetcher',      figmaFetcherAgent))
-  .addNode('generationPlanner', withErrorBoundary('generationPlanner', generationPlannerAgent))
-  .addNode('irBuilder',         withErrorBoundary('irBuilder',         irBuilderAgent))
-  .addNode('irValidator',       withErrorBoundary('irValidator',       irValidatorAgent))
-  .addNode('codeGenerator',     withErrorBoundary('codeGenerator',     codeGeneratorAgent))
-  .addNode('codeValidator',     withErrorBoundary('codeValidator',     codeValidatorAgent))
-  .addNode('codeFixer',         withErrorBoundary('codeFixer',         codeFixerAgent))
+  // ── Nodes ────────────────────────────────────────────────────────────────────
+  .addNode('inputValidator',        withErrorBoundary('inputValidator',        inputValidator))
+  .addNode('figmaFetcher',          withErrorBoundary('figmaFetcher',          figmaFetcherAgent))
+  .addNode('designAnalyzer',        withErrorBoundary('designAnalyzer',        designAnalyzerAgent))
+  .addNode('generationPlanner',     withErrorBoundary('generationPlanner',     generationPlannerAgent))
+  .addNode('irBuilder',             withErrorBoundary('irBuilder',             irBuilderAgent))
+  .addNode('irValidator',           withErrorBoundary('irValidator',           irValidatorAgent))
+  .addNode('codeGenerator',         withErrorBoundary('codeGenerator',         codeGeneratorAgent))
+  .addNode('projectAssembler',      withErrorBoundary('projectAssembler',      projectAssemblerAgent))
+  .addNode('codeValidator',         withErrorBoundary('codeValidator',         codeValidatorAgent))
+  .addNode('codeFixer',             withErrorBoundary('codeFixer',             codeFixerAgent))
+  .addNode('compilationValidator',  withErrorBoundary('compilationValidator',  compilationValidatorAgent))
+  .addNode('compilationFixer',      withErrorBoundary('compilationFixer',      compilationFixerAgent))
+  .addNode('projectZipper',         withErrorBoundary('projectZipper',         projectZipperAgent))
+
+  // ── Edges ─────────────────────────────────────────────────────────────────────
   .addEdge(START, 'inputValidator')
-  // After inputValidator: bail on errors, else fetch Figma data first
-  .addConditionalEdges('inputValidator', (state) =>
-    state.errors.length > 0 ? END : 'figmaFetcher'
-  )
-  // figmaFetcher → generationPlanner (planner now has figmaFile to reason over)
-  .addConditionalEdges('figmaFetcher', (state) =>
-    state.errors.length > 0 ? END : 'generationPlanner'
-  )
-  .addConditionalEdges('generationPlanner', (state) =>
-    state.errors.length > 0 ? END : 'irBuilder'
-  )
-  .addConditionalEdges('irBuilder', (state) =>
-    state.errors.length > 0 ? END : 'irValidator'
-  )
-  .addConditionalEdges('irValidator', (state) => {
-    if (state.errors.length > 0) return END;
-    if (!state.validationResult?.valid && state.retryCount < 2) {
-      return 'irBuilder'; // retry
-    }
-    // Always proceed to code generation after retries — even when the IR has
-    // quality issues.  The code generator handles imperfect IRs gracefully (per-screen
-    // try/catch) and always emits token files.  Silently routing to END here is what
-    // produced the "No files were generated" empty-bundle message.
+
+  // inputValidator → figmaFetcher (or END on error)
+  .addConditionalEdges('inputValidator', (s) => hasFatalErrors(s) ? END : 'figmaFetcher')
+
+  // figmaFetcher → designAnalyzer (always — designAnalyzer is non-fatal)
+  .addConditionalEdges('figmaFetcher', (s) => hasFatalErrors(s) ? END : 'designAnalyzer')
+
+  // designAnalyzer → generationPlanner (even if vision failed — visualAnalysis may be undefined)
+  .addEdge('designAnalyzer', 'generationPlanner')
+
+  // generationPlanner → irBuilder (or END)
+  .addConditionalEdges('generationPlanner', (s) => hasFatalErrors(s) ? END : 'irBuilder')
+
+  // irBuilder → irValidator (or END)
+  .addConditionalEdges('irBuilder', (s) => hasFatalErrors(s) ? END : 'irValidator')
+
+  // irValidator → irBuilder (retry) or codeGenerator
+  .addConditionalEdges('irValidator', (s) => {
+    if (hasFatalErrors(s)) return END;
+    if (!s.validationResult?.valid && s.retryCount < 2) return 'irBuilder';
     return 'codeGenerator';
   })
-  // codeGenerator → codeValidator (always validate before returning to caller)
-  .addConditionalEdges('codeGenerator', (state) =>
-    state.errors.length > 0 ? END : 'codeValidator'
-  )
-  // codeValidator → codeFixer when fixable issues remain and budget allows; else END
-  .addConditionalEdges('codeValidator', (state) => {
-    if (state.errors.length > 0) return END;
-    const cv = state.codeValidationResult;
-    if (cv && cv.fixableIssues.length > 0 && state.codeValidationRetryCount < 2) {
-      return 'codeFixer';
-    }
-    return END;
+
+  // codeGenerator → projectAssembler (project mode) OR codeValidator (screens mode)
+  .addConditionalEdges('codeGenerator', (s) => {
+    if (hasFatalErrors(s)) return END;
+    return s.generationMode === 'project' ? 'projectAssembler' : 'codeValidator';
   })
-  // codeFixer always loops back to re-validate the fixed bundle
+
+  // projectAssembler → codeValidator (or END)
+  .addConditionalEdges('projectAssembler', (s) => hasFatalErrors(s) ? END : 'codeValidator')
+
+  // codeValidator → codeFixer (fixable issues) or compilationValidator
+  .addConditionalEdges('codeValidator', (s) => {
+    if (hasFatalErrors(s)) return END;
+    const cv = s.codeValidationResult;
+    if (cv && cv.fixableIssues.length > 0 && s.codeValidationRetryCount < 2) return 'codeFixer';
+    return 'compilationValidator';
+  })
+
+  // codeFixer always loops back to codeValidator
   .addEdge('codeFixer', 'codeValidator')
+
+  // compilationValidator → compilationFixer (errors + budget) or projectZipper
+  .addConditionalEdges('compilationValidator', (s) => {
+    if (hasFatalErrors(s)) return END;
+    const cr = s.compilationResult;
+    if (cr && !cr.success && cr.errors.length > 0 && (cr.retryCount ?? 0) < 3) {
+      return 'compilationFixer';
+    }
+    return 'projectZipper';
+  })
+
+  // compilationFixer loops back to compilationValidator
+  .addEdge('compilationFixer', 'compilationValidator')
+
+  // projectZipper → END
+  .addEdge('projectZipper', END)
+
   .compile();

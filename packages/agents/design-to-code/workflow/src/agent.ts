@@ -43,6 +43,8 @@ export class DesignToCodeAgent extends AgentBase {
 
     const figmaUrl = input.params['figmaUrl'] as string | undefined;
     const targetFramework = (input.params['targetFramework'] as string | undefined) ?? 'react-native';
+    const generationMode = (input.params['generationMode'] as string | undefined) ?? 'project';
+    const stateManagement = (input.params['stateManagement'] as string | undefined) ?? 'none';
 
     if (!figmaUrl) {
       return this.buildOutput(false, null, startTime, [
@@ -53,6 +55,9 @@ export class DesignToCodeAgent extends AgentBase {
     const initialState: Partial<WorkflowState> = {
       figmaUrl,
       targetFramework: targetFramework as WorkflowState['targetFramework'],
+      generationMode: generationMode as WorkflowState['generationMode'],
+      stateManagement,
+      compilationRetryCount: 0,
       options: {
         dryRun: input.options?.dryRun,
         verbose: input.options?.verbose,

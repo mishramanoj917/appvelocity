@@ -10,7 +10,7 @@
  *   ANTHROPIC_API_KEY or OPENAI_API_KEY — shared bearer token for the proxy
  */
 
-import type { LLMClient, LLMChatOptions, LLMResponse } from '../types.js';
+import type { LLMClient, LLMChatOptions, LLMResponse, LLMContentPart } from '../types.js';
 
 const DEFAULT_API_URL =
   'https://quasarmarket.coforge.com/qag/llmrouter-api/v2/chat/completions';
@@ -19,9 +19,13 @@ const DEFAULT_MAX_TOKENS = 4096;
 
 // ─── OpenAI-compatible wire types ────────────────────────────────────────────
 
+type OpenAIContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
+
 interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | OpenAIContentPart[];
 }
 
 interface OpenAIRequestBody {
@@ -77,7 +81,18 @@ class ProxyLLMClient implements LLMClient {
     }
 
     for (const m of options.messages) {
-      messages.push({ role: m.role, content: m.content });
+      if (typeof m.content === 'string') {
+        messages.push({ role: m.role, content: m.content });
+      } else {
+        // Multimodal content (text + images) — pass through as OpenAI content parts
+        const parts: OpenAIContentPart[] = (m.content as LLMContentPart[]).map((p) => {
+          if (p.type === 'image_url' && p.image_url) {
+            return { type: 'image_url', image_url: { url: p.image_url.url } };
+          }
+          return { type: 'text', text: p.text ?? '' };
+        });
+        messages.push({ role: m.role, content: parts });
+      }
     }
 
     const body: OpenAIRequestBody = {

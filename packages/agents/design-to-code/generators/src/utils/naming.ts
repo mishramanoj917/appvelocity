@@ -4,14 +4,16 @@
 
 /**
  * "home screen" | "home-screen" | "homeScreen" → "HomeScreen"
+ * Guards against empty results and digit-leading identifiers.
  */
 export function toPascalCase(input: string): string {
-  return input
+  const result = input
     .replace(/[-_/\\]/g, ' ')
     .split(/\s+/)
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join('');
+  return /^\d/.test(result) ? `S${result}` : (result || 'Screen');
 }
 
 /**

@@ -37,6 +37,40 @@ export async function irBuilderAgent(
 
   const logs = [];
 
+  // ── 0. Apply visualAnalysis hints to element classification ─────────────────
+  if (state.visualAnalysis) {
+    const { iconNodeIds, imageNodeIds, layoutHints, iconUrls = {}, imageUrls = {} } = state.visualAnalysis;
+    // Build fast lookup sets
+    const iconSet = new Set(iconNodeIds);
+    const imageSet = new Set(imageNodeIds);
+    const hintMap = new Map(layoutHints.map((h) => [h.nodeId, h]));
+
+    // Walk all screens and update element types / layout based on vision hints
+    for (const screen of designIR.screens) {
+      applyVisualHints(screen.root, iconSet, imageSet, hintMap);
+    }
+
+    // Register icon and image nodes as IR assets (so they get CDN URLs and land in the ZIP)
+    const existingIds = new Set(designIR.assets.map((a) => a.nodeId));
+    for (const [nodeId, url] of Object.entries(iconUrls)) {
+      if (!existingIds.has(nodeId)) {
+        designIR.assets.push({ nodeId, slug: nodeId.replace(':', '_'), format: 'svg', url } as typeof designIR.assets[0]);
+        existingIds.add(nodeId);
+      }
+    }
+    for (const [nodeId, url] of Object.entries(imageUrls)) {
+      if (!existingIds.has(nodeId)) {
+        designIR.assets.push({ nodeId, slug: nodeId.replace(':', '_'), format: 'png', url } as typeof designIR.assets[0]);
+        existingIds.add(nodeId);
+      }
+    }
+
+    logs.push(makeLogEntry('info',
+      `Applied visual analysis hints: ${iconSet.size} icon overrides, ${imageSet.size} image overrides, ${hintMap.size} layout hints, ` +
+      `${Object.keys(iconUrls).length} icon URLs + ${Object.keys(imageUrls).length} image URLs registered`
+    ));
+  }
+
   // ── 1. Mobile screen filter ─────────────────────────────────────────────────
   if (MOBILE_FRAMEWORKS.has(state.targetFramework)) {
     const all = designIR.screens.length;
@@ -120,6 +154,30 @@ export async function irBuilderAgent(
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+import type { LayoutHint } from '../types.js';
+
+/** Apply vision LLM hints to correct element types and layout directions. */
+function applyVisualHints(
+  el: IRElement,
+  iconSet: Set<string>,
+  imageSet: Set<string>,
+  hintMap: Map<string, LayoutHint>
+): void {
+  if (iconSet.has(el.id) && el.type !== 'icon') {
+    (el as { type: string }).type = 'icon';
+  }
+  if (imageSet.has(el.id) && el.type !== 'image') {
+    (el as { type: string }).type = 'image';
+  }
+  const hint = hintMap.get(el.id);
+  if (hint && el.layout?.flex) {
+    el.layout.flex.direction = hint.direction;
+  }
+  for (const child of el.children) {
+    applyVisualHints(child, iconSet, imageSet, hintMap);
+  }
+}
 
 /**
  * Recursively walks an element tree and sets image.src from the resolved URL map.

@@ -66,7 +66,20 @@ export async function GET(
         lastStepIndex += newSteps.length;
 
         if (current.status === 'complete') {
-          send('complete', { result: current.result });
+          // Strip zipBuffer (can be hundreds of KB) — client fetches it via /download endpoint
+          const output = current.result as
+            | { success?: boolean; data?: Record<string, unknown>; errors?: unknown[] }
+            | undefined;
+          const data = output?.data ?? {};
+          const projectName =
+            (data['projectBundle'] as { projectName?: string } | undefined)?.projectName ??
+            (data['executionPlan'] as { projectName?: string } | undefined)?.projectName ??
+            'project';
+          send('complete', {
+            success: output?.success ?? false,
+            projectName,
+            errors: output?.errors ?? (data['errors'] as unknown[] | undefined) ?? [],
+          });
           clearInterval(poll);
           clearInterval(ping);
           controller.close();

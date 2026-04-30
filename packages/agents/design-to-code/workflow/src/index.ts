@@ -1,10 +1,12 @@
 /**
  * @appvelocity/agent-design-to-code-workflow
- * Phase 2: LangGraph multi-agent workflow
+ * Phase 3: LLM-orchestrated ReAct agent loop
  */
 
-export { compiledWorkflow } from './graph.js';
 export { DesignToCodeAgent } from './agent.js';
+export { runAgentLoop }      from './agent-loop.js';
+export { AgentMemory }       from './agent-memory.js';
+export type { AgentInput, AgentOutput } from './agent-memory.js';
 
 export type {
   WorkflowState,

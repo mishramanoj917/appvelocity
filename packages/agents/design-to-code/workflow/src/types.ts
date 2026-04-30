@@ -210,6 +210,8 @@ export interface LLMChatOptions {
   system?: string;
   response_format?: { type: 'json_object' | 'text' };
   max_tokens?: number;
+  tools?: ToolDefinition[];
+  tool_choice?: 'auto' | 'none';
 }
 
 export interface LLMResponse {
@@ -217,8 +219,36 @@ export interface LLMResponse {
   model: string;
   inputTokens: number;
   outputTokens: number;
+  toolCalls?: ToolCall[];
+  finishReason?: 'stop' | 'tool_calls' | 'length';
 }
 
 export interface LLMClient {
   chat(options: LLMChatOptions): Promise<LLMResponse>;
+}
+
+// ─── Tool calling types (OpenAI function calling format) ──────────────────────
+
+export interface ToolDefinition {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>; // JSON Schema object
+  };
+}
+
+export interface ToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string; // JSON string
+  };
+}
+
+export interface ToolResult {
+  success: boolean;
+  summary: string;        // ≤200 tokens — what the orchestrator sees
+  error?: string;         // present when success=false
 }

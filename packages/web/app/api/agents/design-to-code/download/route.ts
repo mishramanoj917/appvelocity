@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   const filename = `${projectName.replace(/[^a-zA-Z0-9_-]/g, '_')}.zip`;
 
-  return new Response(zipBuffer, {
+  return new Response(new Uint8Array(zipBuffer), {
     status: 200,
     headers: {
       'Content-Type': 'application/zip',

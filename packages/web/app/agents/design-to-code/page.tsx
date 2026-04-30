@@ -3,52 +3,42 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 
-// ─── Pipeline definition (13 nodes) ──────────────────────────────────────────
+// ─── Agent tool registry (12 tools the orchestrator LLM can call) ─────────────
 
-interface PipelineNode {
+interface AgentTool {
   key: string;
   label: string;
   detail: string;
-  llm?: 'always' | 'flutter';
 }
 
-const PIPELINE: PipelineNode[] = [
-  { key: 'InputValidator',          label: 'Validate',        detail: 'URL · token · mode'              },
-  { key: 'FigmaFetcherAgent',       label: 'Fetch Figma',     detail: 'Pages · components · vars'       },
-  { key: 'DesignAnalyzerAgent',     label: 'Vision Parser',   detail: 'PNG → LLM → assets',  llm: 'always' },
-  { key: 'GenerationPlannerAgent',  label: 'Plan',            detail: 'Screens · nav flow',  llm: 'always' },
-  { key: 'IRBuilderAgent',          label: 'Build IR',        detail: 'DesignIR extraction'              },
-  { key: 'IRValidatorAgent',        label: 'Validate IR',     detail: 'Structure · naming',  llm: 'always' },
-  { key: 'CodeGeneratorAgent',      label: 'Generate Code',   detail: 'Templates + Skills',  llm: 'flutter' },
-  { key: 'ProjectAssemblerAgent',   label: 'Assemble',        detail: 'Router · state · cfg'             },
-  { key: 'CodeValidatorAgent',      label: 'Lint',            detail: 'Syntax · lint check'              },
-  { key: 'CodeFixerAgent',          label: 'Fix',             detail: 'Auto-format & fix',   llm: 'flutter' },
-  { key: 'CompilationValidatorAgent', label: 'Compile Check', detail: 'flutter analyze / tsc'            },
-  { key: 'CompilationFixerAgent',   label: 'Compile Fix',     detail: 'LLM compiler fix',    llm: 'always' },
-  { key: 'ProjectZipperAgent',      label: 'Package',         detail: 'Create ZIP archive'               },
+const AGENT_TOOLS: AgentTool[] = [
+  { key: 'fetch_figma',             label: 'Fetch Figma',      detail: 'Pages · components · vars'    },
+  { key: 'analyze_design',          label: 'Vision Analysis',  detail: 'PNG → LLM → layout hints'     },
+  { key: 'build_ir',                label: 'Build IR',         detail: 'Design IR extraction'          },
+  { key: 'plan_generation',         label: 'Plan',             detail: 'Screens · nav flow'            },
+  { key: 'generate_all_components', label: 'Generate All',     detail: 'Parallel code generation'      },
+  { key: 'generate_component',      label: 'Generate One',     detail: 'Single screen or component'    },
+  { key: 'validate_file',           label: 'Validate File',    detail: 'Gate 1 — Babel AST check'     },
+  { key: 'repair_file',             label: 'Repair File',      detail: 'Gate 5 — LLM targeted fix'    },
+  { key: 'run_workspace_check',     label: 'Workspace Check',  detail: 'Gate 3 — tsc / dart analyze'  },
+  { key: 'assemble_project',        label: 'Assemble',         detail: 'Router · state · build cfg'    },
+  { key: 'run_compilation_check',   label: 'Compile Check',    detail: 'Full compile + auto-fix'       },
+  { key: 'create_zip',              label: 'Create ZIP',       detail: 'Package project archive'       },
 ];
 
-function nodeLLMLabel(node: PipelineNode, framework: 'react-native' | 'flutter'): string | null {
-  if (!node.llm) return null;
-  if (node.llm === 'always') return framework === 'flutter' ? 'Gemini' : 'Claude';
-  if (node.llm === 'flutter') return framework === 'flutter' ? 'Gemini' : null;
-  return null;
-}
-
-const STEP_LOGS: Record<string, string> = {
-  InputValidator:            'Validating Figma URL, token, and generation options…',
-  FigmaFetcherAgent:         'Fetching design data from Figma API…',
-  DesignAnalyzerAgent:       'Exporting screens as PNG, running vision analysis…',
-  GenerationPlannerAgent:    'Analysing design structure, planning navigation flow…',
-  IRBuilderAgent:            'Building Intermediate Representation from Figma nodes…',
-  IRValidatorAgent:          'Validating IR quality — structure, naming, semantics…',
-  CodeGeneratorAgent:        'Generating screen and component code…',
-  ProjectAssemblerAgent:     'Assembling project — entry point, router, state management…',
-  CodeValidatorAgent:        'Running syntax and lint checks…',
-  CodeFixerAgent:            'Applying auto-fixes (prettier / dart format)…',
-  CompilationValidatorAgent: 'Running flutter analyze / tsc --noEmit on generated project…',
-  CompilationFixerAgent:     'Fixing compiler errors with LLM assistance…',
-  ProjectZipperAgent:        'Packaging project into ZIP archive…',
+const TOOL_LOGS: Record<string, string> = {
+  fetch_figma:             'Fetching design data from Figma API…',
+  analyze_design:          'Exporting screens as PNG, running vision analysis…',
+  build_ir:                'Building Design IR from Figma nodes…',
+  plan_generation:         'Planning screens and navigation flow…',
+  generate_all_components: 'Generating all screens and components in parallel…',
+  generate_component:      'Generating single screen or component…',
+  validate_file:           'Running Gate 1 syntax check on file…',
+  repair_file:             'Running Gate 5 repair loop — LLM targeted fix…',
+  run_workspace_check:     'Running Gate 3 workspace check (tsc / dart analyze)…',
+  assemble_project:        'Assembling project — router, state management, build config…',
+  run_compilation_check:   'Running full compilation check + auto-fix pass…',
+  create_zip:              'Packaging project into ZIP archive…',
 };
 
 // State management options per framework
@@ -69,46 +59,38 @@ const SM_OPTIONS: Record<'react-native' | 'flutter', { value: string; label: str
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-type NodeStatus = 'idle' | 'active' | 'done' | 'error';
+type ToolStatus = 'idle' | 'active' | 'done';
 
-function PipelineNodeCard({ node, status, index, total, llmLabel }: {
-  node: PipelineNode; status: NodeStatus; index: number; total: number; llmLabel: string | null;
+function ToolCard({ tool, status, callCount }: {
+  tool: AgentTool; status: ToolStatus; callCount: number;
 }) {
-  const isLast = index === total - 1;
   const ring =
     status === 'active' ? 'border-brand-500 bg-brand-950 shadow-[0_0_0_2px_rgba(99,102,241,0.25)]'
     : status === 'done'  ? 'border-green-800 bg-green-950/40'
-    : status === 'error' ? 'border-red-800 bg-red-950/40'
     : 'border-gray-800 bg-gray-900';
-  const iconColor =
-    status === 'active' ? 'text-brand-400'
-    : status === 'done'  ? 'text-green-400'
-    : status === 'error' ? 'text-red-400'
-    : 'text-gray-600';
+
+  const dot =
+    status === 'active' ? 'bg-brand-400 animate-pulse'
+    : status === 'done'  ? 'bg-green-500'
+    : 'bg-gray-700';
+
   const labelColor =
     status === 'active' ? 'text-white'
     : status === 'done'  ? 'text-green-300'
-    : status === 'error' ? 'text-red-400'
     : 'text-gray-500';
-  const icon = status === 'done' ? '✓' : status === 'error' ? '✗' : status === 'active' ? '▶' : String(index + 1);
 
   return (
-    <div className="flex flex-col items-center">
-      <div className={`relative flex w-28 flex-col items-center rounded-xl border p-2.5 transition-all duration-300 ${ring}`}>
-        <div className={`mb-1.5 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${iconColor} ${status === 'active' ? 'animate-pulse' : ''}`}>
-          {icon}
-        </div>
-        <p className={`text-center text-[11px] font-semibold leading-tight ${labelColor}`}>{node.label}</p>
-        <p className="mt-0.5 text-center font-mono text-[8px] leading-tight text-gray-600">{node.detail}</p>
-        {llmLabel && (
-          <span className="mt-1 rounded-full bg-indigo-950 px-1.5 py-0.5 font-mono text-[8px] text-indigo-400">
-            {llmLabel}
+    <div className={`relative flex flex-col rounded-xl border p-2.5 transition-all duration-300 ${ring}`}>
+      <div className="mb-1.5 flex items-center gap-1.5">
+        <span className={`h-2 w-2 flex-shrink-0 rounded-full ${dot}`} />
+        <p className={`truncate text-[11px] font-semibold leading-tight ${labelColor}`}>{tool.label}</p>
+        {callCount > 0 && (
+          <span className="ml-auto flex-shrink-0 rounded-full bg-gray-800 px-1 text-[9px] text-gray-500">
+            ×{callCount}
           </span>
         )}
       </div>
-      {!isLast && (
-        <div className={`mt-1 text-xs ${status === 'done' ? 'text-green-600' : 'text-gray-700'}`}>→</div>
-      )}
+      <p className="font-mono text-[8px] leading-tight text-gray-600">{tool.detail}</p>
     </div>
   );
 }
@@ -121,29 +103,34 @@ function LogLine({ message, fresh }: { message: string; fresh: boolean }) {
   );
 }
 
+interface CallEvent {
+  tool: string;
+  iter: number;
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DesignToCodePage() {
-  const [figmaUrl, setFigmaUrl]         = useState('');
-  const [framework, setFramework]       = useState<'react-native' | 'flutter'>('react-native');
-  const [genMode, setGenMode]           = useState<'project' | 'screens'>('project');
-  const [stateMgmt, setStateMgmt]       = useState('zustand');
-  const [phase, setPhase]               = useState<'idle' | 'running' | 'done' | 'error'>('idle');
-  const [logs, setLogs]                 = useState<string[]>([]);
-  const [activeStep, setActiveStep]     = useState<string | null>(null);
-  const [doneSteps, setDoneSteps]       = useState<Set<string>>(new Set());
-  const [errorMsg, setErrorMsg]         = useState('');
-  const [jobId, setJobId]               = useState('');
-  const [projectName, setProjectName]   = useState('project');
+  const [figmaUrl, setFigmaUrl]             = useState('');
+  const [framework, setFramework]           = useState<'react-native' | 'flutter'>('react-native');
+  const [genMode, setGenMode]               = useState<'project' | 'screens'>('project');
+  const [stateMgmt, setStateMgmt]           = useState('zustand');
+  const [phase, setPhase]                   = useState<'idle' | 'running' | 'done' | 'error'>('idle');
+  const [logs, setLogs]                     = useState<string[]>([]);
+  const [activeTool, setActiveTool]         = useState<string | null>(null);
+  const [toolCallCounts, setToolCallCounts] = useState<Map<string, number>>(new Map());
+  const [callTimeline, setCallTimeline]     = useState<CallEvent[]>([]);
+  const [currentIter, setCurrentIter]       = useState(0);
+  const [errorMsg, setErrorMsg]             = useState('');
+  const [jobId, setJobId]                   = useState('');
+  const [projectName, setProjectName]       = useState('project');
   const logRef = useRef<HTMLDivElement>(null);
   const esRef  = useRef<EventSource | null>(null);
 
-  // Reset state management default when framework changes
   useEffect(() => {
     setStateMgmt(SM_OPTIONS[framework][0]!.value);
   }, [framework]);
 
-  // Auto-scroll log panel
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
@@ -152,13 +139,23 @@ export default function DesignToCodePage() {
 
   function pushLog(msg: string) { setLogs((l) => [...l, msg]); }
 
-  function advanceStep(step: string) {
-    setActiveStep((prev) => {
-      if (prev) setDoneSteps((d) => new Set(d).add(prev));
-      return step;
+  function advanceStep(stepStr: string) {
+    // Parse "fetch_figma [iter 1]" emitted by agent.ts onStep callback
+    const match = stepStr.match(/^(\S+)\s+\[iter\s+(\d+)\]/);
+    const toolName = match ? match[1]! : stepStr;
+    const iter     = match ? parseInt(match[2]!, 10) : 0;
+
+    setCurrentIter(iter);
+    setCallTimeline((t) => [...t, { tool: toolName, iter }]);
+    setToolCallCounts((prev) => {
+      const next = new Map(prev);
+      next.set(toolName, (next.get(toolName) ?? 0) + 1);
+      return next;
     });
-    const msg = STEP_LOGS[step];
-    if (msg) pushLog(msg);
+    setActiveTool(toolName);
+
+    const msg = TOOL_LOGS[toolName];
+    if (msg) pushLog(`[iter ${iter}] ${msg}`);
   }
 
   async function handleLaunch() {
@@ -166,9 +163,11 @@ export default function DesignToCodePage() {
     if (!url) return;
 
     setPhase('running');
-    setLogs(['Starting DesignToCodeAgent…']);
-    setActiveStep(null);
-    setDoneSteps(new Set());
+    setLogs(['Starting DesignToCodeAgent (ReAct mode)…']);
+    setActiveTool(null);
+    setToolCallCounts(new Map());
+    setCallTimeline([]);
+    setCurrentIter(0);
     setErrorMsg('');
     setJobId('');
 
@@ -208,10 +207,7 @@ export default function DesignToCodePage() {
 
       es.addEventListener('complete', (e) => {
         es.close();
-        setActiveStep((prev) => {
-          if (prev) setDoneSteps((d) => new Set(d).add(prev));
-          return null;
-        });
+        setActiveTool(null);
         try {
           const payload = JSON.parse((e as MessageEvent).data ?? '{}') as {
             success?: boolean;
@@ -221,15 +217,15 @@ export default function DesignToCodePage() {
           if (payload.projectName) setProjectName(payload.projectName);
           if (payload.success === false) {
             const firstError = payload.errors?.[0];
-            const msg = firstError?.message ?? firstError?.code ?? 'Pipeline failed — check that FIGMA_ACCESS_TOKEN is set and the URL is valid.';
+            const msg = firstError?.message ?? firstError?.code ?? 'Agent failed — check FIGMA_ACCESS_TOKEN and URL.';
             setErrorMsg(msg);
             setPhase('error');
           } else {
-            pushLog('Pipeline complete — your project ZIP is ready to download.');
+            pushLog('Agent complete — your project ZIP is ready to download.');
             setPhase('done');
           }
         } catch {
-          pushLog('Pipeline complete — your project ZIP is ready to download.');
+          pushLog('Agent complete — your project ZIP is ready to download.');
           setPhase('done');
         }
       });
@@ -253,17 +249,19 @@ export default function DesignToCodePage() {
     esRef.current?.close();
     setPhase('idle');
     setLogs([]);
-    setActiveStep(null);
-    setDoneSteps(new Set());
+    setActiveTool(null);
+    setToolCallCounts(new Map());
+    setCallTimeline([]);
+    setCurrentIter(0);
   }
 
-  function nodeStatus(node: PipelineNode): NodeStatus {
-    if (doneSteps.has(node.key)) return 'done';
-    if (activeStep === node.key) return 'active';
+  function toolStatus(tool: AgentTool): ToolStatus {
+    if (activeTool === tool.key) return 'active';
+    if (toolCallCounts.has(tool.key)) return 'done';
     return 'idle';
   }
 
-  const showPipeline = phase === 'running' || phase === 'done';
+  const showAgent = phase === 'running' || phase === 'done';
 
   return (
     <div className="min-h-full">
@@ -275,20 +273,28 @@ export default function DesignToCodePage() {
           </Link>
           <span className="text-gray-700">/</span>
           <span className="text-sm text-gray-300">DesignToCodeAgent</span>
+          <span className="ml-auto rounded-full border border-indigo-900 bg-indigo-950 px-2 py-0.5 text-[10px] text-indigo-400">
+            ReAct Agent
+          </span>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-10 space-y-6">
         {/* ── Agent header ──────────────────────────────────────────────────── */}
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl text-3xl"
-            style={{ background: '#6366f118', border: '1px solid #6366f130' }}>
+          <div
+            className="flex h-14 w-14 items-center justify-center rounded-xl text-3xl"
+            style={{ background: '#6366f118', border: '1px solid #6366f130' }}
+          >
             🎨
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">DesignToCodeAgent</h1>
             <p className="mt-0.5 text-sm font-medium" style={{ color: '#6366f1' }}>
               Figma → Runnable Flutter / React Native Project
+            </p>
+            <p className="mt-0.5 text-xs text-gray-600">
+              LLM-orchestrated ReAct loop · up to 30 iterations · 12 tools
             </p>
           </div>
         </div>
@@ -297,7 +303,6 @@ export default function DesignToCodePage() {
         <div className="av-card space-y-5">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Configure</h2>
 
-          {/* Figma URL */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-gray-400">
               Figma File URL <span className="text-red-400">*</span>
@@ -313,43 +318,46 @@ export default function DesignToCodePage() {
           </div>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            {/* Framework */}
             <div>
               <label className="mb-2 block text-xs font-medium text-gray-400">Framework</label>
               <div className="flex gap-2">
                 {(['react-native', 'flutter'] as const).map((fw) => (
-                  <button key={fw} onClick={() => setFramework(fw)}
+                  <button
+                    key={fw}
+                    onClick={() => setFramework(fw)}
                     disabled={phase === 'running'}
                     className={`rounded-lg border px-3 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       framework === fw
                         ? 'border-brand-600 bg-brand-950 text-brand-300'
                         : 'border-gray-700 text-gray-400 hover:border-gray-600'
-                    }`}>
+                    }`}
+                  >
                     {fw === 'react-native' ? 'React Native' : 'Flutter'}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Generation mode */}
             <div>
               <label className="mb-2 block text-xs font-medium text-gray-400">Generate</label>
               <div className="flex gap-2">
                 {(['project', 'screens'] as const).map((mode) => (
-                  <button key={mode} onClick={() => setGenMode(mode)}
+                  <button
+                    key={mode}
+                    onClick={() => setGenMode(mode)}
                     disabled={phase === 'running'}
                     className={`rounded-lg border px-3 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       genMode === mode
                         ? 'border-brand-600 bg-brand-950 text-brand-300'
                         : 'border-gray-700 text-gray-400 hover:border-gray-600'
-                    }`}>
+                    }`}
+                  >
                     {mode === 'project' ? 'Full Project' : 'Screens Only'}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* State management */}
             <div>
               <label className="mb-2 block text-xs font-medium text-gray-400">State Management</label>
               <select
@@ -371,22 +379,33 @@ export default function DesignToCodePage() {
               disabled={phase === 'running' || !figmaUrl.trim()}
               className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {phase === 'running' ? 'Generating…' : 'Generate Code'}
+              {phase === 'running' ? 'Running Agent…' : 'Generate Code'}
             </button>
             {phase === 'running' && (
-              <button onClick={handleCancel}
-                className="rounded-lg border border-gray-700 px-5 py-2 text-sm text-gray-400 transition-colors hover:border-red-700 hover:text-red-400">
+              <button
+                onClick={handleCancel}
+                className="rounded-lg border border-gray-700 px-5 py-2 text-sm text-gray-400 transition-colors hover:border-red-700 hover:text-red-400"
+              >
                 Cancel
               </button>
             )}
           </div>
         </div>
 
-        {/* ── Pipeline visualization ─────────────────────────────────────────── */}
-        {showPipeline && (
+        {/* ── Agent tool panel ──────────────────────────────────────────────── */}
+        {showAgent && (
           <div className="av-card">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Pipeline</h3>
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Agent Tools
+                </h3>
+                {currentIter > 0 && (
+                  <p className="mt-0.5 text-[10px] text-gray-600">
+                    Iteration {currentIter} / 30
+                  </p>
+                )}
+              </div>
               {phase === 'running' && (
                 <span className="av-badge border border-brand-900 bg-brand-950 text-brand-400">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-400" />
@@ -400,31 +419,55 @@ export default function DesignToCodePage() {
               )}
             </div>
 
-            <div className="overflow-x-auto pb-2">
-              <div className="flex min-w-max items-start gap-1">
-                {PIPELINE.map((node, i) => (
-                  <PipelineNodeCard
-                    key={node.key}
-                    node={node}
-                    llmLabel={nodeLLMLabel(node, framework)}
-                    status={nodeStatus(node)}
-                    index={i}
-                    total={PIPELINE.length}
-                  />
-                ))}
-              </div>
+            {/* 12-tool grid — lights up as the LLM picks tools */}
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+              {AGENT_TOOLS.map((tool) => (
+                <ToolCard
+                  key={tool.key}
+                  tool={tool}
+                  status={toolStatus(tool)}
+                  callCount={toolCallCounts.get(tool.key) ?? 0}
+                />
+              ))}
             </div>
+
+            {/* Dynamic call sequence chosen by the LLM orchestrator */}
+            {callTimeline.length > 0 && (
+              <div className="mt-4 border-t border-gray-800 pt-3">
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-gray-600">
+                  Agent call sequence
+                </p>
+                <div className="flex flex-wrap items-center gap-1">
+                  {callTimeline.map((event, i) => (
+                    <span key={i} className="flex items-center gap-1">
+                      <span
+                        className={`rounded border px-1.5 py-0.5 font-mono text-[9px] ${
+                          i === callTimeline.length - 1 && phase === 'running'
+                            ? 'border-brand-800 bg-brand-950 text-brand-300'
+                            : 'border-gray-800 bg-gray-900 text-gray-500'
+                        }`}
+                      >
+                        {event.iter}:{event.tool.replace(/_/g, ' ')}
+                      </span>
+                      {i < callTimeline.length - 1 && (
+                        <span className="text-[10px] text-gray-700">→</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 flex items-center gap-4 border-t border-gray-800 pt-3">
               <span className="text-[10px] text-gray-600">Legend:</span>
-              <span className="flex items-center gap-1 text-[10px] text-gray-500">
-                <span className="inline-block h-2 w-2 rounded-full bg-brand-500" /> Active
+              <span className="flex items-center gap-1.5 text-[10px] text-gray-500">
+                <span className="h-2 w-2 rounded-full bg-brand-400" /> Active
               </span>
-              <span className="flex items-center gap-1 text-[10px] text-gray-500">
-                <span className="inline-block h-2 w-2 rounded-full bg-green-600" /> Done
+              <span className="flex items-center gap-1.5 text-[10px] text-gray-500">
+                <span className="h-2 w-2 rounded-full bg-green-500" /> Done
               </span>
-              <span className="flex items-center gap-1 text-[10px] text-gray-500">
-                <span className="inline-block h-2 w-2 rounded-full bg-indigo-600" /> LLM
+              <span className="flex items-center gap-1.5 text-[10px] text-gray-500">
+                <span className="font-mono text-[9px] text-gray-600">×N</span> Call count
               </span>
             </div>
           </div>
@@ -448,7 +491,9 @@ export default function DesignToCodePage() {
         {phase === 'done' && jobId && (
           <div className="av-card flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-950 text-xl text-green-400">✓</span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-950 text-xl text-green-400">
+                ✓
+              </span>
               <div>
                 <p className="text-sm font-semibold text-green-300">Project ready</p>
                 <p className="text-xs text-gray-500">
@@ -456,6 +501,11 @@ export default function DesignToCodePage() {
                     ? `Complete ${framework === 'flutter' ? 'Flutter' : 'React Native'} project — unzip and run immediately`
                     : 'Screen files generated'}
                 </p>
+                {callTimeline.length > 0 && (
+                  <p className="text-[10px] text-gray-600">
+                    {callTimeline.length} tool calls · {currentIter} iterations
+                  </p>
+                )}
               </div>
             </div>
             <a

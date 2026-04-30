@@ -10,7 +10,7 @@
  *   ANTHROPIC_API_KEY or OPENAI_API_KEY — shared bearer token for the proxy
  */
 
-import type { LLMClient, LLMChatOptions, LLMResponse, LLMContentPart } from '../types.js';
+import type { LLMClient, LLMChatOptions, LLMResponse, LLMContentPart, ToolDefinition, ToolCall } from '../types.js';
 
 const DEFAULT_API_URL =
   'https://quasarmarket.coforge.com/qag/llmrouter-api/v2/chat/completions';
@@ -28,15 +28,26 @@ interface OpenAIMessage {
   content: string | OpenAIContentPart[];
 }
 
+interface OpenAIToolCall {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+}
+
 interface OpenAIRequestBody {
   model: string;
   messages: OpenAIMessage[];
   max_tokens?: number;
   response_format?: { type: 'json_object' | 'text' };
+  tools?: ToolDefinition[];
+  tool_choice?: 'auto' | 'none';
 }
 
 interface OpenAIResponse {
-  choices: Array<{ message: { content: string } }>;
+  choices: Array<{
+    message: { content: string | null; tool_calls?: OpenAIToolCall[] };
+    finish_reason?: string;
+  }>;
   model: string;
   usage: { prompt_tokens: number; completion_tokens: number };
 }
@@ -100,6 +111,7 @@ class ProxyLLMClient implements LLMClient {
       messages,
       max_tokens: maxTokens,
       ...(options.response_format ? { response_format: options.response_format } : {}),
+      ...(options.tools ? { tools: options.tools, tool_choice: options.tool_choice ?? 'auto' } : {}),
     };
 
     const response = await fetch(this.apiUrl, {
@@ -119,13 +131,24 @@ class ProxyLLMClient implements LLMClient {
     }
 
     const data = (await response.json()) as OpenAIResponse;
-    const content = data.choices?.[0]?.message?.content ?? '';
+    const choice = data.choices?.[0];
+    const content = choice?.message?.content ?? '';
+    const rawToolCalls = choice?.message?.tool_calls;
+    const finishReason = choice?.finish_reason as LLMResponse['finishReason'];
+
+    const toolCalls: ToolCall[] | undefined = rawToolCalls?.map((tc) => ({
+      id: tc.id,
+      type: 'function' as const,
+      function: { name: tc.function.name, arguments: tc.function.arguments },
+    }));
 
     return {
       content,
       model: data.model ?? model,
       inputTokens: data.usage?.prompt_tokens ?? 0,
       outputTokens: data.usage?.completion_tokens ?? 0,
+      ...(toolCalls?.length ? { toolCalls } : {}),
+      ...(finishReason ? { finishReason } : {}),
     };
   }
 }

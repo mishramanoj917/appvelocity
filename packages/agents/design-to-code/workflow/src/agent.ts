@@ -79,7 +79,9 @@ export class DesignToCodeAgent extends AgentBase {
           logs:          result.logs,
         },
         startTime,
-        result.errors.length > 0 ? result.errors : undefined
+        result.errors.length > 0 ? result.errors : (
+          result.success ? undefined : [{ code: 'PIPELINE_INCOMPLETE', message: 'Pipeline ended without producing a ZIP. Check logs for details.', recoverable: true }]
+        )
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

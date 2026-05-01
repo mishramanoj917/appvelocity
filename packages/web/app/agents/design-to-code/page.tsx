@@ -3,45 +3,112 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 
-// ─── Agent tool registry (12 tools the orchestrator LLM can call) ─────────────
+// ─── 6-Agent pipeline definition ──────────────────────────────────────────────
 
-interface AgentTool {
-  key: string;
+interface PipelineAgent {
+  id: string;
+  icon: string;
   label: string;
   detail: string;
+  tools: string[];
 }
 
-const AGENT_TOOLS: AgentTool[] = [
-  { key: 'fetch_figma',             label: 'Fetch Figma',      detail: 'Pages · components · vars'    },
-  { key: 'analyze_design',          label: 'Vision Analysis',  detail: 'PNG → LLM → layout hints'     },
-  { key: 'build_ir',                label: 'Build IR',         detail: 'Design IR extraction'          },
-  { key: 'plan_generation',         label: 'Plan',             detail: 'Screens · nav flow'            },
-  { key: 'generate_all_components', label: 'Generate All',     detail: 'Parallel code generation'      },
-  { key: 'generate_component',      label: 'Generate One',     detail: 'Single screen or component'    },
-  { key: 'validate_file',           label: 'Validate File',    detail: 'Gate 1 — Babel AST check'     },
-  { key: 'repair_file',             label: 'Repair File',      detail: 'Gate 5 — LLM targeted fix'    },
-  { key: 'run_workspace_check',     label: 'Workspace Check',  detail: 'Gate 3 — tsc / dart analyze'  },
-  { key: 'assemble_project',        label: 'Assemble',         detail: 'Router · state · build cfg'    },
-  { key: 'run_compilation_check',   label: 'Compile Check',    detail: 'Full compile + auto-fix'       },
-  { key: 'create_zip',              label: 'Create ZIP',       detail: 'Package project archive'       },
+const PIPELINE: PipelineAgent[] = [
+  {
+    id: 'orchestrator',
+    icon: '🎯',
+    label: 'Orchestrator',
+    detail: 'Session lifecycle · retry policy',
+    tools: [],
+  },
+  {
+    id: 'figma-ingestion',
+    icon: '📥',
+    label: 'Figma Ingestion',
+    detail: 'Snapshot-first · 1 API call',
+    tools: ['fetch_figma'],
+  },
+  {
+    id: 'ground-truth',
+    icon: '🗺️',
+    label: 'Ground Truth',
+    detail: 'IR build · status bar filter',
+    tools: ['analyze_design', 'build_ir'],
+  },
+  {
+    id: 'coding',
+    icon: '⚡',
+    label: 'Coding',
+    detail: 'ReAct loop · code generation',
+    tools: [
+      'plan_generation',
+      'generate_all_components',
+      'generate_component',
+      'assemble_project',
+      'create_zip',
+    ],
+  },
+  {
+    id: 'validation',
+    icon: '🛡️',
+    label: 'Validation',
+    detail: 'Gate 1/2/3 · pre-write checks',
+    tools: ['validate_file', 'repair_file', 'run_workspace_check', 'run_compilation_check'],
+  },
+  {
+    id: 'visual-qa',
+    icon: '👁️',
+    label: 'Visual QA',
+    detail: 'Structural · token · pixel · LLM judge',
+    tools: [],
+  },
 ];
 
+const TOOL_TO_AGENT: Record<string, string> = {
+  fetch_figma:             'figma-ingestion',
+  analyze_design:          'ground-truth',
+  build_ir:                'ground-truth',
+  plan_generation:         'coding',
+  generate_all_components: 'coding',
+  generate_component:      'coding',
+  assemble_project:        'coding',
+  create_zip:              'coding',
+  validate_file:           'validation',
+  repair_file:             'validation',
+  run_workspace_check:     'validation',
+  run_compilation_check:   'validation',
+};
+
+const TOOL_LABEL: Record<string, string> = {
+  fetch_figma:             'Fetch Figma',
+  analyze_design:          'Vision Analysis',
+  build_ir:                'Build IR',
+  plan_generation:         'Plan',
+  generate_all_components: 'Generate All',
+  generate_component:      'Generate One',
+  validate_file:           'Gate 1 Check',
+  repair_file:             'Gate 5 Repair',
+  run_workspace_check:     'Gate 3 Compile',
+  assemble_project:        'Assemble',
+  run_compilation_check:   'Compile Check',
+  create_zip:              'Create ZIP',
+};
+
 const TOOL_LOGS: Record<string, string> = {
-  fetch_figma:             'Fetching design data from Figma API…',
-  analyze_design:          'Exporting screens as PNG, running vision analysis…',
-  build_ir:                'Building Design IR from Figma nodes…',
+  fetch_figma:             'Checking snapshot cache · fetching Figma design data…',
+  analyze_design:          'Running vision analysis on exported screens…',
+  build_ir:                'Building Design IR · filtering status bar nodes…',
   plan_generation:         'Planning screens and navigation flow…',
   generate_all_components: 'Generating all screens and components in parallel…',
   generate_component:      'Generating single screen or component…',
-  validate_file:           'Running Gate 1 syntax check on file…',
-  repair_file:             'Running Gate 5 repair loop — LLM targeted fix…',
-  run_workspace_check:     'Running Gate 3 workspace check (tsc / dart analyze)…',
-  assemble_project:        'Assembling project — router, state management, build config…',
-  run_compilation_check:   'Running full compilation check + auto-fix pass…',
+  validate_file:           'Gate 1 — pre-write static check (Babel / dart analyze)…',
+  repair_file:             'Gate 5 — LLM repair loop…',
+  run_workspace_check:     'Gate 3 — incremental workspace compile check…',
+  assemble_project:        'Assembling project scaffold…',
+  run_compilation_check:   'Full compilation check + auto-fix pass…',
   create_zip:              'Packaging project into ZIP archive…',
 };
 
-// State management options per framework
 const SM_OPTIONS: Record<'react-native' | 'flutter', { value: string; label: string }[]> = {
   flutter: [
     { value: 'riverpod', label: 'Riverpod (recommended)' },
@@ -52,45 +119,65 @@ const SM_OPTIONS: Record<'react-native' | 'flutter', { value: string; label: str
   'react-native': [
     { value: 'zustand', label: 'Zustand (recommended)' },
     { value: 'redux',   label: 'Redux Toolkit' },
-    { value: 'jotai',  label: 'Jotai' },
-    { value: 'none',   label: 'None' },
+    { value: 'jotai',   label: 'Jotai' },
+    { value: 'none',    label: 'None' },
   ],
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-type ToolStatus = 'idle' | 'active' | 'done';
+type AgentStatus = 'idle' | 'active' | 'done';
 
-function ToolCard({ tool, status, callCount }: {
-  tool: AgentTool; status: ToolStatus; callCount: number;
+function AgentStageCard({
+  agent,
+  status,
+  callCount,
+  activeTool,
+}: {
+  agent: PipelineAgent;
+  status: AgentStatus;
+  callCount: number;
+  activeTool: string | null;
 }) {
-  const ring =
-    status === 'active' ? 'border-brand-500 bg-brand-950 shadow-[0_0_0_2px_rgba(99,102,241,0.25)]'
-    : status === 'done'  ? 'border-green-800 bg-green-950/40'
-    : 'border-gray-800 bg-gray-900';
+  const isActive = status === 'active';
+  const isDone   = status === 'done';
 
-  const dot =
-    status === 'active' ? 'bg-brand-400 animate-pulse'
-    : status === 'done'  ? 'bg-green-500'
-    : 'bg-gray-700';
+  const border = isActive
+    ? 'border-brand-500 bg-brand-950 shadow-[0_0_0_2px_rgba(99,102,241,0.25)]'
+    : isDone
+    ? 'border-green-800 bg-green-950/40'
+    : 'border-gray-800 bg-gray-900/60';
 
-  const labelColor =
-    status === 'active' ? 'text-white'
-    : status === 'done'  ? 'text-green-300'
-    : 'text-gray-500';
+  const dot = isActive ? 'bg-brand-400 animate-pulse' : isDone ? 'bg-green-500' : 'bg-gray-700';
+
+  const labelColor = isActive ? 'text-white' : isDone ? 'text-green-300' : 'text-gray-500';
+
+  const activeToolLabel = isActive && activeTool ? (TOOL_LABEL[activeTool] ?? activeTool) : null;
 
   return (
-    <div className={`relative flex flex-col rounded-xl border p-2.5 transition-all duration-300 ${ring}`}>
-      <div className="mb-1.5 flex items-center gap-1.5">
-        <span className={`h-2 w-2 flex-shrink-0 rounded-full ${dot}`} />
-        <p className={`truncate text-[11px] font-semibold leading-tight ${labelColor}`}>{tool.label}</p>
-        {callCount > 0 && (
-          <span className="ml-auto flex-shrink-0 rounded-full bg-gray-800 px-1 text-[9px] text-gray-500">
-            ×{callCount}
-          </span>
-        )}
+    <div className={`flex flex-col rounded-xl border p-3 transition-all duration-300 ${border}`}>
+      <div className="flex items-start gap-2">
+        <span className={`mt-0.5 h-2 w-2 flex-shrink-0 rounded-full ${dot}`} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-base leading-none">{agent.icon}</span>
+            <span className={`truncate text-[11px] font-semibold leading-tight ${labelColor}`}>
+              {agent.label}
+            </span>
+            {callCount > 0 && (
+              <span className="ml-auto flex-shrink-0 rounded-full bg-gray-800 px-1.5 py-0.5 text-[9px] text-gray-500">
+                ×{callCount}
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 font-mono text-[8px] leading-tight text-gray-600">{agent.detail}</p>
+          {activeToolLabel && (
+            <p className="mt-1 truncate rounded bg-brand-900/50 px-1.5 py-0.5 font-mono text-[9px] text-brand-300">
+              {activeToolLabel}
+            </p>
+          )}
+        </div>
       </div>
-      <p className="font-mono text-[8px] leading-tight text-gray-600">{tool.detail}</p>
     </div>
   );
 }
@@ -117,10 +204,13 @@ export default function DesignToCodePage() {
   const [stateMgmt, setStateMgmt]           = useState('zustand');
   const [phase, setPhase]                   = useState<'idle' | 'running' | 'done' | 'error'>('idle');
   const [logs, setLogs]                     = useState<string[]>([]);
-  const [activeTool, setActiveTool]         = useState<string | null>(null);
-  const [toolCallCounts, setToolCallCounts] = useState<Map<string, number>>(new Map());
+  const [activeTool, setActiveTool]           = useState<string | null>(null);
+  const [activeAgent, setActiveAgent]         = useState<string | null>(null);
+  const [agentCallCounts, setAgentCallCounts] = useState<Map<string, number>>(new Map());
   const [callTimeline, setCallTimeline]     = useState<CallEvent[]>([]);
   const [currentIter, setCurrentIter]       = useState(0);
+  const [snapshotCached, setSnapshotCached] = useState<boolean | null>(null);
+  const [gate1Stats, setGate1Stats]         = useState({ passed: 0, failed: 0 });
   const [errorMsg, setErrorMsg]             = useState('');
   const [jobId, setJobId]                   = useState('');
   const [projectName, setProjectName]       = useState('project');
@@ -140,22 +230,53 @@ export default function DesignToCodePage() {
   function pushLog(msg: string) { setLogs((l) => [...l, msg]); }
 
   function advanceStep(stepStr: string) {
-    // Parse "fetch_figma [iter 1]" emitted by agent.ts onStep callback
-    const match = stepStr.match(/^(\S+)\s+\[iter\s+(\d+)\]/);
+    const match    = stepStr.match(/^(\S+)\s+\[iter\s+(\d+)\]/);
     const toolName = match ? match[1]! : stepStr;
     const iter     = match ? parseInt(match[2]!, 10) : 0;
 
     setCurrentIter(iter);
     setCallTimeline((t) => [...t, { tool: toolName, iter }]);
-    setToolCallCounts((prev) => {
-      const next = new Map(prev);
-      next.set(toolName, (next.get(toolName) ?? 0) + 1);
-      return next;
-    });
     setActiveTool(toolName);
+
+    const agentId = TOOL_TO_AGENT[toolName];
+    if (agentId) {
+      setActiveAgent(agentId);
+      setAgentCallCounts((prev) => {
+        const next = new Map(prev);
+        next.set(agentId, (next.get(agentId) ?? 0) + 1);
+        return next;
+      });
+    }
+
+    if (toolName === 'validate_file') {
+      setGate1Stats((g) => ({ ...g, passed: g.passed + 1 }));
+    }
 
     const msg = TOOL_LOGS[toolName];
     if (msg) pushLog(`[iter ${iter}] ${msg}`);
+  }
+
+  function handleStreamEvent(data: Record<string, unknown>) {
+    if (typeof data.step === 'string') advanceStep(data.step);
+
+    // Phase 5 agent-level events (ready for when backend wires them)
+    if (data.type === 'agent_start' && typeof data.agent === 'string') {
+      setActiveAgent(data.agent as string);
+    }
+    if (data.type === 'snapshot_cached') {
+      setSnapshotCached(true);
+      pushLog('Snapshot cache hit — skipping Figma API call');
+    }
+    if (data.type === 'snapshot_fresh') {
+      setSnapshotCached(false);
+    }
+    if (data.type === 'gate1_result') {
+      const passed = data.passed as boolean;
+      setGate1Stats((g) => ({
+        passed: g.passed + (passed ? 1 : 0),
+        failed: g.failed + (passed ? 0 : 1),
+      }));
+    }
   }
 
   async function handleLaunch() {
@@ -163,11 +284,14 @@ export default function DesignToCodePage() {
     if (!url) return;
 
     setPhase('running');
-    setLogs(['Starting DesignToCodeAgent (ReAct mode)…']);
+    setLogs(['Starting DesignToCode pipeline (6-agent mode)…']);
     setActiveTool(null);
-    setToolCallCounts(new Map());
+    setActiveAgent('orchestrator');
+    setAgentCallCounts(new Map());
     setCallTimeline([]);
     setCurrentIter(0);
+    setSnapshotCached(null);
+    setGate1Stats({ passed: 0, failed: 0 });
     setErrorMsg('');
     setJobId('');
 
@@ -195,19 +319,19 @@ export default function DesignToCodePage() {
 
       const { jobId: jid, streamUrl } = data as { jobId: string; streamUrl: string };
       setJobId(jid);
-      pushLog(`Job created (${jid.slice(0, 8)}…)`);
+      pushLog(`Session started (${jid.slice(0, 8)}…)`);
 
       const es = new EventSource(streamUrl);
       esRef.current = es;
 
       es.addEventListener('step', (e) => {
-        const { step } = JSON.parse(e.data) as { step: string };
-        advanceStep(step);
+        handleStreamEvent(JSON.parse(e.data) as Record<string, unknown>);
       });
 
       es.addEventListener('complete', (e) => {
         es.close();
         setActiveTool(null);
+        setActiveAgent(null);
         try {
           const payload = JSON.parse((e as MessageEvent).data ?? '{}') as {
             success?: boolean;
@@ -216,16 +340,18 @@ export default function DesignToCodePage() {
           };
           if (payload.projectName) setProjectName(payload.projectName);
           if (payload.success === false) {
-            const firstError = payload.errors?.[0];
-            const msg = firstError?.message ?? firstError?.code ?? 'Agent failed — check FIGMA_ACCESS_TOKEN and URL.';
-            setErrorMsg(msg);
+            const err = payload.errors?.[0];
+            const errMsg = err?.message
+              ? `[${err.code ?? 'ERROR'}] ${err.message}`
+              : (err?.code ?? 'Pipeline failed — check FIGMA_ACCESS_TOKEN and server logs for details.');
+            setErrorMsg(errMsg);
             setPhase('error');
           } else {
-            pushLog('Agent complete — your project ZIP is ready to download.');
+            pushLog('Pipeline complete — project ZIP is ready.');
             setPhase('done');
           }
         } catch {
-          pushLog('Agent complete — your project ZIP is ready to download.');
+          pushLog('Pipeline complete — project ZIP is ready.');
           setPhase('done');
         }
       });
@@ -250,18 +376,19 @@ export default function DesignToCodePage() {
     setPhase('idle');
     setLogs([]);
     setActiveTool(null);
-    setToolCallCounts(new Map());
+    setActiveAgent(null);
+    setAgentCallCounts(new Map());
     setCallTimeline([]);
     setCurrentIter(0);
   }
 
-  function toolStatus(tool: AgentTool): ToolStatus {
-    if (activeTool === tool.key) return 'active';
-    if (toolCallCounts.has(tool.key)) return 'done';
+  function agentStatus(agent: PipelineAgent): AgentStatus {
+    if (activeAgent === agent.id) return 'active';
+    if ((agentCallCounts.get(agent.id) ?? 0) > 0) return 'done';
     return 'idle';
   }
 
-  const showAgent = phase === 'running' || phase === 'done';
+  const showPipeline = phase === 'running' || phase === 'done';
 
   return (
     <div className="min-h-full">
@@ -274,7 +401,7 @@ export default function DesignToCodePage() {
           <span className="text-gray-700">/</span>
           <span className="text-sm text-gray-300">DesignToCodeAgent</span>
           <span className="ml-auto rounded-full border border-indigo-900 bg-indigo-950 px-2 py-0.5 text-[10px] text-indigo-400">
-            ReAct Agent
+            6-Agent Pipeline
           </span>
         </div>
       </header>
@@ -294,7 +421,7 @@ export default function DesignToCodePage() {
               Figma → Runnable Flutter / React Native Project
             </p>
             <p className="mt-0.5 text-xs text-gray-600">
-              LLM-orchestrated ReAct loop · up to 30 iterations · 12 tools
+              6-agent pipeline · snapshot-first · Gate 1/2/3 validation · Visual QA
             </p>
           </div>
         </div>
@@ -379,7 +506,7 @@ export default function DesignToCodePage() {
               disabled={phase === 'running' || !figmaUrl.trim()}
               className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {phase === 'running' ? 'Running Agent…' : 'Generate Code'}
+              {phase === 'running' ? 'Running Pipeline…' : 'Generate Code'}
             </button>
             {phase === 'running' && (
               <button
@@ -392,13 +519,13 @@ export default function DesignToCodePage() {
           </div>
         </div>
 
-        {/* ── Agent tool panel ──────────────────────────────────────────────── */}
-        {showAgent && (
+        {/* ── 6-agent pipeline panel ────────────────────────────────────────── */}
+        {showPipeline && (
           <div className="av-card">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Agent Tools
+                  Agent Pipeline
                 </h3>
                 {currentIter > 0 && (
                   <p className="mt-0.5 text-[10px] text-gray-600">
@@ -406,32 +533,65 @@ export default function DesignToCodePage() {
                   </p>
                 )}
               </div>
-              {phase === 'running' && (
-                <span className="av-badge border border-brand-900 bg-brand-950 text-brand-400">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-400" />
-                  Running
-                </span>
-              )}
-              {phase === 'done' && (
-                <span className="av-badge border border-green-900 bg-green-950 text-green-400">
-                  ✓ Complete
-                </span>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {snapshotCached === true && (
+                  <span className="av-badge border border-emerald-900 bg-emerald-950 text-emerald-400">
+                    📦 Snapshot cached
+                  </span>
+                )}
+                {snapshotCached === false && (
+                  <span className="av-badge border border-blue-900 bg-blue-950 text-blue-400">
+                    🔄 Fresh fetch
+                  </span>
+                )}
+                {phase === 'running' && (
+                  <span className="av-badge border border-brand-900 bg-brand-950 text-brand-400">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-400" />
+                    Running
+                  </span>
+                )}
+                {phase === 'done' && (
+                  <span className="av-badge border border-green-900 bg-green-950 text-green-400">
+                    ✓ Complete
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* 12-tool grid — lights up as the LLM picks tools */}
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-              {AGENT_TOOLS.map((tool) => (
-                <ToolCard
-                  key={tool.key}
-                  tool={tool}
-                  status={toolStatus(tool)}
-                  callCount={toolCallCounts.get(tool.key) ?? 0}
+            {/* 6-agent cards */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              {PIPELINE.map((agent) => (
+                <AgentStageCard
+                  key={agent.id}
+                  agent={agent}
+                  status={agentStatus(agent)}
+                  callCount={agentCallCounts.get(agent.id) ?? 0}
+                  activeTool={activeAgent === agent.id ? activeTool : null}
                 />
               ))}
             </div>
 
-            {/* Dynamic call sequence chosen by the LLM orchestrator */}
+            {/* Gate stats row */}
+            {(gate1Stats.passed + gate1Stats.failed) > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-800 pt-3">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-gray-600">
+                  Validation gates
+                </span>
+                <span className="rounded border border-green-900 bg-green-950/40 px-2 py-0.5 text-[10px] text-green-400">
+                  Gate 1 passed: {gate1Stats.passed}
+                </span>
+                {gate1Stats.failed > 0 && (
+                  <span className="rounded border border-yellow-900 bg-yellow-950/40 px-2 py-0.5 text-[10px] text-yellow-400">
+                    Gate 1 failed: {gate1Stats.failed}
+                  </span>
+                )}
+                <span className="rounded border border-gray-800 bg-gray-900 px-2 py-0.5 text-[10px] text-gray-500">
+                  {callTimeline.length} total tool calls
+                </span>
+              </div>
+            )}
+
+            {/* Dynamic call sequence */}
             {callTimeline.length > 0 && (
               <div className="mt-4 border-t border-gray-800 pt-3">
                 <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-gray-600">
@@ -467,7 +627,7 @@ export default function DesignToCodePage() {
                 <span className="h-2 w-2 rounded-full bg-green-500" /> Done
               </span>
               <span className="flex items-center gap-1.5 text-[10px] text-gray-500">
-                <span className="font-mono text-[9px] text-gray-600">×N</span> Call count
+                <span className="font-mono text-[9px] text-gray-600">×N</span> Tool calls
               </span>
             </div>
           </div>
@@ -501,11 +661,10 @@ export default function DesignToCodePage() {
                     ? `Complete ${framework === 'flutter' ? 'Flutter' : 'React Native'} project — unzip and run immediately`
                     : 'Screen files generated'}
                 </p>
-                {callTimeline.length > 0 && (
-                  <p className="text-[10px] text-gray-600">
-                    {callTimeline.length} tool calls · {currentIter} iterations
-                  </p>
-                )}
+                <p className="text-[10px] text-gray-600">
+                  {callTimeline.length} tool calls · {currentIter} iterations
+                  {gate1Stats.passed > 0 && ` · ${gate1Stats.passed} files validated`}
+                </p>
               </div>
             </div>
             <a

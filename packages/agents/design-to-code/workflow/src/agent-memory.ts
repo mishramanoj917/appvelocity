@@ -6,11 +6,13 @@
  * directly between tool functions.
  */
 
+import { randomUUID } from 'node:crypto';
 import type {
   FigmaFile,
   DesignIR,
   FigmaVariablesResponse,
 } from '@appvelocity/agent-design-to-code-core';
+import { SnapshotManager } from '@appvelocity/agent-design-to-code-core';
 import type {
   VisualAnalysis,
   ExecutionPlan,
@@ -29,6 +31,8 @@ export interface AgentInput {
   targetFramework: 'react-native' | 'flutter';
   generationMode: 'project' | 'screens';
   stateManagement: string;
+  /** Auto-generated if not supplied. Used as the workspace sub-directory name. */
+  sessionId?: string;
   options?: { dryRun?: boolean; verbose?: boolean; includeTests?: boolean };
 }
 
@@ -46,6 +50,15 @@ export interface AgentOutput {
 export class AgentMemory {
   // Input (immutable after init)
   readonly input: AgentInput;
+
+  // Session identity — used as workspace/{sessionId}/ directory name
+  readonly sessionId: string;
+
+  // Snapshot manager — all agents use this to read/write workspace files
+  readonly snapshotManager: SnapshotManager;
+
+  // True once figmaFile has been loaded (from snapshot or API); prevents double-fetch
+  snapshotLoaded = false;
 
   // Accumulated project state
   figmaFile?: FigmaFile;
@@ -69,6 +82,8 @@ export class AgentMemory {
 
   private constructor(input: AgentInput) {
     this.input = input;
+    this.sessionId = input.sessionId ?? randomUUID();
+    this.snapshotManager = new SnapshotManager();
   }
 
   static init(input: AgentInput): AgentMemory {
@@ -78,7 +93,7 @@ export class AgentMemory {
   // ─── Summary (compact state for system prompt injection) ─────────────────────
 
   summary(): string {
-    const lines: string[] = ['PROJECT STATE:'];
+    const lines: string[] = [`PROJECT STATE (session: ${this.sessionId.slice(0, 8)}):`];
 
     // Figma
     if (this.figmaFile) {

@@ -136,7 +136,7 @@ export async function codeGeneratorAgent(
       {
         llm, model, framework, tokenSummary, generatedFilePaths,
         stateManagement: state.stateManagement,
-        workspace, gate3Due, warnings, logs,
+        workspace, gate3Due, warnings, logs, assets: ir.assets,
       }
     );
     files.push(...screenFiles);
@@ -161,7 +161,7 @@ export async function codeGeneratorAgent(
         {
           llm, model, framework, tokenSummary, generatedFilePaths,
           stateManagement: state.stateManagement,
-          workspace, gate3Due, warnings, logs,
+          workspace, gate3Due, warnings, logs, assets: ir.assets,
         }
       );
       files.push(...componentFiles);
@@ -243,6 +243,7 @@ interface BatchContext {
   gate3Due:         number;
   warnings:         string[];
   logs:             ReturnType<typeof makeLogEntry>[];
+  assets:           import('@appvelocity/agent-design-to-code-core').IRAsset[];
 }
 
 async function generateBatch(
@@ -403,6 +404,15 @@ function buildRNPrompt(target: GenerationTarget, ctx: BatchContext): string {
     .map((p) => `  - ${p}`)
     .join('\n');
 
+  // Build asset manifest — include ALL assets, using descriptive placeholder if URL not yet resolved.
+  // Never filter unresolved assets out: the LLM must still generate an <Image> component for them.
+  const assetLines = ctx.assets
+    .map((a) => {
+      const url = a.url ?? `https://via.placeholder.com/600x400?text=${encodeURIComponent(a.name ?? a.slug)}`;
+      return `  - ${a.slug}.${a.format} → ${url}`;
+    })
+    .join('\n');
+
   return `Generate a React Native TypeScript ${target.kind} component.
 
 ## Target file
@@ -431,14 +441,15 @@ Import pattern:
 ${ctx.tokenSummary || '(no tokens — use hardcoded values)'}
 
 ## State management: ${ctx.stateManagement || 'none'}
-
+${assetLines ? `\n## Image assets (MUST render every one of these as an <Image> component)\n${assetLines}\n` : ''}
 ## Design specification
 ${target.serialized}
 
 ## Critical requirements
 - Wrap outermost element in <SafeAreaView style={styles.safeArea}>
 - All touchable areas use Pressable or TouchableOpacity with onPress={() => {}} placeholder
-- Image without resolved src: use {{ uri: 'https://via.placeholder.com/200' }}
+- EVERY asset listed above MUST appear as an <Image source={{ uri: 'URL_FROM_LIST' }} /> — do NOT omit any
+- For images NOT in the asset list, use <Image source={{ uri: 'https://via.placeholder.com/400x300' }} />
 - All text strings: escape {{ and }} as {'{'} and {'}'}
 - StyleSheet.create block at bottom of file with every style referenced in JSX
 - No inline style objects anywhere
@@ -449,6 +460,13 @@ ${target.serialized}
 function buildFlutterPrompt(target: GenerationTarget, ctx: BatchContext): string {
   const existingFiles = ctx.generatedFilePaths
     .map((p) => `  - ${p}`)
+    .join('\n');
+
+  const assetLines = ctx.assets
+    .map((a) => {
+      const url = a.url ?? `https://via.placeholder.com/600x400?text=${encodeURIComponent(a.name ?? a.slug)}`;
+      return `  - ${a.slug}.${a.format} → ${url}`;
+    })
     .join('\n');
 
   return `Generate a Flutter/Dart ${target.kind} widget.
@@ -470,7 +488,7 @@ Import from: package:your_app/tokens/app_colors.dart
 ${ctx.tokenSummary || '(no tokens — use hardcoded values from the design spec)'}
 
 ## State management: ${ctx.stateManagement || 'none'}
-
+${assetLines ? `\n## Image assets (MUST render every one as Image.network)\n${assetLines}\n` : ''}
 ## Design specification
 ${target.serialized}
 
@@ -478,7 +496,8 @@ ${target.serialized}
 - class ${target.name} extends StatelessWidget (use StatefulWidget only if local state needed)
 - const constructor: const ${target.name}({super.key});
 - SafeArea(child: ...) at the root of the Scaffold body
-- Every image: Image.network(url, errorBuilder: (c,e,s) => const Icon(Icons.broken_image))
+- EVERY asset listed above MUST appear as Image.network('URL_FROM_LIST', ...) — do NOT omit any
+- Every other image: Image.network('https://via.placeholder.com/400x300', errorBuilder: (c,e,s) => const Icon(Icons.broken_image))
 - All colours from AppColors, all text styles from AppTextStyles
 - No hard-coded magic numbers — use const spacing values`;
 }
@@ -531,11 +550,35 @@ function buildRNTokensFile(tokens: IRTokenSet): CodeFile {
 }
 
 function buildRNNavTypesFile(screenNames: string[]): CodeFile {
-  const params = screenNames.map((s) => `  ${s}: undefined;`).join('\n');
+  // Deduplicate and convert node IDs to valid TypeScript identifiers.
+  // The LLM planner may return Figma node IDs ("13-8804") instead of names;
+  // those are mapped to component-safe names here.
+  const seen = new Set<string>();
+  const params = screenNames
+    .map((s) => toComponentName(s))
+    .filter((name) => {
+      if (seen.has(name)) return false;
+      seen.add(name);
+      return true;
+    })
+    .map((name) => `  ${name}: undefined;`)
+    .join('\n');
+
   const content =
     `// Navigation types — auto-generated by DesignToCodeAgent.\n` +
     `export type RootStackParamList = {\n${params}\n};\n`;
   return { path: 'src/navigation/types.ts', content, language: 'typescript' };
+}
+
+/** "My Screen Name" → "MyScreenName", "13-8804" → "Screen138804" */
+function toComponentName(name: string): string {
+  const result = name
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join('');
+  return /^\d/.test(result) ? `Screen${result}` : (result || 'Screen');
 }
 
 function buildFlutterTokenFiles(tokens: IRTokenSet): CodeFile[] {

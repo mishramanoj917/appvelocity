@@ -26,6 +26,46 @@ services:
       - redis
     command: pnpm dev:web
 
+  # ── Flutter compiler (batch — no HTTP port, mounts shared workspace) ────────
+  flutter-compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile.flutter
+    volumes:
+      - ./workspace:/workspace
+    environment:
+      WORKSPACE_DIR: /workspace
+    profiles:
+      - compilers
+
+  # ── React Native / TypeScript compiler ───────────────────────────────────────
+  rn-compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile.reactnative
+    volumes:
+      - ./workspace:/workspace
+    environment:
+      WORKSPACE_DIR: /workspace
+    profiles:
+      - compilers
+
+  # ── Visual QA service (pixel diff + screenshot capture) ──────────────────────
+  visual-qa:
+    build:
+      context: .
+      dockerfile: Dockerfile.qa
+    volumes:
+      - ./workspace:/workspace
+    ports:
+      - '5001:5001'
+    environment:
+      WORKSPACE_DIR: /workspace
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    profiles:
+      - compilers
+
   # ── Redis (caching layer) ───────────────────────────────────────────────────
   redis:
     image: redis:7-alpine

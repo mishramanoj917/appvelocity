@@ -43,7 +43,7 @@ export async function GET(
       // Poll job store until terminal state
       // In production: subscribe to a Redis pub/sub channel instead
       let attempts = 0;
-      const maxAttempts = 360; // 3 minutes at 500ms
+      const maxAttempts = 1800; // 15 minutes at 500ms — covers long visual QA + compilation runs
       let lastStepIndex = 0; // tracks which steps we've already emitted
 
       const poll = setInterval(() => {

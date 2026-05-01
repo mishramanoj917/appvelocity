@@ -28,6 +28,11 @@ export interface DesignIR {
   warnings: IRWarning[];
   /** Build metadata */
   meta: IRMeta;
+  /**
+   * Node IDs that were detected as system UI (status bar, battery, WiFi, signal)
+   * and excluded from the element tree. Passed to GroundTruthAgent for ground_truth.json.
+   */
+  statusBarNodeIds: string[];
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -193,7 +198,8 @@ export type IRWarningCode =
   | 'NO_TOKENS'
   | 'TOKENS_INFERRED'
   | 'ASSETS_DETECTED'
-  | 'LAYOUT_RECONSTRUCTED';
+  | 'LAYOUT_RECONSTRUCTED'
+  | 'STATUS_BAR_FILTERED';
 
 export interface IRWarning {
   code: IRWarningCode;

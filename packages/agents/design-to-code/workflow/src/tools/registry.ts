@@ -24,6 +24,7 @@ import { workspaceCheckTool }   from './workspace-check.js';
 import { assembleProjectTool }  from './assemble-project.js';
 import { compilationCheckTool } from './compilation-check.js';
 import { createZipTool }        from './create-zip.js';
+import { runVisualQaTool }      from './run-visual-qa.js';
 
 // ─── Tool registry (OpenAI function-calling format) ───────────────────────────
 
@@ -165,6 +166,14 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'run_visual_qa',
+      description: 'Run visual QA on all generated screens: compares generated code against Figma ground truth using structural analysis + LLM vision judge. Returns per-screen fidelity scores and lists of missing elements. Call after generate_all_components completes.',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
 ];
 
 // ─── Tool dispatcher ──────────────────────────────────────────────────────────
@@ -184,6 +193,7 @@ const HANDLERS: Record<string, ToolHandler> = {
   assemble_project:        assembleProjectTool,
   run_compilation_check:   compilationCheckTool,
   create_zip:              createZipTool,
+  run_visual_qa:           runVisualQaTool,
 };
 
 export async function dispatchTool(call: ToolCall, memory: AgentMemory): Promise<ToolResult> {

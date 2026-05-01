@@ -3,6 +3,7 @@ import axiosRetry from 'axios-retry';
 import PQueue from 'p-queue';
 import { LRUCache } from 'lru-cache';
 import { createLogger } from '../utils/logger.js';
+import { createFigmaRedisCache, type FigmaRedisCache } from './redis-cache.js';
 import type {
   FigmaFile,
   FigmaNodesResponse,
@@ -64,6 +65,7 @@ export class FigmaClient {
   private readonly queue: PQueue;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private readonly cache: LRUCache<string, any>;
+  private readonly redis: FigmaRedisCache;
 
   constructor(config: FigmaClientConfig) {
     const {
@@ -113,7 +115,9 @@ export class FigmaClient {
       ttl: cacheTtlMs,
     });
 
-    log.info('FigmaClient initialised', { rateLimitPerMinute, cacheTtlMs });
+    this.redis = createFigmaRedisCache();
+
+    log.info('FigmaClient initialised', { rateLimitPerMinute, cacheTtlMs, redisEnabled: this.redis.isAvailable() });
   }
 
   // ─── Public API methods ─────────────────────────────────────────────────────
@@ -125,15 +129,24 @@ export class FigmaClient {
   async getFile(fileKey: string, force = false): Promise<FigmaFile> {
     const cacheKey = `file:${fileKey}`;
     if (!force) {
-      const cached = this.cache.get(cacheKey);
-      if (cached) {
-        log.debug('Cache hit', { key: cacheKey });
-        return cached as FigmaFile;
+      // L1: in-memory LRU
+      const l1 = this.cache.get(cacheKey);
+      if (l1) {
+        log.debug('L1 cache hit', { key: cacheKey });
+        return l1 as FigmaFile;
+      }
+      // L2: Redis
+      const l2 = await this.redis.get<FigmaFile>(fileKey, 'file');
+      if (l2) {
+        log.debug('L2 Redis cache hit', { fileKey });
+        this.cache.set(cacheKey, l2);
+        return l2;
       }
     }
 
     const data = await this.get<FigmaFile>(`/v1/files/${fileKey}`);
     this.cache.set(cacheKey, data);
+    await this.redis.set(fileKey, 'file', data);
     return data;
   }
 
@@ -171,14 +184,20 @@ export class FigmaClient {
   ): Promise<FigmaVariablesResponse> {
     const cacheKey = `vars:${fileKey}`;
     if (!force) {
-      const cached = this.cache.get(cacheKey);
-      if (cached) return cached as FigmaVariablesResponse;
+      const l1 = this.cache.get(cacheKey);
+      if (l1) return l1 as FigmaVariablesResponse;
+      const l2 = await this.redis.get<FigmaVariablesResponse>(fileKey, 'vars');
+      if (l2) {
+        this.cache.set(cacheKey, l2);
+        return l2;
+      }
     }
 
     const data = await this.get<FigmaVariablesResponse>(
       `/v1/files/${fileKey}/variables/local`
     );
     this.cache.set(cacheKey, data);
+    await this.redis.set(fileKey, 'vars', data);
     return data;
   }
 

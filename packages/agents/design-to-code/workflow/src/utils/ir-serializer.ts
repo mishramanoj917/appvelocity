@@ -141,7 +141,9 @@ function serializeElement(el: IRElement, depth: number, remainingChars: number):
   // ── Image / icon ────────────────────────────────────────────────────────────
   if (el.image) {
     if (el.image.src) {
-      attrs.push(`src="${el.image.src.slice(0, 60)}"`);
+      // Do NOT truncate CDN URLs — Figma export URLs are 200+ chars and must be
+      // passed verbatim to the LLM so it can generate correct Image sources.
+      attrs.push(`src="${el.image.src}"`);
     } else {
       attrs.push(`asset="${el.image.nodeId.replace(':', '_')}.${el.image.format}"`);
     }

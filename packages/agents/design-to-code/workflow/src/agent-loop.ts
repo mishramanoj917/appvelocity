@@ -94,6 +94,30 @@ export async function runAgentLoop(
 
     // Short-circuit: if the ZIP was created, we're done
     if (memory.zipBuffer) break;
+
+    // Emergency bailout: near iteration limit with files but no ZIP → force delivery
+    if (i === MAX_ITERATIONS - 5 && !memory.zipBuffer && memory.generatedFiles.size > 0) {
+      const nextTool = memory.projectBundle ? 'create_zip' : 'assemble_project';
+      memory.messages.push({
+        role: 'user',
+        content: `⚠️ ITERATION LIMIT APPROACHING (${i}/${MAX_ITERATIONS}). Stop all repair attempts. Call "${nextTool}" NOW to deliver the project. Compilation warnings are acceptable — an incomplete delivery is not.`,
+      });
+      memory.logs.push(`[iter ${i}] Bailout injected — forcing ${nextTool}`);
+    }
+  }
+
+  // Ensure a meaningful error is surfaced if the pipeline ended without a ZIP
+  if (!memory.zipBuffer && memory.errors.length === 0) {
+    const lastRelevant = memory.logs
+      .filter(l => /fail|error/i.test(l))
+      .at(-1)
+      ?? memory.logs.at(-1)
+      ?? `Pipeline did not complete after ${memory.iteration} iterations`;
+    memory.errors.push({
+      code: 'PIPELINE_INCOMPLETE',
+      message: lastRelevant.replace(/^\[iter \d+\] /, '').slice(0, 300),
+      recoverable: true,
+    });
   }
 
   return memory.finalOutput();

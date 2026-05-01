@@ -69,26 +69,31 @@ export default function App() {
   }
 
   generateNavigation(screens: IRScreen[]): string {
-    const screenImports = screens
+    // Deduplicate by componentName — Figma files with multiple pages can list
+    // the same screen more than once, which would produce duplicate imports.
+    const seen = new Set<string>();
+    const unique = screens.filter((s) => {
+      if (seen.has(s.componentName)) return false;
+      seen.add(s.componentName);
+      return true;
+    });
+
+    const screenImports = unique
       .map((s) => `import { ${s.componentName} } from '../screens/${s.componentName}';`)
       .join('\n');
 
-    const paramListEntries = screens
-      .map((s) => `  ${s.componentName}: undefined;`)
-      .join('\n');
-
-    const screenDeclarations = screens
+    const screenDeclarations = unique
       .map((s) => `      <Stack.Screen name="${s.componentName}" component={${s.componentName}} />`)
       .join('\n');
 
+    // Import RootStackParamList from types.ts — do NOT redefine it here because
+    // code-generator already emits src/navigation/types.ts with that type, and
+    // two definitions in the same project cause TypeScript conflicts.
     return `import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import type { RootStackParamList } from './types';
 ${screenImports}
-
-export type RootStackParamList = {
-${paramListEntries}
-};
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -96,7 +101,7 @@ export function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="${screens[0]?.componentName ?? 'Screen'}"
+        initialRouteName="${unique[0]?.componentName ?? 'Screen'}"
         screenOptions={{ headerShown: false }}
       >
 ${screenDeclarations}

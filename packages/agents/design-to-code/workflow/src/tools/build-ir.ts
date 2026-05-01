@@ -1,6 +1,7 @@
 import { irBuilderAgent }    from '../nodes/ir-builder.js';
 import { irValidatorAgent }  from '../nodes/ir-validator.js';
 import { memoryToState }     from './registry.js';
+import { extractGroundTruth } from '../utils/ground-truth-extractor.js';
 import type { AgentMemory }  from '../agent-memory.js';
 import type { ToolResult }   from '../types.js';
 
@@ -29,12 +30,24 @@ export async function buildIrTool(
   const score          = validateResult.validationResult?.score ?? 100;
   const issues         = validateResult.validationResult?.issues?.length ?? 0;
 
+  // Extract ground truth for VisualQA — builds a reference snapshot of what the
+  // generated code must reproduce (tokens, component tree, asset list, frame URLs).
+  try {
+    const assetUrls: Record<string, string> = {};
+    for (const asset of memory.designIR.assets) {
+      if (asset.url) assetUrls[asset.nodeId] = asset.url;
+    }
+    extractGroundTruth(memory.designIR, memory.sessionId, memory.snapshotManager, assetUrls);
+  } catch {
+    // Non-fatal — VisualQA will skip gracefully if ground_truth.json is missing
+  }
+
   const ir = memory.designIR;
   return {
     success: true,
     summary:
       `IR built — ${ir.screens.length} screens: [${ir.screens.map(s => s.componentName).join(', ')}], ` +
       `${ir.components.length} components, ${ir.assets.length} assets. ` +
-      `Validation: ${valid ? 'PASS' : 'WARN'} (score=${score}, issues=${issues})`,
+      `Validation: ${valid ? 'PASS' : 'WARN'} (score=${score}, issues=${issues}). Ground truth written.`,
   };
 }

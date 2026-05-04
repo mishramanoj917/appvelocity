@@ -24,12 +24,15 @@
     "@appvelocity/shared-core": "workspace:*",
     "@appvelocity/agent-design-to-code-core": "workspace:*",
     "@appvelocity/agent-design-to-code-generators": "workspace:*",
+    "@appvelocity/agent-design-to-code-skills": "workspace:*",
     "@langchain/langgraph": "^0.2.0",
-    "@babel/parser": "^7.24.0"
+    "@babel/parser": "^7.24.0",
+    "archiver": "^7.0.1"
   },
   "devDependencies": {
     "typescript": "^5.4.0",
     "@types/node": "^20.11.5",
+    "@types/archiver": "^6.0.2",
     "vitest": "^1.6.0"
   }
 }

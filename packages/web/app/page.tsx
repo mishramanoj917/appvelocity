@@ -48,7 +48,8 @@ export default function DashboardPage() {
           <div className="mt-6 flex flex-wrap gap-4 text-sm">
             <Stat label="Agents" value="7" />
             <Stat label="Frameworks" value="4" />
-            <Stat label="Status" value="Phase 0 ✓" highlight />
+            <Stat label="Status" value="Phase 1 ✓" highlight />
+            <Stat label="Pipeline" value="6-agent · snapshot-first" />
           </div>
         </div>
       </section>

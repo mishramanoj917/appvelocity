@@ -218,8 +218,15 @@ export class RNViewModelBuilder {
       }
 
       case 'component-instance': {
-        const refName = toPascalCase(el.componentRef ?? el.name);
-        return `${pad}<${refName} style={${styleRef}} />`;
+        // Render as View — component refs are not importable without knowing the
+        // full project graph; View is always safe and avoids "Cannot find name" errors.
+        this.usedComponents.add('View');
+        const children = this.renderChildren(el.children, tokens, depth + 1, warnings);
+        warnings?.push(`component-instance '${el.name}' rendered as View — wire up the real component manually if needed`);
+        if (children) {
+          return `${pad}<View style={${styleRef}}>\n${children}\n${pad}</View>`;
+        }
+        return `${pad}<View style={${styleRef}} />`;
       }
 
       case 'view':
@@ -322,9 +329,13 @@ function sanitizeStyleKey(raw: string): string {
 }
 
 function escapeJsx(s: string): string {
-  return s.replace(/[{}<>]/g, (c) => (
-    { '{': '&#123;', '}': '&#125;', '<': '&lt;', '>': '&gt;' }[c] ?? c
-  ));
+  // React Native does not process HTML entities — use JSX expression wrappers instead.
+  // Only { } and < need escaping in JSX text; > is safe as-is.
+  return s
+    .replace(/\n/g, ' ')       // collapse newlines to spaces in inline text
+    .replace(/{/g, "{'{'}")
+    .replace(/}/g, "{'}'}")
+    .replace(/</g, "{'<'}");
 }
 
 function escapeAttr(s: string): string {

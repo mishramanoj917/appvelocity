@@ -44,6 +44,14 @@ const log = createLogger('IRBuilder');
 /** Minimum occurrences of an inline style value before it becomes an inferred token. */
 const TOKEN_INFERENCE_THRESHOLD = 3;
 
+/**
+ * Regex that matches Figma node names that represent system UI chrome.
+ * These nodes should NEVER appear in generated mobile code — the OS renders
+ * battery, WiFi, signal, and time indicators itself.
+ */
+const STATUS_BAR_RE =
+  /^(status[\s_-]?bar|battery|wifi|wi-fi|signal|network|carrier|time[\s_-]?label|notification[\s_-]?bar|system[\s_-]?bar)/i;
+
 // ─── Builder ──────────────────────────────────────────────────────────────────
 
 export class IRBuilder {
@@ -68,16 +76,21 @@ export class IRBuilder {
       if (warning) warnings.push(warning);
     }
 
-    // 2. Screens (asset collector + warnings passed by reference)
+    // 2. Screens (asset collector + status bar filter + warnings passed by reference)
     const collectedAssets: IRAsset[] = [];
+    const filteredStatusBarIds: string[] = [];
     const screenNodes = extractScreens(file);
-    const screens = screenNodes.map((n) => this.buildScreen(n, collectedAssets, warnings));
+    const screens = screenNodes.map((n) =>
+      this.buildScreen(n, collectedAssets, warnings, filteredStatusBarIds)
+    );
 
     // 3. Components
     const parsedComponents = parseComponents(file);
     const components = parsedComponents
       .filter((c) => c.atomicLevel !== 'screen')
-      .map((c) => this.buildComponent(c.node, c, collectedAssets, warnings));
+      .map((c) =>
+        this.buildComponent(c.node, c, collectedAssets, warnings, filteredStatusBarIds)
+      );
 
     // 4. Assets detected during element traversal
     const assets = collectedAssets;
@@ -104,6 +117,15 @@ export class IRBuilder {
 
     log.info(`IR built in ${Date.now() - start}ms`, { ...meta.stats, warnings: warnings.length });
 
+    if (filteredStatusBarIds.length > 0) {
+      warnings.push({
+        code: 'STATUS_BAR_FILTERED',
+        message: `${filteredStatusBarIds.length} system UI node(s) excluded (status bar, battery, WiFi, signal).`,
+        nodeCount: filteredStatusBarIds.length,
+      });
+      log.info(`Filtered ${filteredStatusBarIds.length} status bar node(s)`, { ids: filteredStatusBarIds });
+    }
+
     return {
       fileKey,
       fileName: file.name,
@@ -114,6 +136,7 @@ export class IRBuilder {
       assets,
       warnings,
       meta,
+      statusBarNodeIds: filteredStatusBarIds,
     };
   }
 
@@ -278,10 +301,11 @@ export class IRBuilder {
   private buildScreen(
     node: FigmaNode,
     assets: IRAsset[],
-    warnings: IRWarning[]
+    warnings: IRWarning[],
+    filteredIds: string[]
   ): IRScreen {
     const elementIndex: Record<string, IRElement> = {};
-    const root = this.buildElement(node, elementIndex, assets, warnings);
+    const root = this.buildElement(node, elementIndex, assets, warnings, filteredIds);
     const bounds = node.absoluteBoundingBox;
 
     return {
@@ -301,10 +325,11 @@ export class IRBuilder {
     node: FigmaNode,
     parsed: { atomicLevel: string; variants: Record<string, string>; description: string },
     assets: IRAsset[],
-    warnings: IRWarning[]
+    warnings: IRWarning[],
+    filteredIds: string[]
   ): IRComponent {
     const elementIndex: Record<string, IRElement> = {};
-    const defaultVariant = this.buildElement(node, elementIndex, assets, warnings);
+    const defaultVariant = this.buildElement(node, elementIndex, assets, warnings, filteredIds);
 
     return {
       id: node.id,
@@ -322,7 +347,8 @@ export class IRBuilder {
     node: FigmaNode,
     index: Record<string, IRElement>,
     assets: IRAsset[],
-    warnings: IRWarning[]
+    warnings: IRWarning[],
+    filteredIds: string[]
   ): IRElement {
     const classification = classifyNode(node);
     const style = this.buildStyle(node);
@@ -354,8 +380,15 @@ export class IRBuilder {
       layout,
       style,
       children: (node.children ?? [])
-        .filter((child) => child.visible !== false)
-        .map((child) => this.buildElement(child, index, assets, warnings)),
+        .filter((child) => {
+          if (child.visible === false) return false;
+          if (STATUS_BAR_RE.test(child.name)) {
+            filteredIds.push(child.id);
+            return false;
+          }
+          return true;
+        })
+        .map((child) => this.buildElement(child, index, assets, warnings, filteredIds)),
     };
 
     // Absolute-position child elements when reconstruction was NOT possible
@@ -629,13 +662,16 @@ export class IRBuilder {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** "My Screen Name" → "MyScreenName" */
+/** "My Screen Name" → "MyScreenName", "1. Home" → "Screen1Home" */
 function toComponentName(name: string): string {
-  return name
+  const result = name
     .replace(/[^a-zA-Z0-9\s]/g, '')
     .split(/\s+/)
+    .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join('');
+  // JS identifiers cannot start with a digit — prefix with "Screen"
+  return /^\d/.test(result) ? `Screen${result}` : (result || 'Screen');
 }
 
 /** "Hero Image / Banner" → "hero_image_banner" */

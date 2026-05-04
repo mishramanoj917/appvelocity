@@ -38,6 +38,17 @@ export * from './ir/types.js';
 // ─── IR builder ───────────────────────────────────────────────────────────────
 export { IRBuilder } from './ir/builder.js';
 
+// ─── Figma snapshot ───────────────────────────────────────────────────────────
+export { SnapshotManager } from './figma/snapshot.js';
+export type { FigmaSnapshot } from './figma/snapshot.js';
+
+// ─── Figma Redis cache ────────────────────────────────────────────────────────
+export { createFigmaRedisCache } from './figma/redis-cache.js';
+export type { FigmaRedisCache } from './figma/redis-cache.js';
+
+// ─── Figma node collector (batch image export) ───────────────────────────────
+export { NodeCollector } from './figma/node-collector.js';
+
 // ─── Utilities ────────────────────────────────────────────────────────────────
 export { parseFigmaUrl, normaliseNodeId } from './utils/url-parser.js';
 export { figmaColorToHex, figmaColorToRgba, isTransparent } from './utils/color.js';

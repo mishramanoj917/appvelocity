@@ -68,19 +68,19 @@ export const AGENTS: AgentConfig[] = [
     name: 'DesignToCodeAgent',
     subtitle: 'Figma → Production Mobile Code',
     valueProposition:
-      'Transforms Figma designs into production-ready, framework-specific mobile code using an agentic Plan → Research → Execute → Reflect → Generate workflow.',
+      'Transforms Figma designs into production-ready Flutter and React Native code using a 6-agent pipeline: snapshot-first Figma ingestion, ground truth extraction, LLM-orchestrated code generation, Gate 1/2/3 validation, and visual QA with pixel diff and LLM judge.',
     icon: '🎨',
     color: '#6366f1',
     status: 'active',
     capabilities: [
       'Full design system extraction (tokens, components, screens)',
-      'React Native code generation',
-      'Flutter code generation',
-      'SwiftUI code generation (coming)',
-      'Jetpack Compose code generation (coming)',
-      'Auto-layout → Flexbox mapping',
+      'React Native & Flutter production code generation',
+      'Workspace snapshot — Figma API called once per session',
+      'Auto-layout → Flexbox / Column mapping',
       'Light / dark mode theme generation',
-      'LangGraph agentic workflow with reflection',
+      'Gate 1/2/3 validation pipeline — pre-write static analysis',
+      'Status bar filter — battery, wifi, signal nodes excluded from IR',
+      'Visual QA — structural diff, token diff, pixel diff & LLM judge',
     ],
     actions: [
       {

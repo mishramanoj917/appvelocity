@@ -1,0 +1,9 @@
+{
+  "name": "AppVelocity Exporter",
+  "id": "appvelocity-exporter",
+  "api": "1.0.0",
+  "main": "dist/plugin.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page"
+}

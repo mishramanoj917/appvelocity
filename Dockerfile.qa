@@ -1,0 +1,30 @@
+FROM python:3.11-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# System deps: OpenCV + Pillow + Playwright browsers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 \
+    curl wget ca-certificates nodejs npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python deps: image comparison
+RUN pip install --no-cache-dir \
+    opencv-python-headless \
+    Pillow \
+    numpy \
+    flask \
+    requests
+
+# Node.js deps: Playwright for screenshot capture
+RUN npm install -g playwright
+RUN playwright install chromium --with-deps
+
+WORKDIR /app
+
+# Pixel diff REST service
+COPY scripts/visual_qa_server.py /app/visual_qa_server.py
+
+EXPOSE 5001
+
+CMD ["python", "visual_qa_server.py"]

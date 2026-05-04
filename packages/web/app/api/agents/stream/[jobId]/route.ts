@@ -43,7 +43,7 @@ export async function GET(
       // Poll job store until terminal state
       // In production: subscribe to a Redis pub/sub channel instead
       let attempts = 0;
-      const maxAttempts = 360; // 3 minutes at 500ms
+      const maxAttempts = 1800; // 15 minutes at 500ms — covers long visual QA + compilation runs
       let lastStepIndex = 0; // tracks which steps we've already emitted
 
       const poll = setInterval(() => {
@@ -66,7 +66,20 @@ export async function GET(
         lastStepIndex += newSteps.length;
 
         if (current.status === 'complete') {
-          send('complete', { result: current.result });
+          // Strip zipBuffer (can be hundreds of KB) — client fetches it via /download endpoint
+          const output = current.result as
+            | { success?: boolean; data?: Record<string, unknown>; errors?: unknown[] }
+            | undefined;
+          const data = output?.data ?? {};
+          const projectName =
+            (data['projectBundle'] as { projectName?: string } | undefined)?.projectName ??
+            (data['executionPlan'] as { projectName?: string } | undefined)?.projectName ??
+            'project';
+          send('complete', {
+            success: output?.success ?? false,
+            projectName,
+            errors: output?.errors ?? (data['errors'] as unknown[] | undefined) ?? [],
+          });
           clearInterval(poll);
           clearInterval(ping);
           controller.close();

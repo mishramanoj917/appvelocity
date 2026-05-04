@@ -10,17 +10,48 @@ import type { WorkflowState } from '../types.js';
 export async function figmaFetcherAgent(
   state: WorkflowState
 ): Promise<Partial<WorkflowState>> {
+  const token = process.env['FIGMA_ACCESS_TOKEN'];
+  if (!token) {
+    return {
+      currentStep: 'FigmaFetcherAgent',
+      errors: [{
+        code: 'MISSING_TOKEN',
+        message: 'FIGMA_ACCESS_TOKEN is not set. Add it to your .env file and restart the server.',
+        recoverable: false,
+      }],
+      logs: [makeLogEntry('error', 'FIGMA_ACCESS_TOKEN environment variable is missing.')],
+    };
+  }
+
   const client = new FigmaClient({
-    accessToken: process.env.FIGMA_ACCESS_TOKEN!,
+    accessToken: token,
     rateLimitPerMinute: 60,
   });
 
   const { fileKey } = parseFigmaUrl(state.figmaUrl);
 
-  const [figmaFile, variablesResponse] = await Promise.all([
-    client.getFile(fileKey),
-    client.getLocalVariables(fileKey).catch(() => undefined),
-  ]);
+  let figmaFile: Awaited<ReturnType<typeof client.getFile>>;
+  let variablesResponse: Awaited<ReturnType<typeof client.getLocalVariables>> | undefined;
+  try {
+    [figmaFile, variablesResponse] = await Promise.all([
+      client.getFile(fileKey),
+      client.getLocalVariables(fileKey).catch(() => undefined),
+    ]);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const isAuth = msg.toLowerCase().includes('401') || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('forbidden');
+    return {
+      currentStep: 'FigmaFetcherAgent',
+      errors: [{
+        code: isAuth ? 'FIGMA_AUTH_ERROR' : 'FIGMA_API_ERROR',
+        message: isAuth
+          ? `Figma authentication failed. Verify FIGMA_ACCESS_TOKEN is valid and has access to this file. (${msg})`
+          : `Figma API request failed: ${msg}. Check the Figma URL and your network connection.`,
+        recoverable: !isAuth,
+      }],
+      logs: [makeLogEntry('error', `Figma fetch failed: ${msg}`)],
+    };
+  }
 
   const logs = [
     makeLogEntry(

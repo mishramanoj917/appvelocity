@@ -2,6 +2,7 @@ import { irBuilderAgent }    from '../nodes/ir-builder.js';
 import { irValidatorAgent }  from '../nodes/ir-validator.js';
 import { memoryToState }     from './registry.js';
 import { extractGroundTruth } from '../utils/ground-truth-extractor.js';
+import { applyPluginRenderedBounds, applyPluginAssetPaths } from '../utils/plugin-ir-patcher.js';
 import type { AgentMemory }  from '../agent-memory.js';
 import type { ToolResult }   from '../types.js';
 
@@ -29,6 +30,18 @@ export async function buildIrTool(
   const valid          = validateResult.validationResult?.valid ?? true;
   const score          = validateResult.validationResult?.score ?? 100;
   const issues         = validateResult.validationResult?.issues?.length ?? 0;
+
+  // Apply plugin-exported rendered bounds + asset paths when available.
+  // This overrides absoluteBoundingBox heights for text nodes (text wrap accuracy)
+  // and sets local PNG paths for image nodes (no CDN URL expiry).
+  if (memory.input.pluginExport) {
+    const { renderedBounds, assetPaths } = memory.input.pluginExport;
+    const patchedNodes = applyPluginRenderedBounds(memory.designIR, renderedBounds);
+    const patchedAssets = applyPluginAssetPaths(memory.designIR, assetPaths);
+    if (patchedNodes > 0 || patchedAssets > 0) {
+      memory.logs.push(`Plugin data applied — ${patchedNodes} node bounds patched, ${patchedAssets} asset paths set.`);
+    }
+  }
 
   // Extract ground truth for VisualQA — builds a reference snapshot of what the
   // generated code must reproduce (tokens, component tree, asset list, frame URLs).

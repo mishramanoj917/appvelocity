@@ -8,8 +8,8 @@
 
 import type { IRElement, IRScreen, IRComponent, IRTokenSet } from '@appvelocity/agent-design-to-code-core';
 
-const ELEMENT_CAP = 20;    // max children per node in serialised output
-const CHAR_BUDGET  = 5000;  // max chars for a full screen tree
+const ELEMENT_CAP = 100;    // max children per node in serialised output
+const CHAR_BUDGET  = 25000; // max chars for a full screen tree
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ function serializeElement(el: IRElement, depth: number, remainingChars: number):
   // ── Text content ────────────────────────────────────────────────────────────
   if (el.text) {
     const s       = el.text.style;
-    const preview = el.text.value.slice(0, 50).replace(/\n/g, ' ').replace(/"/g, "'");
+    const preview = el.text.value.slice(0, 200).replace(/\n/g, ' ').replace(/"/g, "'");
     attrs.push(`text="${preview}"`);
     if (s.fontSize) attrs.push(`fs=${s.fontSize}`);
     if (s.fontWeight && Number(s.fontWeight) >= 600) attrs.push('bold');

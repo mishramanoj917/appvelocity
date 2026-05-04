@@ -84,9 +84,13 @@ export async function fetchFigmaTool(
     ? Object.keys(result.variablesResponse.meta.variables).length
     : 0;
 
+  const pluginNote = memory.input.pluginExport
+    ? ` Plugin export active (${Object.keys(memory.input.pluginExport.renderedBounds).length} rendered bounds, ${Object.keys(memory.input.pluginExport.assetPaths).length} assets).`
+    : '';
+
   return {
     success: true,
-    summary: `Fetched "${result.figmaFile.name}" — ${pageCount} page(s), ${tokenCount} design tokens. Snapshot saved (session ${sid.slice(0, 8)}).`,
+    summary: `Fetched "${result.figmaFile.name}" — ${pageCount} page(s), ${tokenCount} design tokens. Snapshot saved (session ${sid.slice(0, 8)}).${pluginNote}`,
   };
 }
 

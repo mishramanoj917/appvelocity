@@ -61,7 +61,12 @@ function assembleFlutter(state: WorkflowState, screens: IRScreen[]): ProjectBund
 
   // Config files
   const hasFonts = (state.visualAnalysis?.fontFamilies?.length ?? 0) > 0;
-  files.push({ path: 'pubspec.yaml', content: skills.generatePubspec(projectName, sm, hasFonts), language: 'yaml' });
+  const assetPaths = state.generatedCode?.assets?.map((a) => a.path) ?? [];
+  const pubspecContent = injectFlutterAssets(
+    skills.generatePubspec(projectName, sm, hasFonts),
+    assetPaths
+  );
+  files.push({ path: 'pubspec.yaml', content: pubspecContent, language: 'yaml' });
   files.push({ path: 'analysis_options.yaml', content: skills.generateAnalysisOptions(), language: 'yaml' });
   files.push({ path: '.gitignore', content: skills.generateGitignore(), language: 'text' });
   files.push({ path: 'README.md', content: generateFlutterReadme(projectName), language: 'text' });
@@ -174,6 +179,31 @@ src/
   tokens/                      # Design tokens
 \`\`\`
 `;
+}
+
+// ─── Flutter pubspec asset injection ─────────────────────────────────────────
+
+function injectFlutterAssets(pubspec: string, assetPaths: string[]): string {
+  if (assetPaths.length === 0) return pubspec;
+
+  const dirs = new Set<string>();
+  for (const p of assetPaths) {
+    // e.g. "assets/images/hero.png" → "assets/images/"
+    const dir = p.split('/').slice(0, -1).join('/') + '/';
+    dirs.add(dir);
+  }
+
+  const assetBlock = [...dirs]
+    .sort()
+    .map((d) => `    - ${d}`)
+    .join('\n');
+
+  const injection = `  assets:\n${assetBlock}\n`;
+
+  if (pubspec.includes('uses-material-design: true')) {
+    return pubspec.replace('uses-material-design: true', `uses-material-design: true\n${injection}`);
+  }
+  return pubspec + `\nflutter:\n${injection}`;
 }
 
 // ─── Node ─────────────────────────────────────────────────────────────────────

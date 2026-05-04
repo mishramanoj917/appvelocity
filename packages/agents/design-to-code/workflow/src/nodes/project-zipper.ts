@@ -15,6 +15,7 @@
 
 import archiver from 'archiver';
 import { Writable } from 'node:stream';
+import { readFile } from 'node:fs/promises';
 import { makeLogEntry } from '../utils/logger.js';
 import type { WorkflowState } from '../types.js';
 
@@ -36,15 +37,21 @@ async function downloadAssets(
 
   const results = await Promise.allSettled(
     capped.map(async (asset): Promise<DownloadedAsset> => {
+      const url = asset.url!;
       try {
-        const res = await fetch(asset.url!, {
-          signal: AbortSignal.timeout(ASSET_FETCH_TIMEOUT_MS),
-        });
-        if (!res.ok) return { path: asset.path, content: null, url: asset.url! };
+        // Local file from Figma plugin export — read directly, no HTTP needed
+        if (url.startsWith('file://')) {
+          const localPath = url.slice('file://'.length);
+          const buf = await readFile(localPath);
+          return { path: asset.path, content: buf, url };
+        }
+        // Remote CDN URL
+        const res = await fetch(url, { signal: AbortSignal.timeout(ASSET_FETCH_TIMEOUT_MS) });
+        if (!res.ok) return { path: asset.path, content: null, url };
         const buf = Buffer.from(await res.arrayBuffer());
-        return { path: asset.path, content: buf, url: asset.url! };
+        return { path: asset.path, content: buf, url };
       } catch {
-        return { path: asset.path, content: null, url: asset.url! };
+        return { path: asset.path, content: null, url };
       }
     })
   );

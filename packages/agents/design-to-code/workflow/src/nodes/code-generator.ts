@@ -33,6 +33,7 @@ import type { CodeFile, AssetFile }  from '@appvelocity/agent-design-to-code-gen
 import { createLLMClient }           from '../utils/llm-client.js';
 import { makeLogEntry }              from '../utils/logger.js';
 import { serializeScreen, serializeComponent, serializeTokenSummary } from '../utils/ir-serializer.js';
+import { generateRNStyleSheet, generateFlutterLayoutConstants } from '../utils/style-generator.js';
 import { runGate1, stripMarkdownFences }  from '../utils/gate1-validator.js';
 import { WorkspaceSession, groupErrorsByFile } from '../utils/workspace-validator.js';
 import { repairFile }                from '../utils/repair-loop.js';
@@ -125,13 +126,16 @@ export async function codeGeneratorAgent(
 
     const screenFiles = await generateBatch(
       screensToGen.map((s) => ({
-        kind:      'screen' as const,
-        id:        s.id,
-        name:      s.componentName,
+        kind:       'screen' as const,
+        id:         s.id,
+        name:       s.componentName,
         serialized: serializeScreen(s),
-        filePath:  framework === 'react-native'
+        filePath:   framework === 'react-native'
           ? `src/screens/${s.componentName}.tsx`
           : `lib/screens/${toSnake(s.componentName)}_screen.dart`,
+        styleSheet: framework === 'react-native'
+          ? generateRNStyleSheet(s).code
+          : generateFlutterLayoutConstants(s),
       })),
       {
         llm, model, framework, tokenSummary, generatedFilePaths,
@@ -157,6 +161,9 @@ export async function codeGeneratorAgent(
           filePath:   framework === 'react-native'
             ? `src/components/${c.componentName}.tsx`
             : `lib/widgets/${toSnake(c.componentName)}_widget.dart`,
+          styleSheet: framework === 'react-native'
+            ? generateRNStyleSheet(c).code
+            : generateFlutterLayoutConstants(c),
         })),
         {
           llm, model, framework, tokenSummary, generatedFilePaths,
@@ -225,11 +232,13 @@ export async function codeGeneratorAgent(
 // ─── Batch generation ─────────────────────────────────────────────────────────
 
 interface GenerationTarget {
-  kind:       'screen' | 'component';
-  id:         string;
-  name:       string;
-  serialized: string;
-  filePath:   string;
+  kind:         'screen' | 'component';
+  id:           string;
+  name:         string;
+  serialized:   string;
+  filePath:     string;
+  /** Pre-generated StyleSheet.create() or Flutter layout constants — LLM references these, does not invent them */
+  styleSheet?:  string;
 }
 
 interface BatchContext {
@@ -404,14 +413,19 @@ function buildRNPrompt(target: GenerationTarget, ctx: BatchContext): string {
     .map((p) => `  - ${p}`)
     .join('\n');
 
-  // Build asset manifest — include ALL assets, using descriptive placeholder if URL not yet resolved.
-  // Never filter unresolved assets out: the LLM must still generate an <Image> component for them.
+  // Build asset manifest using bundled require() paths — these match what is written into the ZIP.
+  // Never filter missing assets out: the LLM must still generate an <Image> for each one.
   const assetLines = ctx.assets
     .map((a) => {
-      const url = a.url ?? `https://via.placeholder.com/600x400?text=${encodeURIComponent(a.name ?? a.slug)}`;
-      return `  - ${a.slug}.${a.format} → ${url}`;
+      const folder = a.format === 'svg' ? 'icons' : 'images';
+      const requirePath = `../../assets/${folder}/${a.slug}.${a.format}`;
+      return `  - ${a.slug}.${a.format}  →  require('${requirePath}')`;
     })
     .join('\n');
+
+  const styleSection = target.styleSheet
+    ? `\n## Pre-generated StyleSheet (ALREADY DEFINED — reference these keys exactly, do NOT redefine)\n\`\`\`typescript\n${target.styleSheet}\n\`\`\`\n`
+    : '';
 
   return `Generate a React Native TypeScript ${target.kind} component.
 
@@ -441,18 +455,19 @@ Import pattern:
 ${ctx.tokenSummary || '(no tokens — use hardcoded values)'}
 
 ## State management: ${ctx.stateManagement || 'none'}
-${assetLines ? `\n## Image assets (MUST render every one of these as an <Image> component)\n${assetLines}\n` : ''}
+${assetLines ? `\n## Image assets — bundled in project ZIP (use the require() paths below exactly)\n${assetLines}\n` : ''}${styleSection}
 ## Design specification
 ${target.serialized}
 
 ## Critical requirements
 - Wrap outermost element in <SafeAreaView style={styles.safeArea}>
 - All touchable areas use Pressable or TouchableOpacity with onPress={() => {}} placeholder
-- EVERY asset listed above MUST appear as an <Image source={{ uri: 'URL_FROM_LIST' }} /> — do NOT omit any
+- EVERY asset listed above MUST appear as <Image source={require('../../assets/images/slug.png')} /> using the exact require() path shown above — do NOT omit any
 - For images NOT in the asset list, use <Image source={{ uri: 'https://via.placeholder.com/400x300' }} />
 - All text strings: escape {{ and }} as {'{'} and {'}'}
-- StyleSheet.create block at bottom of file with every style referenced in JSX
-- No inline style objects anywhere
+${target.styleSheet
+  ? `- IMPORTANT: The \`styles\` object above is already complete — copy it verbatim at the bottom of the file. Reference \`styles.keyName\` for every element. DO NOT add, remove, or change any style values.`
+  : `- StyleSheet.create block at bottom of file with every style referenced in JSX\n- No inline style objects anywhere`}
 - Export: export function ${target.name}(): React.JSX.Element {{ ... }}
           export default ${target.name};`;
 }
@@ -464,10 +479,14 @@ function buildFlutterPrompt(target: GenerationTarget, ctx: BatchContext): string
 
   const assetLines = ctx.assets
     .map((a) => {
-      const url = a.url ?? `https://via.placeholder.com/600x400?text=${encodeURIComponent(a.name ?? a.slug)}`;
-      return `  - ${a.slug}.${a.format} → ${url}`;
+      const folder = a.format === 'svg' ? 'icons' : 'images';
+      return `  - assets/${folder}/${a.slug}.${a.format}  (${a.name ?? a.slug})`;
     })
     .join('\n');
+
+  const layoutSection = target.styleSheet
+    ? `\n## Pre-generated layout constants (ALREADY DEFINED — reference these in your widget tree)\n\`\`\`dart\n${target.styleSheet}\n\`\`\`\n`
+    : '';
 
   return `Generate a Flutter/Dart ${target.kind} widget.
 
@@ -488,7 +507,7 @@ Import from: package:your_app/tokens/app_colors.dart
 ${ctx.tokenSummary || '(no tokens — use hardcoded values from the design spec)'}
 
 ## State management: ${ctx.stateManagement || 'none'}
-${assetLines ? `\n## Image assets (MUST render every one as Image.network)\n${assetLines}\n` : ''}
+${assetLines ? `\n## Image assets — bundled in project ZIP (use Image.asset with paths below)\n${assetLines}\n` : ''}${layoutSection}
 ## Design specification
 ${target.serialized}
 
@@ -496,10 +515,12 @@ ${target.serialized}
 - class ${target.name} extends StatelessWidget (use StatefulWidget only if local state needed)
 - const constructor: const ${target.name}({super.key});
 - SafeArea(child: ...) at the root of the Scaffold body
-- EVERY asset listed above MUST appear as Image.network('URL_FROM_LIST', ...) — do NOT omit any
+- EVERY asset listed above MUST appear as Image.asset('assets/images/slug.png', fit: BoxFit.cover) — do NOT omit any
 - Every other image: Image.network('https://via.placeholder.com/400x300', errorBuilder: (c,e,s) => const Icon(Icons.broken_image))
 - All colours from AppColors, all text styles from AppTextStyles
-- No hard-coded magic numbers — use const spacing values`;
+${target.styleSheet
+  ? `- IMPORTANT: The layout constants above are already computed — copy them verbatim at the top of the file and use them for all SizedBox/Container/EdgeInsets dimensions.`
+  : `- No hard-coded magic numbers — use const spacing values`}`;
 }
 
 // ─── Deterministic file builders ──────────────────────────────────────────────

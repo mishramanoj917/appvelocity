@@ -199,6 +199,8 @@ interface CallEvent {
 
 export default function DesignToCodePage() {
   const [figmaUrl, setFigmaUrl]             = useState('');
+  const [inputMode, setInputMode]           = useState<'url' | 'plugin'>('url');
+  const [pluginFile, setPluginFile]         = useState<File | null>(null);
   const [framework, setFramework]           = useState<'react-native' | 'flutter'>('react-native');
   const [genMode, setGenMode]               = useState<'project' | 'screens'>('project');
   const [stateMgmt, setStateMgmt]           = useState('zustand');
@@ -214,8 +216,9 @@ export default function DesignToCodePage() {
   const [errorMsg, setErrorMsg]             = useState('');
   const [jobId, setJobId]                   = useState('');
   const [projectName, setProjectName]       = useState('project');
-  const logRef = useRef<HTMLDivElement>(null);
-  const esRef  = useRef<EventSource | null>(null);
+  const logRef    = useRef<HTMLDivElement>(null);
+  const esRef     = useRef<EventSource | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setStateMgmt(SM_OPTIONS[framework][0]!.value);
@@ -281,7 +284,8 @@ export default function DesignToCodePage() {
 
   async function handleLaunch() {
     const url = figmaUrl.trim();
-    if (!url) return;
+    if (inputMode === 'url' && !url) return;
+    if (inputMode === 'plugin' && !pluginFile) return;
 
     setPhase('running');
     setLogs(['Starting DesignToCode pipeline (6-agent mode)…']);
@@ -296,19 +300,33 @@ export default function DesignToCodePage() {
     setJobId('');
 
     try {
-      const res = await fetch('/api/agents/design-to-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'generate',
-          params: {
-            figmaUrl: url,
-            targetFramework: framework,
-            generationMode: genMode,
-            stateManagement: stateMgmt,
-          },
-        }),
-      });
+      let res: Response;
+
+      if (inputMode === 'plugin' && pluginFile) {
+        // Plugin mode: send as multipart/form-data with the ZIP file
+        const formData = new FormData();
+        formData.append('action', 'generate');
+        formData.append('figmaUrl', url);
+        formData.append('targetFramework', framework);
+        formData.append('generationMode', genMode);
+        formData.append('stateManagement', stateMgmt);
+        formData.append('pluginZip', pluginFile);
+        res = await fetch('/api/agents/design-to-code', { method: 'POST', body: formData });
+      } else {
+        res = await fetch('/api/agents/design-to-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'generate',
+            params: {
+              figmaUrl: url,
+              targetFramework: framework,
+              generationMode: genMode,
+              stateManagement: stateMgmt,
+            },
+          }),
+        });
+      }
 
       const data = await res.json();
       if (!res.ok) {
@@ -430,9 +448,31 @@ export default function DesignToCodePage() {
         <div className="av-card space-y-5">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Configure</h2>
 
+          {/* Input mode toggle */}
+          <div className="flex gap-2">
+            {(['url', 'plugin'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setInputMode(mode)}
+                disabled={phase === 'running'}
+                className={`rounded-lg border px-3 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  inputMode === mode
+                    ? 'border-brand-600 bg-brand-950 text-brand-300'
+                    : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                }`}
+              >
+                {mode === 'url' ? 'Figma URL' : '📦 Plugin Export'}
+              </button>
+            ))}
+          </div>
+
+          {/* Figma URL — required in url mode, optional in plugin mode */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-gray-400">
-              Figma File URL <span className="text-red-400">*</span>
+              Figma File URL{' '}
+              {inputMode === 'url'
+                ? <span className="text-red-400">*</span>
+                : <span className="text-gray-600">(optional — auto-detected from ZIP)</span>}
             </label>
             <input
               type="url"
@@ -442,7 +482,45 @@ export default function DesignToCodePage() {
               onChange={(e) => setFigmaUrl(e.target.value)}
               disabled={phase === 'running'}
             />
+            {inputMode === 'plugin' && !figmaUrl.trim() && (
+              <p className="mt-1 text-xs text-gray-600">
+                Leave blank to use the file key embedded in the ZIP, or paste URL to load fresh design tokens
+              </p>
+            )}
           </div>
+
+          {/* Plugin ZIP upload — only shown in plugin mode */}
+          {inputMode === 'plugin' && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-400">
+                AppVelocity Plugin Export ZIP <span className="text-red-400">*</span>
+              </label>
+              <div
+                onClick={() => fileInput.current?.click()}
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border border-dashed px-4 py-3 text-sm transition-colors ${
+                  pluginFile
+                    ? 'border-brand-600 bg-brand-950/30 text-brand-300'
+                    : 'border-gray-600 text-gray-400 hover:border-gray-500'
+                } ${phase === 'running' ? 'cursor-not-allowed opacity-50' : ''}`}
+              >
+                <span className="text-lg">📦</span>
+                <span>
+                  {pluginFile ? pluginFile.name : 'Click to upload appvelocity-export.zip'}
+                </span>
+              </div>
+              <input
+                ref={fileInput}
+                type="file"
+                accept=".zip"
+                className="hidden"
+                disabled={phase === 'running'}
+                onChange={(e) => setPluginFile(e.target.files?.[0] ?? null)}
+              />
+              <p className="mt-1 text-xs text-gray-600">
+                Run the AppVelocity Figma plugin → Export → upload the ZIP here for pixel-perfect output
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
             <div>
@@ -503,7 +581,7 @@ export default function DesignToCodePage() {
           <div className="flex gap-3 pt-1">
             <button
               onClick={handleLaunch}
-              disabled={phase === 'running' || !figmaUrl.trim()}
+              disabled={phase === 'running' || (inputMode === 'url' && !figmaUrl.trim()) || (inputMode === 'plugin' && !pluginFile)}
               className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {phase === 'running' ? 'Running Pipeline…' : 'Generate Code'}

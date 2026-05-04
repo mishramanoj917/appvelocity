@@ -26,6 +26,31 @@ import type {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * Rendered geometry data exported by the Figma Plugin.
+ * Provides actual post-layout bounds (text wrap, effects) for each node.
+ */
+export interface PluginRenderedBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Payload extracted from an appvelocity-export.zip uploaded by the user.
+ * Supplements the REST API file tree with exact rendered geometry and
+ * reliable asset PNG bytes (no CDN URL expiry).
+ */
+export interface PluginExportData {
+  /** nodeId → actual rendered bounds after text wrap, effects, overflow */
+  renderedBounds: Record<string, PluginRenderedBounds>;
+  /** componentId → variant properties */
+  variantProperties: Record<string, Record<string, string>>;
+  /** nodeId → absolute path on disk where the PNG was written */
+  assetPaths: Record<string, string>;
+}
+
 export interface AgentInput {
   figmaUrl: string;
   targetFramework: 'react-native' | 'flutter';
@@ -34,6 +59,12 @@ export interface AgentInput {
   /** Auto-generated if not supplied. Used as the workspace sub-directory name. */
   sessionId?: string;
   options?: { dryRun?: boolean; verbose?: boolean; includeTests?: boolean };
+  /**
+   * Optional: data extracted from an appvelocity-export.zip uploaded by the user.
+   * When present, rendered bounds override REST API absoluteBoundingBox for text
+   * nodes and image nodes use local PNG paths instead of CDN URLs.
+   */
+  pluginExport?: PluginExportData;
 }
 
 export interface AgentOutput {

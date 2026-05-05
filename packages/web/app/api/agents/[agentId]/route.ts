@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import AdmZip from 'adm-zip';
 import { agentRegistry } from '@/lib/agent-registry';
 import { jobStore } from '@/lib/job-store';
+import { saveProject } from '@/lib/project-store';
 
 const LaunchSchema = z.object({
   action: z.string(),
@@ -106,7 +107,11 @@ export async function POST(
         onStep: (step: string) => jobStore.pushStep(jobId, step),
       },
     })
-    .then((result) => jobStore.complete(jobId, result))
+    .then((result) => {
+      jobStore.complete(jobId, result);
+      void saveProject(jobId, result as unknown as Record<string, unknown>, agentParams['figmaUrl'] as string | undefined)
+        .catch((e: unknown) => console.warn('[project-store] save failed:', e));
+    })
     .catch((err: Error) => jobStore.fail(jobId, err.message));
 
   return NextResponse.json(

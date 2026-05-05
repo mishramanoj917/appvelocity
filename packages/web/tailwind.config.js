@@ -8,19 +8,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // AppVelocity brand palette
+        // AppVelocity brand palette — orange-red (#f15b40)
         brand: {
-          50:  '#f0f4ff',
-          100: '#e0e9ff',
-          200: '#c7d6fe',
-          300: '#a4b8fc',
-          400: '#7f92f8',
-          500: '#6366f1',  // primary
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
+          50:  '#fff4f1',
+          100: '#ffe8e2',
+          200: '#ffc6b8',
+          300: '#ff9985',
+          400: '#f97255',
+          500: '#f15b40',  // primary
+          600: '#d94a30',
+          700: '#b53c25',
+          800: '#8f2f1c',
+          900: '#6b2215',
+          950: '#3d1008',
+        },
+        // Navy palette
+        navy: {
+          DEFAULT: '#082340',
+          md: '#0d3358',
+          lt: '#0f3d6e',
         },
       },
       fontFamily: {

@@ -4,16 +4,22 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 96%;
+    --foreground: 215 47% 10%;
+    --border: #e4e7ec;
+    --surface: #ffffff;
+    --bg: #f4f5f7;
+    --txt: #0f1724;
+    --txt2: #475467;
+    --muted: #98a2b3;
   }
 
   * {
-    @apply border-gray-800;
+    @apply border-[#e4e7ec];
   }
 
   body {
-    @apply bg-gray-950 text-gray-100;
+    @apply bg-[#f4f5f7] text-[#0f1724];
   }
 
   /* Smooth scrollbar */
@@ -21,17 +27,17 @@
     @apply w-1.5;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-gray-900;
+    @apply bg-gray-100;
   }
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-gray-700 hover:bg-gray-600;
+    @apply rounded-full bg-gray-300 hover:bg-gray-400;
   }
 }
 
 @layer components {
   /* Reusable card */
   .av-card {
-    @apply rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-sm;
+    @apply rounded-xl border border-[#e4e7ec] bg-white p-6 shadow-sm;
   }
 
   /* Agent status badge */
@@ -41,7 +47,7 @@
 
   /* Log stream output */
   .av-log {
-    @apply font-mono text-xs leading-relaxed text-gray-300;
+    @apply font-mono text-xs leading-relaxed text-gray-700;
   }
 }
 
@@ -51,6 +57,6 @@
 }
 .av-cursor::after {
   content: '▋';
-  @apply ml-0.5 text-brand-400;
+  @apply ml-0.5 text-brand-500;
   animation: blink 1s step-end infinite;
 }

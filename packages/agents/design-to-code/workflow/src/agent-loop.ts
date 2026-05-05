@@ -68,8 +68,21 @@ export async function runAgentLoop(
       // Check for native tool call support
       if (!response.toolCalls?.length) {
         if (response.finishReason === 'stop') {
-          // LLM said it's done — check if we actually have a ZIP
-          break;
+          if (memory.zipBuffer) break; // Legitimately done
+          // LLM stopped prematurely (e.g. after workspace check passed but before ZIP)
+          const nextStep = memory.generatedFiles.size === 0
+            ? 'generate_all_components'
+            : !memory.projectBundle && memory.input.generationMode === 'project'
+            ? 'assemble_project'
+            : !memory.compilationResult
+            ? 'run_compilation_check'
+            : 'create_zip';
+          memory.logs.push(`[iter ${i}] LLM stopped without ZIP — nudging to call ${nextStep}`);
+          memory.messages.push({
+            role: 'user',
+            content: `You stopped but no ZIP has been created yet. Call ${nextStep} now. Do not stop until create_zip succeeds.`,
+          });
+          continue;
         }
         // Proxy returned no tool_calls and didn't stop — switch to text mode
         useTextFallback = true;

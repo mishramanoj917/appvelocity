@@ -1,0 +1,58 @@
+{
+  "jobId": "477e53cb-e6cb-4736-999f-18fdb82ce918",
+  "projectName": "TCSHomepage",
+  "framework": "react-native",
+  "fileCount": 12,
+  "filePaths": [
+    {
+      "path": "App.tsx",
+      "language": "typescript"
+    },
+    {
+      "path": "src/navigation/AppNavigator.tsx",
+      "language": "typescript"
+    },
+    {
+      "path": "src/store/index.ts",
+      "language": "typescript"
+    },
+    {
+      "path": "src/tokens/tokens.ts",
+      "language": "typescript"
+    },
+    {
+      "path": "src/navigation/types.ts",
+      "language": "typescript"
+    },
+    {
+      "path": "src/screens/DesignHomeProtoDefault.tsx",
+      "language": "typescript"
+    },
+    {
+      "path": "package.json",
+      "language": "json"
+    },
+    {
+      "path": "tsconfig.json",
+      "language": "json"
+    },
+    {
+      "path": "app.json",
+      "language": "json"
+    },
+    {
+      "path": "babel.config.js",
+      "language": "javascript"
+    },
+    {
+      "path": ".gitignore",
+      "language": "text"
+    },
+    {
+      "path": "README.md",
+      "language": "text"
+    }
+  ],
+  "createdAt": 1777963513151,
+  "figmaUrl": "https://www.figma.com/design/xLp0oFZh8A6JKHO0RxgcNL/TCS-Homepage?node-id=1-1003&t=OYBqTxsDbrFBkM3r-4"
+}

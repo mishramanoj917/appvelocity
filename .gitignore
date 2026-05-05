@@ -40,3 +40,20 @@ Thumbs.db
 # ── Editor ────────────────────────────────────────────────────────────────────
 .idea/
 *.iml
+.vscode/
+
+# ── Runtime job artefacts ─────────────────────────────────────────────────────
+packages/web/workspace/
+packages/web/public/downloads/
+packages/agents/**/output/
+*.zip
+
+# ── Python virtualenv ─────────────────────────────────────────────────────────
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.local
+*.tmp

@@ -101,6 +101,8 @@ interface CallEvent {
 
 export default function DesignToCodePage() {
   const [figmaUrl, setFigmaUrl]             = useState('');
+  const [figmaToken, setFigmaToken]         = useState('');
+  const [showToken, setShowToken]           = useState(false);
   const [inputMode, setInputMode]           = useState<'url' | 'plugin'>('url');
   const [pluginFile, setPluginFile]         = useState<File | null>(null);
   const [framework, setFramework]           = useState<'react-native' | 'flutter'>('react-native');
@@ -188,6 +190,7 @@ export default function DesignToCodePage() {
     const url = figmaUrl.trim();
     if (inputMode === 'url' && !url) return;
     if (inputMode === 'plugin' && !pluginFile) return;
+    if (!figmaToken.trim()) return;
 
     setPhase('running');
     setLogs(['Starting DesignToCode pipeline (6-agent mode)…']);
@@ -209,6 +212,7 @@ export default function DesignToCodePage() {
         const formData = new FormData();
         formData.append('action', 'generate');
         formData.append('figmaUrl', url);
+        formData.append('figmaAccessToken', figmaToken.trim());
         formData.append('targetFramework', framework);
         formData.append('generationMode', genMode);
         formData.append('stateManagement', stateMgmt);
@@ -222,6 +226,7 @@ export default function DesignToCodePage() {
             action: 'generate',
             params: {
               figmaUrl: url,
+              figmaAccessToken: figmaToken.trim(),
               targetFramework: framework,
               generationMode: genMode,
               stateManagement: stateMgmt,
@@ -397,6 +402,34 @@ export default function DesignToCodePage() {
             )}
           </div>
 
+          {/* Figma Access Token */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-gray-600">
+              Figma Access Token <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showToken ? 'text' : 'password'}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-16 text-sm text-[#0f1724] placeholder-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 font-mono"
+                placeholder="figd_…"
+                value={figmaToken}
+                onChange={(e) => setFigmaToken(e.target.value)}
+                disabled={phase === 'running'}
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-0.5 text-[11px] text-gray-400 transition-colors hover:text-gray-600"
+                tabIndex={-1}
+              >
+                {showToken ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-gray-400">
+              Personal access token from Figma → Account settings → Personal access tokens
+            </p>
+          </div>
+
           {/* Plugin ZIP upload — only shown in plugin mode */}
           {inputMode === 'plugin' && (
             <div>
@@ -489,7 +522,7 @@ export default function DesignToCodePage() {
           <div className="flex gap-3 pt-1">
             <button
               onClick={handleLaunch}
-              disabled={phase === 'running' || (inputMode === 'url' && !figmaUrl.trim()) || (inputMode === 'plugin' && !pluginFile)}
+              disabled={phase === 'running' || !figmaToken.trim() || (inputMode === 'url' && !figmaUrl.trim()) || (inputMode === 'plugin' && !pluginFile)}
               className="rounded-lg bg-brand-500 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {phase === 'running' ? 'Running Pipeline…' : 'Generate Code'}

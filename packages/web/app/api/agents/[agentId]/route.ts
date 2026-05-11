@@ -73,6 +73,7 @@ export async function POST(
       targetFramework:  formData.get('targetFramework') as string ?? 'react-native',
       generationMode:   formData.get('generationMode') as string ?? 'project',
       stateManagement:  formData.get('stateManagement') as string ?? 'none',
+      figmaAccessToken: formData.get('figmaAccessToken') as string ?? '',
     };
 
     const pluginZip = formData.get('pluginZip') as File | null;
@@ -94,6 +95,10 @@ export async function POST(
     }
     launchParams = parsed.data.params as Record<string, unknown>;
   }
+
+  // Apply Figma token from request body (sent by UI settings modal)
+  const figmaAccessToken = launchParams['figmaAccessToken'] as string | undefined;
+  if (figmaAccessToken) process.env['FIGMA_ACCESS_TOKEN'] = figmaAccessToken;
 
   // Create a job and start execution asynchronously
   const jobId     = crypto.randomUUID();

@@ -33,11 +33,11 @@ export async function inputValidator(
     });
   }
 
-  // Validate Figma API token
-  if (!process.env['FIGMA_ACCESS_TOKEN']) {
+  // Validate Figma API token (accept from state or env)
+  if (!state.figmaAccessToken && !process.env['FIGMA_ACCESS_TOKEN']) {
     errors.push({
       code: 'MISSING_FIGMA_TOKEN',
-      message: 'FIGMA_ACCESS_TOKEN environment variable is not set',
+      message: 'FIGMA_ACCESS_TOKEN is not set. Enter it in the Settings modal or add it to your .env file.',
       recoverable: false,
     });
   }

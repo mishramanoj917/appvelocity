@@ -10,16 +10,16 @@ import type { WorkflowState } from '../types.js';
 export async function figmaFetcherAgent(
   state: WorkflowState
 ): Promise<Partial<WorkflowState>> {
-  const token = process.env['FIGMA_ACCESS_TOKEN'];
+  const token = state.figmaAccessToken || process.env['FIGMA_ACCESS_TOKEN'];
   if (!token) {
     return {
       currentStep: 'FigmaFetcherAgent',
       errors: [{
         code: 'MISSING_TOKEN',
-        message: 'FIGMA_ACCESS_TOKEN is not set. Add it to your .env file and restart the server.',
+        message: 'FIGMA_ACCESS_TOKEN is not set. Enter it in the Settings modal or add it to your .env file.',
         recoverable: false,
       }],
-      logs: [makeLogEntry('error', 'FIGMA_ACCESS_TOKEN environment variable is missing.')],
+      logs: [makeLogEntry('error', 'FIGMA_ACCESS_TOKEN is missing (checked UI params and environment).')],
     };
   }
 

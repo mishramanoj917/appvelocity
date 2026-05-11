@@ -119,7 +119,7 @@ export async function designAnalyzerAgent(
   }
 
   const { fileKey } = parseFigmaUrl(state.figmaUrl);
-  const accessToken = process.env['FIGMA_ACCESS_TOKEN'] ?? '';
+  const accessToken = state.figmaAccessToken || (process.env['FIGMA_ACCESS_TOKEN'] ?? '');
   const client = new FigmaClient({ accessToken });
 
   const screens = collectScreenNodes(state.figmaFile);

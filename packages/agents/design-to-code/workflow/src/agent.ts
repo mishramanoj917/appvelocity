@@ -40,10 +40,11 @@ export class DesignToCodeAgent extends AgentBase {
   async execute(input: AgentInput): Promise<AgentOutput> {
     const startTime = Date.now();
 
-    const figmaUrl        = input.params['figmaUrl'] as string | undefined;
-    const targetFramework = (input.params['targetFramework'] as string | undefined) ?? 'react-native';
-    const generationMode  = (input.params['generationMode']  as string | undefined) ?? 'project';
-    const stateManagement = (input.params['stateManagement'] as string | undefined) ?? 'none';
+    const figmaUrl          = input.params['figmaUrl'] as string | undefined;
+    const targetFramework   = (input.params['targetFramework'] as string | undefined) ?? 'react-native';
+    const generationMode    = (input.params['generationMode']  as string | undefined) ?? 'project';
+    const stateManagement   = (input.params['stateManagement'] as string | undefined) ?? 'none';
+    const figmaAccessToken  = input.params['figmaAccessToken'] as string | undefined;
 
     if (!figmaUrl) {
       return this.buildOutput(false, null, startTime, [
@@ -53,9 +54,10 @@ export class DesignToCodeAgent extends AgentBase {
 
     const loopInput: LoopInput = {
       figmaUrl,
-      targetFramework: targetFramework as LoopInput['targetFramework'],
-      generationMode:  generationMode  as LoopInput['generationMode'],
+      targetFramework:  targetFramework as LoopInput['targetFramework'],
+      generationMode:   generationMode  as LoopInput['generationMode'],
       stateManagement,
+      figmaAccessToken: figmaAccessToken || undefined,
       options: {
         dryRun:       input.options?.dryRun,
         verbose:      input.options?.verbose,

@@ -89,9 +89,10 @@ export async function irBuilderAgent(
   }
 
   // ── 2. Asset URL resolution ─────────────────────────────────────────────────
-  if (designIR.assets.length > 0 && process.env.FIGMA_ACCESS_TOKEN) {
+  const figmaToken = state.figmaAccessToken || process.env.FIGMA_ACCESS_TOKEN;
+  if (designIR.assets.length > 0 && figmaToken) {
     const client = new FigmaClient({
-      accessToken: process.env.FIGMA_ACCESS_TOKEN,
+      accessToken: figmaToken,
       rateLimitPerMinute: 60,
     });
 

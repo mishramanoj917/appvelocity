@@ -58,6 +58,8 @@ export interface AgentInput {
   stateManagement: string;
   /** Auto-generated if not supplied. Used as the workspace sub-directory name. */
   sessionId?: string;
+  /** Figma personal access token passed from the UI settings modal. Takes precedence over FIGMA_ACCESS_TOKEN env var. */
+  figmaAccessToken?: string;
   options?: { dryRun?: boolean; verbose?: boolean; includeTests?: boolean };
   /**
    * Optional: data extracted from an appvelocity-export.zip uploaded by the user.

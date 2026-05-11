@@ -252,6 +252,7 @@ export function memoryToState(memory: AgentMemory): WorkflowState {
     targetFramework:         memory.input.targetFramework,
     generationMode:          memory.input.generationMode,
     stateManagement:         memory.input.stateManagement,
+    figmaAccessToken:        memory.input.figmaAccessToken,
     options:                 memory.input.options ?? {},
     figmaFile:               memory.figmaFile,
     variablesResponse:       memory.variablesResponse,

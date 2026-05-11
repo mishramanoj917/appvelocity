@@ -16,6 +16,7 @@ export interface WorkflowState {
   targetFramework: 'react-native' | 'flutter';
   generationMode: 'project' | 'screens';
   stateManagement: string; // e.g. 'riverpod'|'bloc'|'provider'|'zustand'|'redux'|'jotai'|'none'
+  figmaAccessToken?: string;
   options: {
     dryRun?: boolean;
     verbose?: boolean;

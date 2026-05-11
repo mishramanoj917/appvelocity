@@ -17,7 +17,10 @@ const nextConfig = {
   experimental: {
     // Enables server actions (used by agent launchers)
     serverActions: {
-      allowedOrigins: ['localhost:3000'],
+      allowedOrigins: [
+        'localhost:3000',
+        'appvelocity-xperion.centralindia.cloudapp.azure.com',
+      ],
     },
   },
   // Required for streaming responses from API routes

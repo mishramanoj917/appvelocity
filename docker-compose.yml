@@ -52,6 +52,7 @@ services:
 
   # ── Visual QA service (pixel diff + screenshot capture) ──────────────────────
   visual-qa:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile.qa
@@ -68,6 +69,7 @@ services:
 
   # ── Redis (caching layer) ───────────────────────────────────────────────────
   redis:
+    restart: unless-stopped
     image: redis:7-alpine
     ports:
       - '6379:6379'

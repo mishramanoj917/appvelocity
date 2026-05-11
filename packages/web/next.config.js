@@ -22,9 +22,9 @@ const nextConfig = {
         'appvelocity-xperion.centralindia.cloudapp.azure.com',
       ],
     },
+    // Required for streaming responses from API routes (Next.js 14 key)
+    serverComponentsExternalPackages: ['@langchain/core', '@langchain/langgraph', '@anthropic-ai/sdk'],
   },
-  // Required for streaming responses from API routes
-  serverExternalPackages: ['@langchain/core', '@langchain/langgraph', '@anthropic-ai/sdk'],
 };
 
 module.exports = nextConfig;

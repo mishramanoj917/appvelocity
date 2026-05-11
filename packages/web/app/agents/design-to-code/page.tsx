@@ -11,6 +11,155 @@ import {
   TOOL_LOGS,
 } from '@/lib/pipeline-config';
 
+// ─── Settings Modal ───────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'av_api_keys';
+
+interface ApiKeys {
+  figmaToken:    string;
+  anthropicKey:  string;
+  openaiKey:     string;
+  llmUrl:        string;
+}
+
+function loadKeys(): ApiKeys {
+  if (typeof window === 'undefined') return { figmaToken: '', anthropicKey: '', openaiKey: '', llmUrl: '' };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as ApiKeys) : { figmaToken: '', anthropicKey: '', openaiKey: '', llmUrl: '' };
+  } catch { return { figmaToken: '', anthropicKey: '', openaiKey: '', llmUrl: '' }; }
+}
+
+function saveKeys(keys: ApiKeys) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+}
+
+function SecretField({
+  label, value, onChange, placeholder, hint,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; hint?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-14 font-mono text-sm text-[#0f1724] placeholder-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+        />
+        <button
+          type="button"
+          onClick={() => setShow((v) => !v)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-0.5 text-[11px] text-gray-400 transition-colors hover:text-gray-600"
+          tabIndex={-1}
+        >
+          {show ? 'Hide' : 'Show'}
+        </button>
+      </div>
+      {hint && <p className="mt-1 text-[11px] text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
+function SettingsModal({
+  onClose, onSave,
+}: {
+  onClose: () => void;
+  onSave: (keys: ApiKeys) => void;
+}) {
+  const [keys, setKeys] = useState<ApiKeys>(loadKeys);
+  const [saved, setSaved] = useState(false);
+
+  function set(field: keyof ApiKeys) {
+    return (v: string) => setKeys((k) => ({ ...k, [field]: v }));
+  }
+
+  function handleSave() {
+    saveKeys(keys);
+    onSave(keys);
+    setSaved(true);
+    setTimeout(() => { setSaved(false); onClose(); }, 800);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-[#e4e7ec] bg-white p-6 shadow-xl">
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚙</span>
+            <h2 className="text-sm font-semibold text-[#0f1724]">API Key Configuration</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <SecretField
+            label="Figma Access Token"
+            value={keys.figmaToken}
+            onChange={set('figmaToken')}
+            placeholder="figd_…"
+            hint="Figma → Account settings → Personal access tokens"
+          />
+          <SecretField
+            label="Anthropic API Key"
+            value={keys.anthropicKey}
+            onChange={set('anthropicKey')}
+            placeholder="sk-ant-api03-…"
+            hint="Used by the Coding, Validation, and Visual QA agents"
+          />
+          <SecretField
+            label="OpenAI API Key"
+            value={keys.openaiKey}
+            onChange={set('openaiKey')}
+            placeholder="sk-…"
+            hint="Used by the Ground Truth agent for vision analysis"
+          />
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">LLM Proxy URL</label>
+            <input
+              type="url"
+              value={keys.llmUrl}
+              onChange={(e) => setKeys((k) => ({ ...k, llmUrl: e.target.value }))}
+              placeholder="https://…/v1"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-[#0f1724] placeholder-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+            <p className="mt-1 text-[11px] text-gray-400">Coforge QuasarMarket proxy endpoint (overrides default)</p>
+          </div>
+        </div>
+
+        <p className="mt-4 text-[11px] text-gray-400">
+          Keys are stored in your browser only and sent securely with each generation request.
+        </p>
+
+        <div className="mt-5 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-xs text-gray-500 transition-colors hover:border-gray-400"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="rounded-lg bg-brand-500 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-600"
+          >
+            {saved ? '✓ Saved' : 'Save Keys'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const SM_OPTIONS: Record<'react-native' | 'flutter', { value: string; label: string }[]> = {
   flutter: [
     { value: 'riverpod', label: 'Riverpod (recommended)' },
@@ -100,6 +249,8 @@ interface CallEvent {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DesignToCodePage() {
+  const [showSettings, setShowSettings]     = useState(false);
+  const [apiKeys, setApiKeys]               = useState<ApiKeys>({ figmaToken: '', anthropicKey: '', openaiKey: '', llmUrl: '' });
   const [figmaUrl, setFigmaUrl]             = useState('');
   const [figmaToken, setFigmaToken]         = useState('');
   const [showToken, setShowToken]           = useState(false);
@@ -123,6 +274,13 @@ export default function DesignToCodePage() {
   const logRef    = useRef<HTMLDivElement>(null);
   const esRef     = useRef<EventSource | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // Load saved API keys from localStorage on mount
+  useEffect(() => {
+    const saved = loadKeys();
+    setApiKeys(saved);
+    if (saved.figmaToken) setFigmaToken(saved.figmaToken);
+  }, []);
 
   useEffect(() => {
     setStateMgmt(SM_OPTIONS[framework][0]!.value);
@@ -204,6 +362,12 @@ export default function DesignToCodePage() {
     setErrorMsg('');
     setJobId('');
 
+    // Build extra headers for server-side key overrides
+    const keyHeaders: Record<string, string> = {};
+    if (apiKeys.anthropicKey) keyHeaders['x-anthropic-key'] = apiKeys.anthropicKey;
+    if (apiKeys.openaiKey)    keyHeaders['x-openai-key']    = apiKeys.openaiKey;
+    if (apiKeys.llmUrl)       keyHeaders['x-llm-url']       = apiKeys.llmUrl;
+
     try {
       let res: Response;
 
@@ -217,11 +381,11 @@ export default function DesignToCodePage() {
         formData.append('generationMode', genMode);
         formData.append('stateManagement', stateMgmt);
         formData.append('pluginZip', pluginFile);
-        res = await fetch('/api/agents/design-to-code', { method: 'POST', body: formData });
+        res = await fetch('/api/agents/design-to-code', { method: 'POST', body: formData, headers: keyHeaders });
       } else {
         res = await fetch('/api/agents/design-to-code', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...keyHeaders },
           body: JSON.stringify({
             action: 'generate',
             params: {
@@ -315,8 +479,20 @@ export default function DesignToCodePage() {
 
   const showPipeline = phase === 'running' || phase === 'done';
 
+  const keysConfigured = !!(apiKeys.figmaToken && apiKeys.anthropicKey && apiKeys.openaiKey);
+
   return (
     <div className="min-h-full">
+      {showSettings && (
+        <SettingsModal
+          onClose={() => setShowSettings(false)}
+          onSave={(keys) => {
+            setApiKeys(keys);
+            if (keys.figmaToken) setFigmaToken(keys.figmaToken);
+          }}
+        />
+      )}
+
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="border-b border-[#e4e7ec] bg-white/90 px-6 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4">
@@ -331,6 +507,20 @@ export default function DesignToCodePage() {
           >
             History
           </Link>
+          <button
+            onClick={() => setShowSettings(true)}
+            title="Configure API keys"
+            className="relative rounded-lg border border-gray-200 p-1.5 text-gray-400 transition-colors hover:border-gray-300 hover:text-gray-600"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            {/* Green dot when all keys are configured */}
+            {keysConfigured && (
+              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500" />
+            )}
+          </button>
           <span className="rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600">
             6-Agent Pipeline
           </span>

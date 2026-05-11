@@ -33,6 +33,15 @@ export async function POST(
 ) {
   const { agentId } = params;
 
+  // Apply per-request API key overrides from custom headers (set via the UI settings modal).
+  // Acceptable for a single-instance demo — falls back to process.env when headers absent.
+  const anthropicKey = request.headers.get('x-anthropic-key');
+  const openaiKey    = request.headers.get('x-openai-key');
+  const llmUrl       = request.headers.get('x-llm-url');
+  if (anthropicKey) process.env['ANTHROPIC_API_KEY'] = anthropicKey;
+  if (openaiKey)    process.env['OPENAI_API_KEY']    = openaiKey;
+  if (llmUrl)       process.env['LLM_API_URL']       = llmUrl;
+
   // Check the agent exists and is available
   const agentEntry = agentRegistry.get(agentId);
   if (!agentEntry) {

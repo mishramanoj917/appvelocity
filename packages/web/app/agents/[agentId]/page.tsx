@@ -9,7 +9,8 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  return AGENTS.map((a) => ({ agentId: a.id }));
+  // Exclude agents that have their own dedicated page (e.g. design-to-code)
+  return AGENTS.filter((a) => a.id !== 'design-to-code').map((a) => ({ agentId: a.id }));
 }
 
 export default function AgentPage({ params }: Props) {

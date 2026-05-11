@@ -12,16 +12,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CodeViewer, type CodeFile } from '@/components/code-viewer/CodeViewer';
+import { FileTreeView } from '@/components/code-viewer/file-tree';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface WorkflowLogEntry {
-  level: 'info' | 'success' | 'warning' | 'error';
-  message: string;
-  timestamp: string;
-}
-
-interface GeneratedCode {
+interface ProjectBundleData {
+  projectName?: string;
   framework: string;
   files: CodeFile[];
   dependencies: Record<string, string>;
@@ -44,14 +40,10 @@ interface VisualQAReport {
 }
 
 interface AgentOutputData {
-  generatedCode?: GeneratedCode;
-  logs?: WorkflowLogEntry[];
-  validationResult?: {
-    valid: boolean;
-    score: number;
-    issues?: Array<{ severity: string; message: string; fixSuggestion?: string }>;
-  };
-  // New 6-agent pipeline fields
+  projectBundle?: ProjectBundleData;
+  logs?: string[];
+  iterations?: number;
+  // Optional fields populated by future pipeline enhancements
   gateStats?: GateStats;
   snapshotReused?: boolean;
   statusBarNodesFiltered?: number;
@@ -72,6 +64,7 @@ interface Job {
   status: 'running' | 'complete' | 'failed';
   result?: AgentOutput;
   error?: string;
+  steps?: string[];
   createdAt: number;
   updatedAt: number;
 }
@@ -80,8 +73,10 @@ interface Job {
 
 export default function JobResultPage({ params }: { params: { jobId: string } }) {
   const { jobId } = params;
-  const [job, setJob] = useState<Job | null>(null);
+  const [job, setJob]           = useState<Job | null>(null);
   const [notFound, setNotFound] = useState(false);
+  // Lifted file selection state — shared between ProjectStructureCard and CodeViewer
+  const [selectedFile, setSelectedFile] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
@@ -153,9 +148,8 @@ export default function JobResultPage({ params }: { params: { jobId: string } })
     );
   }
 
-  const generatedCode  = job.result?.data?.generatedCode;
+  const projectBundle  = job.result?.data?.projectBundle;
   const pipelineLogs   = job.result?.data?.logs ?? [];
-  const validation     = job.result?.data?.validationResult;
   const gateStats      = job.result?.data?.gateStats;
   const visualQaReports = job.result?.data?.visualQaReports ?? [];
   const snapshotReused = job.result?.data?.snapshotReused;
@@ -163,8 +157,7 @@ export default function JobResultPage({ params }: { params: { jobId: string } })
   const escalatedFiles = job.result?.data?.escalatedFiles ?? [];
   const durationSec    = ((job.updatedAt - job.createdAt) / 1000).toFixed(1);
 
-  if (!generatedCode?.files.length) {
-    const irIssues = validation?.issues?.filter((i) => i.severity === 'error') ?? [];
+  if (!projectBundle?.files.length) {
     return (
       <PageLayout jobId={jobId}>
         <div className="av-card">
@@ -172,29 +165,10 @@ export default function JobResultPage({ params }: { params: { jobId: string } })
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
               No files generated
             </h2>
-            {validation && (
-              <span className="rounded-full bg-yellow-950 px-2 py-0.5 text-xs text-yellow-400">
-                IR score: {validation.score}/100
-              </span>
-            )}
           </div>
           <p className="mb-3 text-sm text-gray-400">
-            {irIssues.length > 0
-              ? 'The IR validator found structural issues that prevented code generation.'
-              : 'The agent completed but produced an empty bundle. Check the pipeline log below.'}
+            The agent completed but produced an empty bundle. Check the pipeline log below.
           </p>
-          {irIssues.length > 0 && (
-            <ul className="mb-4 space-y-1">
-              {irIssues.map((issue, i) => (
-                <li key={i} className="rounded bg-red-950/40 px-3 py-2 text-xs text-red-400">
-                  {issue.message}
-                  {issue.fixSuggestion && (
-                    <span className="ml-2 text-gray-500">→ {issue.fixSuggestion}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
           {pipelineLogs.length > 0 && <PipelineLogCard logs={pipelineLogs} />}
         </div>
       </PageLayout>
@@ -205,43 +179,41 @@ export default function JobResultPage({ params }: { params: { jobId: string } })
     <PageLayout jobId={jobId}>
       {/* ── Summary row ──────────────────────────────────────────────────────── */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <span className="av-badge border border-green-900 bg-green-950 px-3 py-1 text-sm text-green-400">
-          ✓ {generatedCode.files.length} file{generatedCode.files.length !== 1 ? 's' : ''} generated
+        <span className="av-badge border border-green-200 bg-green-50 px-3 py-1 text-sm text-green-700">
+          ✓ {projectBundle.files.length} file{projectBundle.files.length !== 1 ? 's' : ''} generated
         </span>
-        <span className="av-badge border border-gray-800 bg-gray-900 px-3 py-1 text-sm text-gray-400">
-          {generatedCode.framework}
+        <span className="av-badge border border-gray-200 bg-gray-50 px-3 py-1 text-sm text-gray-600">
+          {projectBundle.framework}
         </span>
-        <span className="av-badge border border-gray-800 bg-gray-900 px-3 py-1 text-sm text-gray-400">
+        <span className="av-badge border border-gray-200 bg-gray-50 px-3 py-1 text-sm text-gray-600">
           {durationSec}s
         </span>
-        {validation && (
-          <span
-            className={`av-badge border px-3 py-1 text-sm ${
-              validation.valid
-                ? 'border-green-900 bg-green-950 text-green-400'
-                : 'border-yellow-900 bg-yellow-950 text-yellow-400'
-            }`}
-          >
-            IR score {validation.score}/100
-          </span>
-        )}
         {snapshotReused === true && (
-          <span className="av-badge border border-emerald-900 bg-emerald-950 px-3 py-1 text-sm text-emerald-400">
+          <span className="av-badge border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm text-emerald-700">
             📦 Snapshot reused
           </span>
         )}
         {typeof statusBarFiltered === 'number' && statusBarFiltered > 0 && (
-          <span className="av-badge border border-gray-800 bg-gray-900 px-3 py-1 text-sm text-gray-500">
+          <span className="av-badge border border-gray-200 bg-gray-50 px-3 py-1 text-sm text-gray-500">
             {statusBarFiltered} status bar nodes filtered
           </span>
         )}
       </div>
 
+      {/* ── Project structure ────────────────────────────────────────────────── */}
+      <ProjectStructureCard
+        files={projectBundle.files}
+        selectedFile={selectedFile}
+        onFileSelect={setSelectedFile}
+      />
+
       {/* ── Code viewer ──────────────────────────────────────────────────────── */}
       <CodeViewer
-        files={generatedCode.files}
-        framework={generatedCode.framework}
+        files={projectBundle.files}
+        framework={projectBundle.framework}
         jobId={jobId}
+        selectedFile={selectedFile}
+        onFileSelect={setSelectedFile}
       />
 
       {/* ── Gate stats ───────────────────────────────────────────────────────── */}
@@ -297,7 +269,7 @@ export default function JobResultPage({ params }: { params: { jobId: string } })
         <div className="av-card mt-6">
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
             Escalated Files
-            <span className="ml-2 rounded bg-yellow-950 px-1.5 py-0.5 text-yellow-400">
+            <span className="ml-2 rounded bg-yellow-100 px-1.5 py-0.5 text-yellow-700">
               {escalatedFiles.length}
             </span>
           </h3>
@@ -306,9 +278,9 @@ export default function JobResultPage({ params }: { params: { jobId: string } })
           </p>
           <div className="space-y-1">
             {escalatedFiles.map((file, i) => (
-              <div key={i} className="flex items-center gap-2 rounded bg-yellow-950/30 px-3 py-2">
-                <span className="text-yellow-500">⚠</span>
-                <code className="font-mono text-xs text-yellow-300">{file}</code>
+              <div key={i} className="flex items-center gap-2 rounded border border-yellow-200 bg-yellow-50 px-3 py-2">
+                <span className="text-yellow-600">⚠</span>
+                <code className="font-mono text-xs text-yellow-800">{file}</code>
               </div>
             ))}
           </div>
@@ -316,16 +288,16 @@ export default function JobResultPage({ params }: { params: { jobId: string } })
       )}
 
       {/* ── Dependencies ─────────────────────────────────────────────────────── */}
-      {Object.keys(generatedCode.dependencies ?? {}).length > 0 && (
+      {Object.keys(projectBundle.dependencies ?? {}).length > 0 && (
         <div className="av-card mt-6">
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
             Suggested Dependencies
           </h3>
           <div className="flex flex-wrap gap-2">
-            {Object.entries(generatedCode.dependencies).map(([pkg, ver]) => (
+            {Object.entries(projectBundle.dependencies).map(([pkg, ver]) => (
               <code
                 key={pkg}
-                className="rounded bg-gray-800 px-2 py-0.5 font-mono text-xs text-gray-300"
+                className="rounded bg-gray-100 border border-gray-200 px-2 py-0.5 font-mono text-xs text-gray-700"
               >
                 {pkg}@{ver}
               </code>
@@ -341,6 +313,46 @@ export default function JobResultPage({ params }: { params: { jobId: string } })
         </div>
       )}
     </PageLayout>
+  );
+}
+
+// ─── Project structure card ───────────────────────────────────────────────────
+
+function ProjectStructureCard({
+  files,
+  selectedFile,
+  onFileSelect,
+}: {
+  files: CodeFile[];
+  selectedFile: string | undefined;
+  onFileSelect: (path: string) => void;
+}) {
+  const totalFiles   = files.length;
+  const dirs = new Set(
+    files
+      .map((f) => f.path.split('/').slice(0, -1).join('/'))
+      .filter(Boolean)
+  );
+  const totalFolders = dirs.size;
+
+  return (
+    <div className="av-card mb-6">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+          Project Structure
+        </h3>
+        <span className="text-[10px] text-gray-400">
+          {totalFiles} files · {totalFolders} folder{totalFolders !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <FileTreeView
+        files={files}
+        activeFile={selectedFile ?? files[0]?.path ?? ''}
+        onSelectFile={onFileSelect}
+        theme="light"
+        className="max-h-64 overflow-y-auto rounded-lg bg-gray-50 border border-[#e4e7ec] py-1"
+      />
+    </div>
   );
 }
 
@@ -365,19 +377,19 @@ function GateCard({
   return (
     <div
       className={`rounded-lg border p-3 ${
-        allGood ? 'border-green-900 bg-green-950/30' : 'border-yellow-900 bg-yellow-950/20'
+        allGood ? 'border-green-200 bg-green-50' : 'border-yellow-200 bg-yellow-50'
       }`}
     >
       <p className="mb-1.5 text-[10px] font-medium text-gray-500">{label}</p>
       {labelOverride ? (
-        <p className={`text-sm font-semibold ${allGood ? 'text-green-400' : 'text-yellow-400'}`}>
+        <p className={`text-sm font-semibold ${allGood ? 'text-green-700' : 'text-yellow-700'}`}>
           {labelOverride}
         </p>
       ) : (
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-green-400">{passed} passed</span>
+          <span className="text-sm font-semibold text-green-700">{passed} passed</span>
           {failed > 0 && (
-            <span className="text-sm font-semibold text-yellow-400">{failed} failed</span>
+            <span className="text-sm font-semibold text-yellow-700">{failed} failed</span>
           )}
           {extra && <span className={`text-xs ${extraColor}`}>{extra}</span>}
         </div>
@@ -392,20 +404,20 @@ function VisualQACard({ report }: { report: VisualQAReport }) {
   return (
     <div
       className={`rounded-lg border p-4 ${
-        report.overallPass ? 'border-green-900 bg-green-950/20' : 'border-red-900 bg-red-950/20'
+        report.overallPass ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-medium text-sm text-gray-200">{report.screen}</p>
+          <p className="font-medium text-sm text-[#0f1724]">{report.screen}</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {report.failedLayers.length === 0 ? (
-              <span className="rounded bg-green-950 px-1.5 py-0.5 text-[10px] text-green-400">
+              <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] text-green-700">
                 All layers passed
               </span>
             ) : (
               report.failedLayers.map((layer) => (
-                <span key={layer} className="rounded bg-red-950 px-1.5 py-0.5 text-[10px] text-red-400">
+                <span key={layer} className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] text-red-600">
                   {layer} failed
                 </span>
               ))
@@ -415,8 +427,8 @@ function VisualQACard({ report }: { report: VisualQAReport }) {
         <span
           className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
             report.overallPass
-              ? 'bg-green-950 text-green-400'
-              : 'bg-red-950 text-red-400'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-600'
           }`}
         >
           {report.overallPass ? '✓ Pass' : '✗ Fail'}
@@ -426,33 +438,33 @@ function VisualQACard({ report }: { report: VisualQAReport }) {
       {/* Layer details */}
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 text-[10px]">
         {report.tokenDiff && (
-          <div className="rounded bg-gray-900 px-2 py-1.5">
-            <p className="text-gray-600">Token diff</p>
-            <p className={report.tokenDiff.critical > 0 ? 'text-red-400' : 'text-green-400'}>
+          <div className="rounded bg-white border border-[#e4e7ec] px-2 py-1.5">
+            <p className="text-gray-400">Token diff</p>
+            <p className={report.tokenDiff.critical > 0 ? 'text-red-600' : 'text-green-700'}>
               {report.tokenDiff.critical} critical · {report.tokenDiff.warnings} warn
             </p>
           </div>
         )}
         {report.pixelDiff && (
-          <div className="rounded bg-gray-900 px-2 py-1.5">
-            <p className="text-gray-600">Pixel diff</p>
-            <p className={report.pixelDiff.diffPercent > 15 ? 'text-red-400' : 'text-green-400'}>
+          <div className="rounded bg-white border border-[#e4e7ec] px-2 py-1.5">
+            <p className="text-gray-400">Pixel diff</p>
+            <p className={report.pixelDiff.diffPercent > 15 ? 'text-red-600' : 'text-green-700'}>
               {report.pixelDiff.diffPercent.toFixed(1)}%
             </p>
           </div>
         )}
         {report.visualJudge && (
-          <div className="rounded bg-gray-900 px-2 py-1.5">
-            <p className="text-gray-600">LLM judge</p>
-            <p className={report.visualJudge.score >= 85 ? 'text-green-400' : 'text-yellow-400'}>
+          <div className="rounded bg-white border border-[#e4e7ec] px-2 py-1.5">
+            <p className="text-gray-400">LLM judge</p>
+            <p className={report.visualJudge.score >= 85 ? 'text-green-700' : 'text-yellow-700'}>
               {report.visualJudge.score}/100
             </p>
           </div>
         )}
         {report.structural && (
-          <div className="rounded bg-gray-900 px-2 py-1.5">
-            <p className="text-gray-600">Structural</p>
-            <p className={report.structural.missing.length > 0 ? 'text-yellow-400' : 'text-green-400'}>
+          <div className="rounded bg-white border border-[#e4e7ec] px-2 py-1.5">
+            <p className="text-gray-400">Structural</p>
+            <p className={report.structural.missing.length > 0 ? 'text-yellow-700' : 'text-green-700'}>
               {report.structural.missing.length} missing
             </p>
           </div>
@@ -475,27 +487,27 @@ function VisualQACard({ report }: { report: VisualQAReport }) {
 
 // ─── Pipeline log card ────────────────────────────────────────────────────────
 
-function PipelineLogCard({ logs }: { logs: WorkflowLogEntry[] }) {
+function PipelineLogCard({ logs }: { logs: string[] }) {
   return (
     <div className="av-card">
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
         Pipeline Log
       </h3>
-      <div className="max-h-48 overflow-y-auto rounded-lg bg-gray-950 p-3">
+      <div className="max-h-48 overflow-y-auto rounded-lg bg-gray-50 border border-[#e4e7ec] p-3">
         {logs.map((entry, i) => (
           <div
             key={i}
-            className={`av-log text-xs ${
-              entry.level === 'error'
-                ? 'text-red-400'
-                : entry.level === 'success'
-                ? 'text-green-400'
-                : entry.level === 'warning'
-                ? 'text-yellow-400'
+            className={`av-log font-mono text-xs ${
+              /error|fail/i.test(entry)
+                ? 'text-red-600'
+                : /success|done|zip|pass/i.test(entry)
+                ? 'text-green-700'
+                : /warn/i.test(entry)
+                ? 'text-yellow-700'
                 : 'text-gray-500'
             }`}
           >
-            [{entry.level}] {entry.message}
+            {entry}
           </div>
         ))}
       </div>
@@ -508,18 +520,18 @@ function PipelineLogCard({ logs }: { logs: WorkflowLogEntry[] }) {
 function PageLayout({ jobId, children }: { jobId: string; children: React.ReactNode }) {
   return (
     <div className="min-h-full">
-      <header className="border-b border-gray-800 bg-gray-950/80 px-6 py-4">
+      <header className="border-b border-[#e4e7ec] bg-white/90 px-6 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4">
           <Link
             href="/agents/design-to-code"
-            className="text-sm text-gray-500 transition-colors hover:text-gray-300"
+            className="text-sm text-gray-500 transition-colors hover:text-[#0f1724]"
           >
             ← New job
           </Link>
-          <span className="text-gray-700">/</span>
-          <span className="text-sm text-gray-300">DesignToCodeAgent</span>
-          <span className="text-gray-700">/</span>
-          <span className="font-mono text-xs text-gray-500">{jobId}</span>
+          <span className="text-gray-300">/</span>
+          <span className="text-sm font-medium text-[#0f1724]">DesignToCodeAgent</span>
+          <span className="text-gray-300">/</span>
+          <span className="font-mono text-xs text-gray-400">{jobId}</span>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
@@ -537,6 +549,6 @@ function CenteredLayout({ children }: { children: React.ReactNode }) {
 
 function FailedBadge() {
   return (
-    <span className="av-badge border border-red-900 bg-red-950 text-red-400">✗ Failed</span>
+    <span className="av-badge border border-red-200 bg-red-50 text-red-600">✗ Failed</span>
   );
 }

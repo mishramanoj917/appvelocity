@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import AdmZip from 'adm-zip';
 import { agentRegistry } from '@/lib/agent-registry';
 import { jobStore } from '@/lib/job-store';
+import { saveProject } from '@/lib/project-store';
 
 const LaunchSchema = z.object({
   action: z.string(),
@@ -31,6 +32,15 @@ export async function POST(
   { params }: { params: { agentId: string } }
 ) {
   const { agentId } = params;
+
+  // Apply per-request API key overrides from custom headers (set via the UI settings modal).
+  // Acceptable for a single-instance demo — falls back to process.env when headers absent.
+  const anthropicKey = request.headers.get('x-anthropic-key');
+  const openaiKey    = request.headers.get('x-openai-key');
+  const llmUrl       = request.headers.get('x-llm-url');
+  if (anthropicKey) process.env['ANTHROPIC_API_KEY'] = anthropicKey;
+  if (openaiKey)    process.env['OPENAI_API_KEY']    = openaiKey;
+  if (llmUrl)       process.env['LLM_API_URL']       = llmUrl;
 
   // Check the agent exists and is available
   const agentEntry = agentRegistry.get(agentId);
@@ -106,7 +116,11 @@ export async function POST(
         onStep: (step: string) => jobStore.pushStep(jobId, step),
       },
     })
-    .then((result) => jobStore.complete(jobId, result))
+    .then((result) => {
+      jobStore.complete(jobId, result);
+      void saveProject(jobId, result as unknown as Record<string, unknown>, agentParams['figmaUrl'] as string | undefined)
+        .catch((e: unknown) => console.warn('[project-store] save failed:', e));
+    })
     .catch((err: Error) => jobStore.fail(jobId, err.message));
 
   return NextResponse.json(

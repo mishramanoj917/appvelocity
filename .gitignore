@@ -1,29 +1,23 @@
-# ── Dependencies ─────────────────────────────────────────────────────────────
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules
 .pnpm-store/
 
 # ── Build outputs ─────────────────────────────────────────────────────────────
 dist/
-out/
 .next/
 build/
 *.tsbuildinfo
 
 # ── Test & coverage ───────────────────────────────────────────────────────────
 coverage/
-.nyc_output/
 
 # ── Caches ────────────────────────────────────────────────────────────────────
 .turbo/
 .cache/
 .eslintcache
-.parcel-cache/
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 
 # ── Environment (never commit secrets) ────────────────────────────────────────
@@ -40,3 +34,19 @@ Thumbs.db
 # ── Editor ────────────────────────────────────────────────────────────────────
 .idea/
 *.iml
+.vscode/
+
+# ── Runtime job artefacts ─────────────────────────────────────────────────────
+packages/web/storage/
+packages/web/workspace/
+packages/agents/**/output/
+*.zip
+
+# ── Python (Visual QA service) ────────────────────────────────────────────────
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.tmp

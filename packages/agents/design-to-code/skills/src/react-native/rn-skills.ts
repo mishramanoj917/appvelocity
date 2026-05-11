@@ -2,6 +2,29 @@ import type { IRElement, IRScreen } from '@appvelocity/agent-design-to-code-core
 
 export type RNStateManagement = 'zustand' | 'redux' | 'jotai' | 'none';
 
+// ─── Version constants (update here only) ────────────────────────────────────
+// Verified against npm registry, May 2026. Expo SDK 55 ships RN 0.83 + React 19.
+const RN_VERSIONS = {
+  // Runtime
+  expo:                             '~55.0.0',
+  'expo-status-bar':                '~2.0.0',
+  react:                            '19.0.0',
+  'react-native':                   '0.83.0',
+  '@react-navigation/native':       '^7.2.2',
+  '@react-navigation/native-stack': '^7.2.0',
+  'react-native-safe-area-context': '^5.7.0',
+  'react-native-screens':           '^4.24.0',
+  // Dev
+  '@babel/core':   '^7.26.0',
+  '@types/react':  '~19.0.0',
+  typescript:      '^5.8.3',
+  // State management
+  zustand:             '^5.0.12',
+  '@reduxjs/toolkit':  '^2.11.2',
+  'react-redux':       '^9.2.0',
+  jotai:               '^2.19.1',
+} as const;
+
 // ─── Component mapping ─────────────────────────────────────────────────────────
 
 const NAME_TO_COMPONENT: [RegExp, string][] = [
@@ -144,21 +167,20 @@ ${screenDeclarations}
         'type-check': 'tsc --noEmit',
       },
       dependencies: {
-        expo: '~51.0.0',
-        'expo-status-bar': '~1.12.1',
-        react: '18.2.0',
-        'react-native': '0.74.1',
-        '@react-navigation/native': '^6.1.17',
-        '@react-navigation/native-stack': '^6.9.26',
-        'react-native-safe-area-context': '4.10.1',
-        'react-native-screens': '3.31.1',
+        expo:                             RN_VERSIONS['expo'],
+        'expo-status-bar':                RN_VERSIONS['expo-status-bar'],
+        react:                            RN_VERSIONS['react'],
+        'react-native':                   RN_VERSIONS['react-native'],
+        '@react-navigation/native':       RN_VERSIONS['@react-navigation/native'],
+        '@react-navigation/native-stack': RN_VERSIONS['@react-navigation/native-stack'],
+        'react-native-safe-area-context': RN_VERSIONS['react-native-safe-area-context'],
+        'react-native-screens':           RN_VERSIONS['react-native-screens'],
         ...smDeps,
       },
       devDependencies: {
-        '@babel/core': '^7.24.0',
-        '@types/react': '~18.2.79',
-        '@types/react-native': '^0.73.0',
-        typescript: '^5.4.5',
+        '@babel/core':  RN_VERSIONS['@babel/core'],
+        '@types/react': RN_VERSIONS['@types/react'],
+        typescript:     RN_VERSIONS['typescript'],
       },
     }, null, 2);
   }
@@ -225,11 +247,11 @@ web-build/
 
   getDependencies(stateManagement: RNStateManagement): Record<string, string> {
     return {
-      expo: '~51.0.0',
-      react: '18.2.0',
-      'react-native': '0.74.1',
-      '@react-navigation/native': '^6.1.17',
-      '@react-navigation/native-stack': '^6.9.26',
+      expo:                             RN_VERSIONS['expo'],
+      react:                            RN_VERSIONS['react'],
+      'react-native':                   RN_VERSIONS['react-native'],
+      '@react-navigation/native':       RN_VERSIONS['@react-navigation/native'],
+      '@react-navigation/native-stack': RN_VERSIONS['@react-navigation/native-stack'],
       ...this._packageJsonStateDeps(stateManagement),
     };
   }
@@ -252,9 +274,9 @@ web-build/
   }
 
   private _packageJsonStateDeps(sm: RNStateManagement): Record<string, string> {
-    if (sm === 'zustand') return { zustand: '^4.5.2' };
-    if (sm === 'redux') return { '@reduxjs/toolkit': '^2.2.3', 'react-redux': '^9.1.2' };
-    if (sm === 'jotai') return { jotai: '^2.8.0' };
+    if (sm === 'zustand') return { zustand: RN_VERSIONS['zustand'] };
+    if (sm === 'redux')   return { '@reduxjs/toolkit': RN_VERSIONS['@reduxjs/toolkit'], 'react-redux': RN_VERSIONS['react-redux'] };
+    if (sm === 'jotai')   return { jotai: RN_VERSIONS['jotai'] };
     return {};
   }
 

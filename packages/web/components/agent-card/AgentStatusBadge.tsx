@@ -6,18 +6,18 @@ const STATUS_CONFIG: Record<
 > = {
   active: {
     label: 'Active',
-    className: 'bg-green-950 text-green-400 border border-green-900',
-    dot: 'bg-green-400',
+    className: 'bg-green-50 text-green-700 border border-green-200',
+    dot: 'bg-green-500',
   },
   beta: {
     label: 'Beta',
-    className: 'bg-amber-950 text-amber-400 border border-amber-900',
-    dot: 'bg-amber-400',
+    className: 'bg-amber-50 text-amber-700 border border-amber-200',
+    dot: 'bg-amber-500',
   },
   planned: {
     label: 'Planned',
-    className: 'bg-gray-800 text-gray-400 border border-gray-700',
-    dot: 'bg-gray-500',
+    className: 'bg-gray-100 text-gray-500 border border-gray-200',
+    dot: 'bg-gray-400',
   },
 };
 

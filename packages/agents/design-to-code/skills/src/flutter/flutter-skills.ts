@@ -2,6 +2,22 @@ import type { IRElement, IRScreen, IRTokenSet } from '@appvelocity/agent-design-
 
 export type FlutterStateManagement = 'riverpod' | 'bloc' | 'provider' | 'none';
 
+// ─── Version constants (update here only) ────────────────────────────────────
+// Verified against pub.dev, May 2026. Latest stable Flutter SDK: 3.41.5.
+const FLUTTER_VERSIONS = {
+  sdkConstraint:        '>=3.27.0 <4.0.0',
+  flutterConstraint:    '>=3.27.0',
+  cupertino_icons:      '^1.0.9',
+  go_router:            '^16.2.0',
+  cached_network_image: '^3.4.1',
+  flutter_lints:        '^6.0.0',
+  flutter_riverpod:     '^3.3.1',
+  riverpod_annotation:  '^4.0.2',
+  flutter_bloc:         '^9.1.1',
+  bloc:                 '^9.2.0',
+  provider:             '^6.1.5',
+} as const;
+
 // ─── Widget mapping ────────────────────────────────────────────────────────────
 
 const NAME_TO_WIDGET: [RegExp, string][] = [
@@ -180,20 +196,20 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: '>=3.10.0'
+  sdk: '${FLUTTER_VERSIONS.sdkConstraint}'
+  flutter: '${FLUTTER_VERSIONS.flutterConstraint}'
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
-  go_router: ^13.0.0
-  cached_network_image: ^3.3.1
+  cupertino_icons: ${FLUTTER_VERSIONS.cupertino_icons}
+  go_router: ${FLUTTER_VERSIONS.go_router}
+  cached_network_image: ${FLUTTER_VERSIONS.cached_network_image}
 ${smDeps}
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ${FLUTTER_VERSIONS.flutter_lints}
 
 flutter:
   uses-material-design: true
@@ -257,10 +273,10 @@ build/
 
   getDependencies(stateManagement: FlutterStateManagement): Record<string, string> {
     const base: Record<string, string> = {
-      flutter: 'sdk: flutter',
-      cupertino_icons: '^1.0.6',
-      go_router: '^13.0.0',
-      cached_network_image: '^3.3.1',
+      flutter:              'sdk: flutter',
+      cupertino_icons:      FLUTTER_VERSIONS.cupertino_icons,
+      go_router:            FLUTTER_VERSIONS.go_router,
+      cached_network_image: FLUTTER_VERSIONS.cached_network_image,
     };
     return { ...base, ...this._stateDepsMap(stateManagement) };
   }
@@ -297,20 +313,23 @@ build/
   }
 
   private _pubspecStateDeps(sm: FlutterStateManagement): string {
-    if (sm === 'riverpod') return '  flutter_riverpod: ^2.5.1\n  riverpod_annotation: ^2.3.5\n';
-    if (sm === 'bloc') return '  flutter_bloc: ^8.1.5\n  bloc: ^8.1.4\n';
-    if (sm === 'provider') return '  provider: ^6.1.2\n';
+    if (sm === 'riverpod') return `  flutter_riverpod: ${FLUTTER_VERSIONS.flutter_riverpod}\n  riverpod_annotation: ${FLUTTER_VERSIONS.riverpod_annotation}\n`;
+    if (sm === 'bloc')     return `  flutter_bloc: ${FLUTTER_VERSIONS.flutter_bloc}\n  bloc: ${FLUTTER_VERSIONS.bloc}\n`;
+    if (sm === 'provider') return `  provider: ${FLUTTER_VERSIONS.provider}\n`;
     return '';
   }
 
   private _stateDepsMap(sm: FlutterStateManagement): Record<string, string> {
-    if (sm === 'riverpod') return { flutter_riverpod: '^2.5.1', riverpod_annotation: '^2.3.5' };
-    if (sm === 'bloc') return { flutter_bloc: '^8.1.5', bloc: '^8.1.4' };
-    if (sm === 'provider') return { provider: '^6.1.2' };
+    if (sm === 'riverpod') return { flutter_riverpod: FLUTTER_VERSIONS.flutter_riverpod, riverpod_annotation: FLUTTER_VERSIONS.riverpod_annotation };
+    if (sm === 'bloc')     return { flutter_bloc: FLUTTER_VERSIONS.flutter_bloc, bloc: FLUTTER_VERSIONS.bloc };
+    if (sm === 'provider') return { provider: FLUTTER_VERSIONS.provider };
     return {};
   }
 
   private _riverpodProvider(pascal: string): string {
+    const camel = `${pascal[0]!.toLowerCase()}${pascal.slice(1)}`;
+    // Riverpod 3.x: StateNotifier/StateNotifierProvider moved to legacy.dart.
+    // Use Notifier + NotifierProvider instead.
     return `import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ${pascal}State {
@@ -318,14 +337,15 @@ class ${pascal}State {
   // Add your state fields here
 }
 
-class ${pascal}Notifier extends StateNotifier<${pascal}State> {
-  ${pascal}Notifier() : super(const ${pascal}State());
+class ${pascal}Notifier extends Notifier<${pascal}State> {
+  @override
+  ${pascal}State build() => const ${pascal}State();
   // Add your state mutation methods here
 }
 
-final ${pascal[0]!.toLowerCase()}${pascal.slice(1)}Provider =
-    StateNotifierProvider<${pascal}Notifier, ${pascal}State>(
-  (ref) => ${pascal}Notifier(),
+final ${camel}Provider =
+    NotifierProvider<${pascal}Notifier, ${pascal}State>(
+  ${pascal}Notifier.new,
 );
 `;
   }

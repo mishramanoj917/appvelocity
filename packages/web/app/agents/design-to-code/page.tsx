@@ -2,112 +2,163 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { AgentHierarchyView } from '@/components/agent-hierarchy/AgentHierarchyView';
+import {
+  type PipelineAgent,
+  PIPELINE,
+  TOOL_TO_AGENT,
+  TOOL_LABEL,
+  TOOL_LOGS,
+} from '@/lib/pipeline-config';
 
-// ─── 6-Agent pipeline definition ──────────────────────────────────────────────
+// ─── Settings Modal ───────────────────────────────────────────────────────────
 
-interface PipelineAgent {
-  id: string;
-  icon: string;
-  label: string;
-  detail: string;
-  tools: string[];
+const STORAGE_KEY = 'av_api_keys';
+
+interface ApiKeys {
+  figmaToken:    string;
+  anthropicKey:  string;
+  openaiKey:     string;
+  llmUrl:        string;
 }
 
-const PIPELINE: PipelineAgent[] = [
-  {
-    id: 'orchestrator',
-    icon: '🎯',
-    label: 'Orchestrator',
-    detail: 'Session lifecycle · retry policy',
-    tools: [],
-  },
-  {
-    id: 'figma-ingestion',
-    icon: '📥',
-    label: 'Figma Ingestion',
-    detail: 'Snapshot-first · 1 API call',
-    tools: ['fetch_figma'],
-  },
-  {
-    id: 'ground-truth',
-    icon: '🗺️',
-    label: 'Ground Truth',
-    detail: 'IR build · status bar filter',
-    tools: ['analyze_design', 'build_ir'],
-  },
-  {
-    id: 'coding',
-    icon: '⚡',
-    label: 'Coding',
-    detail: 'ReAct loop · code generation',
-    tools: [
-      'plan_generation',
-      'generate_all_components',
-      'generate_component',
-      'assemble_project',
-      'create_zip',
-    ],
-  },
-  {
-    id: 'validation',
-    icon: '🛡️',
-    label: 'Validation',
-    detail: 'Gate 1/2/3 · pre-write checks',
-    tools: ['validate_file', 'repair_file', 'run_workspace_check', 'run_compilation_check'],
-  },
-  {
-    id: 'visual-qa',
-    icon: '👁️',
-    label: 'Visual QA',
-    detail: 'Structural · token · pixel · LLM judge',
-    tools: [],
-  },
-];
+function loadKeys(): ApiKeys {
+  if (typeof window === 'undefined') return { figmaToken: '', anthropicKey: '', openaiKey: '', llmUrl: '' };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as ApiKeys) : { figmaToken: '', anthropicKey: '', openaiKey: '', llmUrl: '' };
+  } catch { return { figmaToken: '', anthropicKey: '', openaiKey: '', llmUrl: '' }; }
+}
 
-const TOOL_TO_AGENT: Record<string, string> = {
-  fetch_figma:             'figma-ingestion',
-  analyze_design:          'ground-truth',
-  build_ir:                'ground-truth',
-  plan_generation:         'coding',
-  generate_all_components: 'coding',
-  generate_component:      'coding',
-  assemble_project:        'coding',
-  create_zip:              'coding',
-  validate_file:           'validation',
-  repair_file:             'validation',
-  run_workspace_check:     'validation',
-  run_compilation_check:   'validation',
-};
+function saveKeys(keys: ApiKeys) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+}
 
-const TOOL_LABEL: Record<string, string> = {
-  fetch_figma:             'Fetch Figma',
-  analyze_design:          'Vision Analysis',
-  build_ir:                'Build IR',
-  plan_generation:         'Plan',
-  generate_all_components: 'Generate All',
-  generate_component:      'Generate One',
-  validate_file:           'Gate 1 Check',
-  repair_file:             'Gate 5 Repair',
-  run_workspace_check:     'Gate 3 Compile',
-  assemble_project:        'Assemble',
-  run_compilation_check:   'Compile Check',
-  create_zip:              'Create ZIP',
-};
+function SecretField({
+  label, value, onChange, placeholder, hint,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; hint?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-gray-600">{label}</label>
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-14 font-mono text-sm text-[#0f1724] placeholder-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+        />
+        <button
+          type="button"
+          onClick={() => setShow((v) => !v)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-0.5 text-[11px] text-gray-400 transition-colors hover:text-gray-600"
+          tabIndex={-1}
+        >
+          {show ? 'Hide' : 'Show'}
+        </button>
+      </div>
+      {hint && <p className="mt-1 text-[11px] text-gray-400">{hint}</p>}
+    </div>
+  );
+}
 
-const TOOL_LOGS: Record<string, string> = {
-  fetch_figma:             'Checking snapshot cache · fetching Figma design data…',
-  analyze_design:          'Running vision analysis on exported screens…',
-  build_ir:                'Building Design IR · filtering status bar nodes…',
-  plan_generation:         'Planning screens and navigation flow…',
-  generate_all_components: 'Generating all screens and components in parallel…',
-  generate_component:      'Generating single screen or component…',
-  validate_file:           'Gate 1 — pre-write static check (Babel / dart analyze)…',
-  repair_file:             'Gate 5 — LLM repair loop…',
-  run_workspace_check:     'Gate 3 — incremental workspace compile check…',
-  assemble_project:        'Assembling project scaffold…',
-  run_compilation_check:   'Full compilation check + auto-fix pass…',
-  create_zip:              'Packaging project into ZIP archive…',
-};
+function SettingsModal({
+  onClose, onSave,
+}: {
+  onClose: () => void;
+  onSave: (keys: ApiKeys) => void;
+}) {
+  const [keys, setKeys] = useState<ApiKeys>(loadKeys);
+  const [saved, setSaved] = useState(false);
+
+  function set(field: keyof ApiKeys) {
+    return (v: string) => setKeys((k) => ({ ...k, [field]: v }));
+  }
+
+  function handleSave() {
+    saveKeys(keys);
+    onSave(keys);
+    setSaved(true);
+    setTimeout(() => { setSaved(false); onClose(); }, 800);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-[#e4e7ec] bg-white p-6 shadow-xl">
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚙</span>
+            <h2 className="text-sm font-semibold text-[#0f1724]">API Key Configuration</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <SecretField
+            label="Figma Access Token"
+            value={keys.figmaToken}
+            onChange={set('figmaToken')}
+            placeholder="figd_…"
+            hint="Figma → Account settings → Personal access tokens"
+          />
+          <SecretField
+            label="Anthropic API Key"
+            value={keys.anthropicKey}
+            onChange={set('anthropicKey')}
+            placeholder="sk-ant-api03-…"
+            hint="Used by the Coding, Validation, and Visual QA agents"
+          />
+          <SecretField
+            label="OpenAI API Key"
+            value={keys.openaiKey}
+            onChange={set('openaiKey')}
+            placeholder="sk-…"
+            hint="Used by the Ground Truth agent for vision analysis"
+          />
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">LLM Proxy URL</label>
+            <input
+              type="url"
+              value={keys.llmUrl}
+              onChange={(e) => setKeys((k) => ({ ...k, llmUrl: e.target.value }))}
+              placeholder="https://…/v1"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-[#0f1724] placeholder-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+            <p className="mt-1 text-[11px] text-gray-400">Coforge QuasarMarket proxy endpoint (overrides default)</p>
+          </div>
+        </div>
+
+        <p className="mt-4 text-[11px] text-gray-400">
+          Keys are stored in your browser only and sent securely with each generation request.
+        </p>
+
+        <div className="mt-5 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-xs text-gray-500 transition-colors hover:border-gray-400"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="rounded-lg bg-brand-500 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-600"
+          >
+            {saved ? '✓ Saved' : 'Save Keys'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const SM_OPTIONS: Record<'react-native' | 'flutter', { value: string; label: string }[]> = {
   flutter: [
@@ -143,36 +194,36 @@ function AgentStageCard({
   const isDone   = status === 'done';
 
   const border = isActive
-    ? 'border-brand-500 bg-brand-950 shadow-[0_0_0_2px_rgba(99,102,241,0.25)]'
+    ? 'border-brand-400 bg-brand-50 shadow-[0_0_0_2px_rgba(241,91,64,0.15)]'
     : isDone
-    ? 'border-green-800 bg-green-950/40'
-    : 'border-gray-800 bg-gray-900/60';
+    ? 'border-green-300 bg-green-50'
+    : 'border-[#e4e7ec] bg-gray-50';
 
-  const dot = isActive ? 'bg-brand-400 animate-pulse' : isDone ? 'bg-green-500' : 'bg-gray-700';
+  const dot = isActive ? 'bg-brand-500 animate-pulse' : isDone ? 'bg-green-500' : 'bg-gray-300';
 
-  const labelColor = isActive ? 'text-white' : isDone ? 'text-green-300' : 'text-gray-500';
+  const labelColor = isActive ? 'text-[#0f1724]' : isDone ? 'text-green-700' : 'text-gray-500';
 
   const activeToolLabel = isActive && activeTool ? (TOOL_LABEL[activeTool] ?? activeTool) : null;
 
   return (
-    <div className={`flex flex-col rounded-xl border p-3 transition-all duration-300 ${border}`}>
+    <div className={`flex flex-col rounded-xl border p-3.5 transition-all duration-300 ${border}`}>
       <div className="flex items-start gap-2">
         <span className={`mt-0.5 h-2 w-2 flex-shrink-0 rounded-full ${dot}`} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="text-base leading-none">{agent.icon}</span>
-            <span className={`truncate text-[11px] font-semibold leading-tight ${labelColor}`}>
+            <span className={`truncate text-xs font-semibold leading-tight ${labelColor}`}>
               {agent.label}
             </span>
             {callCount > 0 && (
-              <span className="ml-auto flex-shrink-0 rounded-full bg-gray-800 px-1.5 py-0.5 text-[9px] text-gray-500">
+              <span className="ml-auto flex-shrink-0 rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
                 ×{callCount}
               </span>
             )}
           </div>
-          <p className="mt-0.5 font-mono text-[8px] leading-tight text-gray-600">{agent.detail}</p>
+          <p className="mt-0.5 font-mono text-[10px] leading-tight text-gray-400">{agent.detail}</p>
           {activeToolLabel && (
-            <p className="mt-1 truncate rounded bg-brand-900/50 px-1.5 py-0.5 font-mono text-[9px] text-brand-300">
+            <p className="mt-1 truncate rounded border border-brand-200 bg-brand-50 px-1.5 py-0.5 font-mono text-[10px] text-brand-600">
               {activeToolLabel}
             </p>
           )}
@@ -184,8 +235,8 @@ function AgentStageCard({
 
 function LogLine({ message, fresh }: { message: string; fresh: boolean }) {
   return (
-    <div className={`av-log py-0.5 text-xs leading-relaxed ${fresh ? 'av-cursor text-gray-200' : 'text-gray-500'}`}>
-      <span className="mr-2 text-gray-700">›</span>{message}
+    <div className={`av-log py-0.5 text-xs leading-relaxed ${fresh ? 'av-cursor text-gray-800' : 'text-gray-500'}`}>
+      <span className="mr-2 text-gray-400">›</span>{message}
     </div>
   );
 }
@@ -198,7 +249,11 @@ interface CallEvent {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DesignToCodePage() {
+  const [showSettings, setShowSettings]     = useState(false);
+  const [apiKeys, setApiKeys]               = useState<ApiKeys>({ figmaToken: '', anthropicKey: '', openaiKey: '', llmUrl: '' });
   const [figmaUrl, setFigmaUrl]             = useState('');
+  const [figmaToken, setFigmaToken]         = useState('');
+  const [showToken, setShowToken]           = useState(false);
   const [inputMode, setInputMode]           = useState<'url' | 'plugin'>('url');
   const [pluginFile, setPluginFile]         = useState<File | null>(null);
   const [framework, setFramework]           = useState<'react-native' | 'flutter'>('react-native');
@@ -219,6 +274,13 @@ export default function DesignToCodePage() {
   const logRef    = useRef<HTMLDivElement>(null);
   const esRef     = useRef<EventSource | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // Load saved API keys from localStorage on mount
+  useEffect(() => {
+    const saved = loadKeys();
+    setApiKeys(saved);
+    if (saved.figmaToken) setFigmaToken(saved.figmaToken);
+  }, []);
 
   useEffect(() => {
     setStateMgmt(SM_OPTIONS[framework][0]!.value);
@@ -286,6 +348,7 @@ export default function DesignToCodePage() {
     const url = figmaUrl.trim();
     if (inputMode === 'url' && !url) return;
     if (inputMode === 'plugin' && !pluginFile) return;
+    if (!figmaToken.trim()) return;
 
     setPhase('running');
     setLogs(['Starting DesignToCode pipeline (6-agent mode)…']);
@@ -299,6 +362,12 @@ export default function DesignToCodePage() {
     setErrorMsg('');
     setJobId('');
 
+    // Build extra headers for server-side key overrides
+    const keyHeaders: Record<string, string> = {};
+    if (apiKeys.anthropicKey) keyHeaders['x-anthropic-key'] = apiKeys.anthropicKey;
+    if (apiKeys.openaiKey)    keyHeaders['x-openai-key']    = apiKeys.openaiKey;
+    if (apiKeys.llmUrl)       keyHeaders['x-llm-url']       = apiKeys.llmUrl;
+
     try {
       let res: Response;
 
@@ -307,19 +376,21 @@ export default function DesignToCodePage() {
         const formData = new FormData();
         formData.append('action', 'generate');
         formData.append('figmaUrl', url);
+        formData.append('figmaAccessToken', figmaToken.trim());
         formData.append('targetFramework', framework);
         formData.append('generationMode', genMode);
         formData.append('stateManagement', stateMgmt);
         formData.append('pluginZip', pluginFile);
-        res = await fetch('/api/agents/design-to-code', { method: 'POST', body: formData });
+        res = await fetch('/api/agents/design-to-code', { method: 'POST', body: formData, headers: keyHeaders });
       } else {
         res = await fetch('/api/agents/design-to-code', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...keyHeaders },
           body: JSON.stringify({
             action: 'generate',
             params: {
               figmaUrl: url,
+              figmaAccessToken: figmaToken.trim(),
               targetFramework: framework,
               generationMode: genMode,
               stateManagement: stateMgmt,
@@ -408,17 +479,49 @@ export default function DesignToCodePage() {
 
   const showPipeline = phase === 'running' || phase === 'done';
 
+  const keysConfigured = !!(apiKeys.figmaToken && apiKeys.anthropicKey && apiKeys.openaiKey);
+
   return (
     <div className="min-h-full">
+      {showSettings && (
+        <SettingsModal
+          onClose={() => setShowSettings(false)}
+          onSave={(keys) => {
+            setApiKeys(keys);
+            if (keys.figmaToken) setFigmaToken(keys.figmaToken);
+          }}
+        />
+      )}
+
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="border-b border-gray-800 bg-gray-950/80 px-6 py-4">
+      <header className="border-b border-[#e4e7ec] bg-white/90 px-6 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4">
-          <Link href="/" className="text-sm text-gray-500 transition-colors hover:text-gray-300">
+          <Link href="/" className="text-sm text-gray-500 transition-colors hover:text-[#0f1724]">
             ← Dashboard
           </Link>
-          <span className="text-gray-700">/</span>
-          <span className="text-sm text-gray-300">DesignToCodeAgent</span>
-          <span className="ml-auto rounded-full border border-indigo-900 bg-indigo-950 px-2 py-0.5 text-[10px] text-indigo-400">
+          <span className="text-gray-300">/</span>
+          <span className="text-sm font-medium text-[#0f1724]">DesignToCodeAgent</span>
+          <Link
+            href="/agents/design-to-code/history"
+            className="ml-auto text-sm text-gray-500 transition-colors hover:text-[#0f1724]"
+          >
+            History
+          </Link>
+          <button
+            onClick={() => setShowSettings(true)}
+            title="Configure API keys"
+            className="relative rounded-lg border border-gray-200 p-1.5 text-gray-400 transition-colors hover:border-gray-300 hover:text-gray-600"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            {/* Green dot when all keys are configured */}
+            {keysConfigured && (
+              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500" />
+            )}
+          </button>
+          <span className="rounded-full border border-brand-200 bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600">
             6-Agent Pipeline
           </span>
         </div>
@@ -434,11 +537,11 @@ export default function DesignToCodePage() {
             🎨
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">DesignToCodeAgent</h1>
-            <p className="mt-0.5 text-sm font-medium" style={{ color: '#6366f1' }}>
+            <h1 className="text-2xl font-bold text-[#0f1724]">DesignToCodeAgent</h1>
+            <p className="mt-0.5 text-sm font-medium text-brand-600">
               Figma → Runnable Flutter / React Native Project
             </p>
-            <p className="mt-0.5 text-xs text-gray-600">
+            <p className="mt-0.5 text-xs text-gray-500">
               6-agent pipeline · snapshot-first · Gate 1/2/3 validation · Visual QA
             </p>
           </div>
@@ -446,7 +549,7 @@ export default function DesignToCodePage() {
 
         {/* ── Launch form ───────────────────────────────────────────────────── */}
         <div className="av-card space-y-5">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Configure</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Configure</h2>
 
           {/* Input mode toggle */}
           <div className="flex gap-2">
@@ -457,8 +560,8 @@ export default function DesignToCodePage() {
                 disabled={phase === 'running'}
                 className={`rounded-lg border px-3 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   inputMode === mode
-                    ? 'border-brand-600 bg-brand-950 text-brand-300'
-                    : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-gray-300 text-gray-500 hover:border-gray-400'
                 }`}
               >
                 {mode === 'url' ? 'Figma URL' : '📦 Plugin Export'}
@@ -468,7 +571,7 @@ export default function DesignToCodePage() {
 
           {/* Figma URL — required in url mode, optional in plugin mode */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-400">
+            <label className="mb-1.5 block text-xs font-medium text-gray-600">
               Figma File URL{' '}
               {inputMode === 'url'
                 ? <span className="text-red-400">*</span>
@@ -476,7 +579,7 @@ export default function DesignToCodePage() {
             </label>
             <input
               type="url"
-              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600 disabled:opacity-50"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-[#0f1724] placeholder-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50"
               placeholder="https://www.figma.com/file/… or https://www.figma.com/design/…"
               value={figmaUrl}
               onChange={(e) => setFigmaUrl(e.target.value)}
@@ -489,18 +592,46 @@ export default function DesignToCodePage() {
             )}
           </div>
 
+          {/* Figma Access Token */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-gray-600">
+              Figma Access Token <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type={showToken ? 'text' : 'password'}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-16 text-sm text-[#0f1724] placeholder-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:opacity-50 font-mono"
+                placeholder="figd_…"
+                value={figmaToken}
+                onChange={(e) => setFigmaToken(e.target.value)}
+                disabled={phase === 'running'}
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-0.5 text-[11px] text-gray-400 transition-colors hover:text-gray-600"
+                tabIndex={-1}
+              >
+                {showToken ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-gray-400">
+              Personal access token from Figma → Account settings → Personal access tokens
+            </p>
+          </div>
+
           {/* Plugin ZIP upload — only shown in plugin mode */}
           {inputMode === 'plugin' && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-gray-400">
+              <label className="mb-1.5 block text-xs font-medium text-gray-600">
                 AppVelocity Plugin Export ZIP <span className="text-red-400">*</span>
               </label>
               <div
                 onClick={() => fileInput.current?.click()}
                 className={`flex cursor-pointer items-center gap-3 rounded-lg border border-dashed px-4 py-3 text-sm transition-colors ${
                   pluginFile
-                    ? 'border-brand-600 bg-brand-950/30 text-brand-300'
-                    : 'border-gray-600 text-gray-400 hover:border-gray-500'
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-gray-300 text-gray-500 hover:border-gray-400'
                 } ${phase === 'running' ? 'cursor-not-allowed opacity-50' : ''}`}
               >
                 <span className="text-lg">📦</span>
@@ -516,7 +647,7 @@ export default function DesignToCodePage() {
                 disabled={phase === 'running'}
                 onChange={(e) => setPluginFile(e.target.files?.[0] ?? null)}
               />
-              <p className="mt-1 text-xs text-gray-600">
+              <p className="mt-1 text-xs text-gray-400">
                 Run the AppVelocity Figma plugin → Export → upload the ZIP here for pixel-perfect output
               </p>
             </div>
@@ -524,7 +655,7 @@ export default function DesignToCodePage() {
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
             <div>
-              <label className="mb-2 block text-xs font-medium text-gray-400">Framework</label>
+              <label className="mb-2 block text-xs font-medium text-gray-600">Framework</label>
               <div className="flex gap-2">
                 {(['react-native', 'flutter'] as const).map((fw) => (
                   <button
@@ -533,8 +664,8 @@ export default function DesignToCodePage() {
                     disabled={phase === 'running'}
                     className={`rounded-lg border px-3 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       framework === fw
-                        ? 'border-brand-600 bg-brand-950 text-brand-300'
-                        : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                        ? 'border-brand-500 bg-brand-50 text-brand-700'
+                        : 'border-gray-300 text-gray-500 hover:border-gray-400'
                     }`}
                   >
                     {fw === 'react-native' ? 'React Native' : 'Flutter'}
@@ -544,7 +675,7 @@ export default function DesignToCodePage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-medium text-gray-400">Generate</label>
+              <label className="mb-2 block text-xs font-medium text-gray-600">Generate</label>
               <div className="flex gap-2">
                 {(['project', 'screens'] as const).map((mode) => (
                   <button
@@ -553,8 +684,8 @@ export default function DesignToCodePage() {
                     disabled={phase === 'running'}
                     className={`rounded-lg border px-3 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                       genMode === mode
-                        ? 'border-brand-600 bg-brand-950 text-brand-300'
-                        : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                        ? 'border-brand-500 bg-brand-50 text-brand-700'
+                        : 'border-gray-300 text-gray-500 hover:border-gray-400'
                     }`}
                   >
                     {mode === 'project' ? 'Full Project' : 'Screens Only'}
@@ -564,12 +695,12 @@ export default function DesignToCodePage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-medium text-gray-400">State Management</label>
+              <label className="mb-2 block text-xs font-medium text-gray-600">State Management</label>
               <select
                 value={stateMgmt}
                 onChange={(e) => setStateMgmt(e.target.value)}
                 disabled={phase === 'running'}
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs text-gray-200 focus:border-brand-600 focus:outline-none disabled:opacity-50"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-[#0f1724] focus:border-brand-500 focus:outline-none disabled:opacity-50"
               >
                 {SM_OPTIONS[framework].map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -581,15 +712,15 @@ export default function DesignToCodePage() {
           <div className="flex gap-3 pt-1">
             <button
               onClick={handleLaunch}
-              disabled={phase === 'running' || (inputMode === 'url' && !figmaUrl.trim()) || (inputMode === 'plugin' && !pluginFile)}
-              className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={phase === 'running' || !figmaToken.trim() || (inputMode === 'url' && !figmaUrl.trim()) || (inputMode === 'plugin' && !pluginFile)}
+              className="rounded-lg bg-brand-500 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {phase === 'running' ? 'Running Pipeline…' : 'Generate Code'}
             </button>
             {phase === 'running' && (
               <button
                 onClick={handleCancel}
-                className="rounded-lg border border-gray-700 px-5 py-2 text-sm text-gray-400 transition-colors hover:border-red-700 hover:text-red-400"
+                className="rounded-lg border border-gray-300 px-5 py-2 text-sm text-gray-500 transition-colors hover:border-red-400 hover:text-red-500"
               >
                 Cancel
               </button>
@@ -602,34 +733,34 @@ export default function DesignToCodePage() {
           <div className="av-card">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
                   Agent Pipeline
                 </h3>
                 {currentIter > 0 && (
-                  <p className="mt-0.5 text-[10px] text-gray-600">
+                  <p className="mt-0.5 text-[10px] text-gray-500">
                     Iteration {currentIter} / 30
                   </p>
                 )}
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 {snapshotCached === true && (
-                  <span className="av-badge border border-emerald-900 bg-emerald-950 text-emerald-400">
+                  <span className="av-badge border border-emerald-200 bg-emerald-50 text-emerald-700">
                     📦 Snapshot cached
                   </span>
                 )}
                 {snapshotCached === false && (
-                  <span className="av-badge border border-blue-900 bg-blue-950 text-blue-400">
+                  <span className="av-badge border border-blue-200 bg-blue-50 text-blue-700">
                     🔄 Fresh fetch
                   </span>
                 )}
                 {phase === 'running' && (
-                  <span className="av-badge border border-brand-900 bg-brand-950 text-brand-400">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-400" />
+                  <span className="av-badge border border-brand-200 bg-brand-50 text-brand-600">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-500" />
                     Running
                   </span>
                 )}
                 {phase === 'done' && (
-                  <span className="av-badge border border-green-900 bg-green-950 text-green-400">
+                  <span className="av-badge border border-green-200 bg-green-50 text-green-700">
                     ✓ Complete
                   </span>
                 )}
@@ -651,61 +782,48 @@ export default function DesignToCodePage() {
 
             {/* Gate stats row */}
             {(gate1Stats.passed + gate1Stats.failed) > 0 && (
-              <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gray-800 pt-3">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-gray-600">
+              <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[#e4e7ec] pt-3">
+                <span className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
                   Validation gates
                 </span>
-                <span className="rounded border border-green-900 bg-green-950/40 px-2 py-0.5 text-[10px] text-green-400">
+                <span className="rounded border border-green-200 bg-green-50 px-2 py-0.5 text-[10px] text-green-700">
                   Gate 1 passed: {gate1Stats.passed}
                 </span>
                 {gate1Stats.failed > 0 && (
-                  <span className="rounded border border-yellow-900 bg-yellow-950/40 px-2 py-0.5 text-[10px] text-yellow-400">
+                  <span className="rounded border border-yellow-200 bg-yellow-50 px-2 py-0.5 text-[10px] text-yellow-700">
                     Gate 1 failed: {gate1Stats.failed}
                   </span>
                 )}
-                <span className="rounded border border-gray-800 bg-gray-900 px-2 py-0.5 text-[10px] text-gray-500">
+                <span className="rounded border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500">
                   {callTimeline.length} total tool calls
                 </span>
               </div>
             )}
 
-            {/* Dynamic call sequence */}
+            {/* Agent execution hierarchy */}
             {callTimeline.length > 0 && (
-              <div className="mt-4 border-t border-gray-800 pt-3">
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-gray-600">
+              <div className="mt-4 border-t border-[#e4e7ec] pt-3">
+                <p className="mb-3 text-[10px] font-medium uppercase tracking-wider text-gray-400">
                   Agent call sequence
                 </p>
-                <div className="flex flex-wrap items-center gap-1">
-                  {callTimeline.map((event, i) => (
-                    <span key={i} className="flex items-center gap-1">
-                      <span
-                        className={`rounded border px-1.5 py-0.5 font-mono text-[9px] ${
-                          i === callTimeline.length - 1 && phase === 'running'
-                            ? 'border-brand-800 bg-brand-950 text-brand-300'
-                            : 'border-gray-800 bg-gray-900 text-gray-500'
-                        }`}
-                      >
-                        {event.iter}:{event.tool.replace(/_/g, ' ')}
-                      </span>
-                      {i < callTimeline.length - 1 && (
-                        <span className="text-[10px] text-gray-700">→</span>
-                      )}
-                    </span>
-                  ))}
-                </div>
+                <AgentHierarchyView
+                  steps={callTimeline.map((c) => `${c.tool} [iter ${c.iter}]`)}
+                  isLive={phase === 'running'}
+                  standalone={false}
+                />
               </div>
             )}
 
-            <div className="mt-4 flex items-center gap-4 border-t border-gray-800 pt-3">
-              <span className="text-[10px] text-gray-600">Legend:</span>
+            <div className="mt-4 flex items-center gap-4 border-t border-[#e4e7ec] pt-3">
+              <span className="text-[10px] text-gray-400">Legend:</span>
               <span className="flex items-center gap-1.5 text-[10px] text-gray-500">
-                <span className="h-2 w-2 rounded-full bg-brand-400" /> Active
+                <span className="h-2 w-2 rounded-full bg-brand-500" /> Active
               </span>
               <span className="flex items-center gap-1.5 text-[10px] text-gray-500">
                 <span className="h-2 w-2 rounded-full bg-green-500" /> Done
               </span>
               <span className="flex items-center gap-1.5 text-[10px] text-gray-500">
-                <span className="font-mono text-[9px] text-gray-600">×N</span> Tool calls
+                <span className="font-mono text-[9px] text-gray-400">×N</span> Tool calls
               </span>
             </div>
           </div>
@@ -714,10 +832,10 @@ export default function DesignToCodePage() {
         {/* ── Live execution log ─────────────────────────────────────────────── */}
         {(phase === 'running' || phase === 'done') && logs.length > 0 && (
           <div className="av-card">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
               Execution Log
             </h3>
-            <div ref={logRef} className="max-h-48 overflow-y-auto rounded-lg bg-gray-950 p-4">
+            <div ref={logRef} className="max-h-48 overflow-y-auto rounded-lg bg-gray-50 p-4 border border-[#e4e7ec]">
               {logs.map((line, i) => (
                 <LogLine key={i} message={line} fresh={i === logs.length - 1} />
               ))}
@@ -729,11 +847,11 @@ export default function DesignToCodePage() {
         {phase === 'done' && jobId && (
           <div className="av-card flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-950 text-xl text-green-400">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-xl text-green-600">
                 ✓
               </span>
               <div>
-                <p className="text-sm font-semibold text-green-300">Project ready</p>
+                <p className="text-sm font-semibold text-green-700">Project ready</p>
                 <p className="text-xs text-gray-500">
                   {genMode === 'project'
                     ? `Complete ${framework === 'flutter' ? 'Flutter' : 'React Native'} project — unzip and run immediately`
@@ -745,13 +863,21 @@ export default function DesignToCodePage() {
                 </p>
               </div>
             </div>
-            <a
-              href={`/api/agents/design-to-code/download?jobId=${jobId}`}
-              download={`${projectName}.zip`}
-              className="flex items-center gap-2 rounded-lg bg-green-700 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-600"
-            >
-              ⬇ Download ZIP
-            </a>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/agents/design-to-code/jobs/${jobId}`}
+                className="flex items-center gap-2 rounded-lg border border-brand-300 px-4 py-2 text-sm font-semibold text-brand-600 transition-colors hover:border-brand-500 hover:text-brand-700"
+              >
+                View Code →
+              </Link>
+              <a
+                href={`/api/agents/design-to-code/download?jobId=${jobId}`}
+                download={`${projectName}.zip`}
+                className="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+              >
+                ⬇ Download ZIP
+              </a>
+            </div>
           </div>
         )}
 
@@ -759,13 +885,13 @@ export default function DesignToCodePage() {
         {phase === 'error' && (
           <div className="av-card">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">Error</h3>
-              <span className="av-badge border border-red-900 bg-red-950 text-red-400">✗ Failed</span>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Error</h3>
+              <span className="av-badge border border-red-200 bg-red-50 text-red-600">✗ Failed</span>
             </div>
-            <div className="rounded-lg bg-red-950/40 p-4 text-sm text-red-400">{errorMsg}</div>
+            <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-600">{errorMsg}</div>
             <button
               onClick={() => { setPhase('idle'); setLogs([]); }}
-              className="mt-3 text-xs text-gray-500 transition-colors hover:text-gray-300"
+              className="mt-3 text-xs text-gray-400 transition-colors hover:text-gray-600"
             >
               ← Try again
             </button>

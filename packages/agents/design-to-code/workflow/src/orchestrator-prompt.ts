@@ -66,6 +66,10 @@ You may deviate from this sequence based on what you observe. For example:
 When the ZIP has been created (create_zip returned success), respond with a plain text message
 describing the result — DO NOT call any more tools. That text response signals completion.
 
+**CRITICAL**: A successful run_workspace_check does NOT mean you are done. You MUST still call
+${generationMode === 'project' ? 'assemble_project → ' : ''}run_compilation_check then create_zip.
+Do NOT respond with text until create_zip returns success.
+
 If you reach ${30} iterations without completing, explain what is blocking and stop.
 
 ## RULES

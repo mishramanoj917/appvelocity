@@ -14,7 +14,7 @@ export function AgentCard({ agent }: Props) {
       href={`/agents/${agent.id}`}
       className={`av-card group flex flex-col gap-4 transition-all duration-200 ${
         isAvailable
-          ? 'hover:border-brand-700 hover:shadow-lg hover:shadow-brand-950/50 cursor-pointer'
+          ? 'hover:border-brand-400 hover:shadow-md cursor-pointer'
           : 'cursor-default opacity-70 hover:opacity-85'
       }`}
     >
@@ -24,7 +24,7 @@ export function AgentCard({ agent }: Props) {
           className="flex h-11 w-11 items-center justify-center rounded-lg text-2xl"
           style={{
             background: `${agent.color}15`,
-            border: `1px solid ${agent.color}25`,
+            border: `1px solid ${agent.color}30`,
           }}
         >
           {agent.icon}
@@ -34,7 +34,7 @@ export function AgentCard({ agent }: Props) {
 
       {/* Name & subtitle */}
       <div>
-        <h3 className="font-semibold text-white group-hover:text-brand-300 transition-colors">
+        <h3 className="font-semibold text-[#0f1724] group-hover:text-brand-600 transition-colors">
           {agent.name}
         </h3>
         <p className="mt-0.5 text-xs" style={{ color: agent.color }}>
@@ -42,20 +42,20 @@ export function AgentCard({ agent }: Props) {
         </p>
       </div>
 
-      {/* Short description – first sentence only */}
-      <p className="text-sm leading-relaxed text-gray-400 line-clamp-2">
+      {/* Short description */}
+      <p className="text-sm leading-relaxed text-gray-500 line-clamp-2">
         {agent.valueProposition}
       </p>
 
       {/* Capability count */}
-      <div className="mt-auto flex items-center gap-1.5 text-xs text-gray-500">
+      <div className="mt-auto flex items-center gap-1.5 text-xs text-gray-400">
         <span
           className="inline-block h-1.5 w-1.5 rounded-full"
           style={{ background: agent.color }}
         />
         {agent.capabilities.length} capabilities
         {isAvailable && (
-          <span className="ml-auto text-brand-400">
+          <span className="ml-auto text-brand-500">
             Launch →
           </span>
         )}

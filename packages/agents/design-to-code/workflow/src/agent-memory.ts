@@ -17,6 +17,7 @@ import type {
   VisualAnalysis,
   ExecutionPlan,
   ProjectBundle,
+  ProjectFile,
   CompilationResult,
   AgentError,
   LLMMessage,
@@ -243,10 +244,33 @@ export class AgentMemory {
   // ─── Final output ─────────────────────────────────────────────────────────────
 
   finalOutput(): AgentOutput {
+    let projectBundle = this.projectBundle;
+
+    // In 'screens' mode assemble_project is skipped, so projectBundle is never set.
+    // Construct a minimal bundle from generatedFiles so the history store can save it.
+    if (!projectBundle && this.generatedFiles.size > 0) {
+      const files: ProjectBundle['files'] = [...this.generatedFiles.entries()].map(([p, content]) => {
+        let language: ProjectFile['language'] = 'text';
+        if (p.endsWith('.dart'))               language = 'dart';
+        else if (p.endsWith('.ts') || p.endsWith('.tsx')) language = 'typescript';
+        else if (p.endsWith('.js') || p.endsWith('.jsx')) language = 'javascript';
+        else if (p.endsWith('.yaml') || p.endsWith('.yml')) language = 'yaml';
+        else if (p.endsWith('.json'))          language = 'json';
+        return { path: p, content, language };
+      });
+      projectBundle = {
+        projectName: this.executionPlan?.projectName ?? 'project',
+        framework:   this.input.targetFramework,
+        files,
+        assets:       [],
+        dependencies: {},
+      };
+    }
+
     return {
       success: !!this.zipBuffer && this.errors.length === 0,
       zipBuffer: this.zipBuffer,
-      projectBundle: this.projectBundle,
+      projectBundle,
       errors: this.errors,
       iterations: this.iteration,
       logs: this.logs,

@@ -502,8 +502,14 @@ export default function DesignToCodePage() {
           <span className="text-gray-300">/</span>
           <span className="text-sm font-medium text-[#0f1724]">DesignToCodeAgent</span>
           <Link
-            href="/agents/design-to-code/history"
+            href="/agents/design-to-code/analyze"
             className="ml-auto text-sm text-gray-500 transition-colors hover:text-[#0f1724]"
+          >
+            Analyze
+          </Link>
+          <Link
+            href="/agents/design-to-code/history"
+            className="text-sm text-gray-500 transition-colors hover:text-[#0f1724]"
           >
             History
           </Link>

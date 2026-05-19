@@ -23,7 +23,9 @@ import type {
   LLMMessage,
   ToolCall,
   ToolResult,
+  DesignQualityReport,
 } from './types.js';
+import { analyzeDesignQuality } from './nodes/quality-analyzer.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -74,6 +76,7 @@ export interface AgentOutput {
   success: boolean;
   zipBuffer?: Buffer;
   projectBundle?: ProjectBundle;
+  qualityReport?: DesignQualityReport;
   errors: AgentError[];
   iterations: number;
   logs: string[];
@@ -267,10 +270,26 @@ export class AgentMemory {
       };
     }
 
+    // Compute design quality report if Figma data is available (non-fatal).
+    let qualityReport: DesignQualityReport | undefined;
+    if (this.figmaFile && this.designIR) {
+      try {
+        qualityReport = analyzeDesignQuality(
+          this.figmaFile,
+          this.variablesResponse,
+          this.visualAnalysis,
+          this.designIR
+        );
+      } catch {
+        // non-fatal — pipeline result is unaffected
+      }
+    }
+
     return {
       success: !!this.zipBuffer && this.errors.length === 0,
       zipBuffer: this.zipBuffer,
       projectBundle,
+      qualityReport,
       errors: this.errors,
       iterations: this.iteration,
       logs: this.logs,

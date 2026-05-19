@@ -58,6 +58,17 @@ function ProjectCard({
             <span className="text-[10px] text-gray-400">
               {project.fileCount} file{project.fileCount !== 1 ? 's' : ''}
             </span>
+            {project.irScore !== undefined && (
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                project.irGrade === 'A' ? 'border-green-200 bg-green-50 text-green-700' :
+                project.irGrade === 'B' ? 'border-brand-200 bg-brand-50 text-brand-600' :
+                project.irGrade === 'C' ? 'border-yellow-200 bg-yellow-50 text-yellow-700' :
+                project.irGrade === 'D' ? 'border-orange-200 bg-orange-50 text-orange-700' :
+                                          'border-red-200 bg-red-50 text-red-700'
+              }`}>
+                IR {project.irScore} · {project.irGrade}
+              </span>
+            )}
           </div>
           <p className="mt-0.5 text-[11px] text-gray-500">
             {timeAgo(project.createdAt)}

@@ -26,6 +26,10 @@ export type {
 
 export { createLLMClient, setLLMClient } from './utils/llm-client.js';
 
+export { analyzeDesignQuality } from './nodes/quality-analyzer.js';
+export { runDesignAudit, FigmaAuthError, FigmaApiError, InvalidFigmaUrlError } from './nodes/quality-audit.js';
+export type { DesignQualityReport, DesignIssue, QualitySuggestion, IssueCategory } from './types.js';
+
 export { inputValidator } from './nodes/input-validator.js';
 export { generationPlannerAgent } from './nodes/generation-planner.js';
 export { figmaFetcherAgent } from './nodes/figma-fetcher.js';

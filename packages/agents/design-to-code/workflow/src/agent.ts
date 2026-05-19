@@ -77,6 +77,8 @@ export class DesignToCodeAgent extends AgentBase {
         {
           zipBuffer:     result.zipBuffer,
           projectBundle: result.projectBundle,
+          irScore:       result.qualityReport?.irScore,
+          irGrade:       result.qualityReport?.grade,
           iterations:    result.iterations,
           logs:          result.logs,
         },

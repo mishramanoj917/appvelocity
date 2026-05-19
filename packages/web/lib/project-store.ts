@@ -27,6 +27,8 @@ export interface ProjectMeta {
   filePaths: ProjectFilePath[];
   createdAt: number;
   figmaUrl?: string;
+  irScore?: number;
+  irGrade?: string;
 }
 
 export interface ProjectBundle {
@@ -39,6 +41,8 @@ export interface ProjectBundle {
 interface AgentOutputData {
   projectBundle?: ProjectBundle;
   zipBuffer?: { type: 'Buffer'; data: number[] } | Buffer;
+  irScore?: number;
+  irGrade?: string;
   [key: string]: unknown;
 }
 
@@ -92,6 +96,8 @@ export async function saveProject(
     filePaths,
     createdAt: Date.now(),
     figmaUrl,
+    irScore: result.data?.irScore,
+    irGrade: result.data?.irGrade,
   };
 
   await Promise.all([

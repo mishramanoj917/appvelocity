@@ -228,6 +228,69 @@ export interface LLMClient {
   chat(options: LLMChatOptions): Promise<LLMResponse>;
 }
 
+// ─── Design Quality Report ────────────────────────────────────────────────────
+
+export type IssueCategory =
+  | 'missing-design-tokens'
+  | 'hardcoded-colors'
+  | 'absolute-positioning'
+  | 'low-component-reuse'
+  | 'inconsistent-typography'
+  | 'poor-naming'
+  | 'non-standard-screen-size'
+  | 'missing-spacing-tokens'
+  | 'status-bar-included';
+
+export interface DesignIssue {
+  id: string;
+  category: IssueCategory;
+  severity: 'critical' | 'warning' | 'info';
+  title: string;
+  description: string;
+  impact: string;
+  suggestion: string;
+  affectedCount: number;
+  nodeIds?: string[];
+}
+
+export interface QualitySuggestion {
+  priority: 1 | 2 | 3 | 4 | 5;
+  title: string;
+  steps: string[];
+  scoreDelta: number;
+}
+
+export interface DesignQualityReport {
+  irScore: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  dimensions: {
+    tokenCoverage:      { score: number; weight: number; label: string };
+    autoLayoutCoverage: { score: number; weight: number; label: string };
+    componentReuse:     { score: number; weight: number; label: string };
+    namingQuality:      { score: number; weight: number; label: string };
+    styleConsistency:   { score: number; weight: number; label: string };
+  };
+  issues: DesignIssue[];
+  suggestions: QualitySuggestion[];
+  stats: {
+    screenCount: number;
+    componentCount: number;
+    tokenCount: number;
+    instanceCount: number;
+    totalNodes: number;
+    uniqueColors: number;
+    uniqueFontCombos: number;
+    framesWithAutoLayout: number;
+    totalFrames: number;
+    wellNamedNodes: number;
+    poorlyNamedNodes: number;
+    spacingUnit: 4 | 8 | null;
+    fontFamilies: string[];
+  };
+  figmaFileName: string;
+  analysisTimestamp: string;
+}
+
 // ─── Tool calling types (OpenAI function calling format) ──────────────────────
 
 export interface ToolDefinition {

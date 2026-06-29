@@ -77,7 +77,9 @@ class ProxyLLMClient implements LLMClient {
   }
 
   async chat(options: LLMChatOptions): Promise<LLMResponse> {
-    const model = options.model ?? DEFAULT_MODEL;
+    // OVERRIDE_MODEL env var allows callers (CLI, extension) to force a specific model
+    // e.g. OVERRIDE_MODEL=gemini-1.5-pro for better Flutter/Dart generation
+    const model = process.env.OVERRIDE_MODEL ?? options.model ?? DEFAULT_MODEL;
     const maxTokens = options.max_tokens ?? DEFAULT_MAX_TOKENS;
 
     // Build the messages array — system prompt goes first as a 'system' role message

@@ -30,6 +30,7 @@ import type {
   IRTokenSet,
 } from '@appvelocity/agent-design-to-code-core';
 import type { CodeFile, AssetFile }  from '@appvelocity/agent-design-to-code-generators';
+import { resolveLayout, buildAssetAccessorFile } from '@appvelocity/agent-design-to-code-generators';
 import { createLLMClient }           from '../utils/llm-client.js';
 import { makeLogEntry }              from '../utils/logger.js';
 import { serializeScreen, serializeComponent, serializeTokenSummary } from '../utils/ir-serializer.js';
@@ -71,10 +72,29 @@ ABSOLUTE RULES — never violate:
 4. Use const constructors wherever the value is compile-time constant.
 5. Handle null safety: use ? for nullable types, ?? for defaults, ?. for optional chaining.
 6. Never use dynamic type — annotate all variables explicitly.
-7. Use AppColors / AppTextStyles from lib/tokens/ for all design values.
+7. Use AppColors / AppTextStyles from lib/tokens/ for all design values. NEVER hardcode Color() hex values or TextStyle() sizes — always reference AppColors.* and AppTextStyles.*.
 8. Image.network() for remote images; Image.asset() for local — never bare Image().
 9. Wrap every screen body in SafeArea(child: ...).
-10. Declare the class in a single file; no partial classes.`;
+10. Declare the class in a single file; no partial classes.
+
+LAYOUT RULES — follow the widget tree spec exactly:
+11. If a ## Widget Tree Spec section is provided, use EXACTLY those widget types and nesting. Do NOT change Row→Column, Stack→Column, or any widget type.
+12. HORIZONTAL Auto Layout → Row. VERTICAL Auto Layout → Column. Mixed/overlapping elements → Stack with Positioned children.
+13. For children that fill remaining space (marked fill/100%): wrap in Expanded(). For flexible children: wrap in Flexible().
+14. Gaps between Row/Column children: use SizedBox(width: N) or SizedBox(height: N) between items — never margin/padding hacks.
+15. For Positioned children inside a Stack: always specify top:, left:, width:, height: explicitly.
+16. Text line height = Figma lineHeight (px) / fontSize (px). Already computed in the spec — use it.
+17. CrossAxisAlignment.stretch means children fill the cross axis — do NOT set explicit widths on Column children or heights on Row children when this is used.
+18. NEVER use negative margins. For overlapping elements, ALWAYS use Stack + Positioned.
+
+WIDGET WHITELIST — only use widgets from this list without adding new imports:
+Container, Row, Column, Stack, Expanded, Flexible, SizedBox, Padding, Positioned, Align, Center,
+Text, RichText, Image, Icon, ElevatedButton, TextButton, OutlinedButton, IconButton,
+GestureDetector, InkWell, Scaffold, AppBar, BottomNavigationBar, NavigationBar,
+ListView, ListView.builder, GridView, SingleChildScrollView, ClipRRect, DecoratedBox,
+SafeArea, Opacity, AnimatedContainer, TextField, CircularProgressIndicator,
+Divider, Card, Chip, Badge, CircleAvatar, Tooltip, DropdownButton, Switch, Checkbox,
+TabBar, TabBarView, DefaultTabController, BottomSheet, SnackBar, Dialog`;
 
 // ─── Node ─────────────────────────────────────────────────────────────────────
 
@@ -104,11 +124,20 @@ export async function codeGeneratorAgent(
     files.push(buildRNNavTypesFile(plan.screens));
   } else {
     files.push(...buildFlutterTokenFiles(ir.tokens));
+    // Type-safe asset accessors — generated before screens so LLM can reference Assets.*
+    if (ir.assets.length > 0) {
+      files.push(buildAssetAccessorFile(ir.assets));
+    }
   }
 
   // ── Step 2: Build project context (updated incrementally) ──────────────────
   const tokenSummary     = serializeTokenSummary(ir.tokens);
   const generatedFilePaths: string[] = files.map((f) => f.path);
+
+  // Flutter: extract actual token file content so LLM knows exact constant names
+  const flutterTokenFileContent = framework === 'flutter'
+    ? files.map((f) => `// FILE: ${f.path}\n${f.content}`).join('\n\n')
+    : '';
 
   // ── Step 3: Create temp workspace ──────────────────────────────────────────
   const workspace = await WorkspaceSession.create(framework);
@@ -136,9 +165,12 @@ export async function codeGeneratorAgent(
         styleSheet: framework === 'react-native'
           ? generateRNStyleSheet(s).code
           : generateFlutterLayoutConstants(s),
+        layoutSpec: framework === 'flutter'
+          ? resolveLayout(s.root).treeText
+          : undefined,
       })),
       {
-        llm, model, framework, tokenSummary, generatedFilePaths,
+        llm, model, framework, tokenSummary, flutterTokenFileContent, generatedFilePaths,
         stateManagement: state.stateManagement,
         workspace, gate3Due, warnings, logs, assets: ir.assets,
       }
@@ -164,9 +196,12 @@ export async function codeGeneratorAgent(
           styleSheet: framework === 'react-native'
             ? generateRNStyleSheet(c).code
             : generateFlutterLayoutConstants(c),
+          layoutSpec: framework === 'flutter'
+            ? resolveLayout(c.defaultVariant).treeText
+            : undefined,
         })),
         {
-          llm, model, framework, tokenSummary, generatedFilePaths,
+          llm, model, framework, tokenSummary, flutterTokenFileContent, generatedFilePaths,
           stateManagement: state.stateManagement,
           workspace, gate3Due, warnings, logs, assets: ir.assets,
         }
@@ -174,9 +209,10 @@ export async function codeGeneratorAgent(
       files.push(...componentFiles);
     }
 
-    // ── Step 6: Final Gate 3 pass ──────────────────────────────────────────────
-    if (framework === 'react-native') {
-      logs.push(makeLogEntry('info', '[CodeGen] Gate 3: final workspace tsc check…'));
+    // ── Step 6: Final Gate 3 pass (React Native: tsc, Flutter: flutter analyze) ─
+    if (framework === 'react-native' || framework === 'flutter') {
+      const checkLabel = framework === 'react-native' ? 'tsc' : 'flutter analyze';
+      logs.push(makeLogEntry('info', `[CodeGen] Gate 3: final workspace ${checkLabel} check…`));
       const errors = await workspace.runCheck();
       if (errors.length > 0) {
         const repaired = await repairWorkspaceErrors(
@@ -200,7 +236,22 @@ export async function codeGeneratorAgent(
     await workspace.cleanup();
   }
 
-  // ── Step 7: Collect assets ──────────────────────────────────────────────────
+  // ── Step 7: Vision validation loop (Flutter only, if screenshots available) ──
+  if (framework === 'flutter') {
+    const figmaScreenshots = buildFigmaScreenshotMap(ir.assets);
+    if (figmaScreenshots.size > 0 || process.env.SKIP_VISION !== '1') {
+      const { runVisionValidator } = await import('./vision-validator.js');
+      const visionResult = await runVisionValidator(files, figmaScreenshots, llm, model);
+      // Merge any patched files back
+      for (const patchedFile of visionResult.files) {
+        const idx = files.findIndex((f) => f.path === patchedFile.path);
+        if (idx >= 0) files[idx] = patchedFile;
+      }
+      logs.push(...visionResult.logs);
+    }
+  }
+
+  // ── Step 8: Collect assets ──────────────────────────────────────────────────
   const assets: AssetFile[] = ir.assets
     .filter((a): a is typeof a & { url: string } => !!a.url)
     .map((a) => ({
@@ -239,6 +290,8 @@ interface GenerationTarget {
   filePath:     string;
   /** Pre-generated StyleSheet.create() or Flutter layout constants — LLM references these, does not invent them */
   styleSheet?:  string;
+  /** Deterministic Flutter widget tree spec from layout-resolver — LLM follows this exactly */
+  layoutSpec?:  string;
 }
 
 interface BatchContext {
@@ -246,6 +299,8 @@ interface BatchContext {
   model:            string;
   framework:        'react-native' | 'flutter';
   tokenSummary:     string;
+  /** Actual content of AppColors + AppTextStyles dart files (injected into Flutter prompts) */
+  flutterTokenFileContent: string;
   generatedFilePaths: string[];
   stateManagement:  string;
   workspace:        WorkspaceSession;
@@ -280,8 +335,8 @@ async function generateBatch(
     }
   }
 
-  // Gate 3: run workspace tsc after every GATE3_INTERVAL files
-  if (ctx.framework === 'react-native' && ctx.workspace.fileCount >= ctx.gate3Due) {
+  // Gate 3: run workspace check after every GATE3_INTERVAL files
+  if ((ctx.framework === 'react-native' || ctx.framework === 'flutter') && ctx.workspace.fileCount >= ctx.gate3Due) {
     ctx.gate3Due += GATE3_INTERVAL;
     const errors = await ctx.workspace.runCheck();
     if (errors.length > 0) {
@@ -480,13 +535,25 @@ function buildFlutterPrompt(target: GenerationTarget, ctx: BatchContext): string
   const assetLines = ctx.assets
     .map((a) => {
       const folder = a.format === 'svg' ? 'icons' : 'images';
-      return `  - assets/${folder}/${a.slug}.${a.format}  (${a.name ?? a.slug})`;
+      const constName = toConstName(a.slug || a.name);
+      const accessor = folder === 'icons'
+        ? `Assets.icons.${constName}`
+        : `Assets.images.${constName}`;
+      return `  - ${a.slug}.${a.format}  →  Image.asset(${accessor})`;
     })
     .join('\n');
 
-  const layoutSection = target.styleSheet
-    ? `\n## Pre-generated layout constants (ALREADY DEFINED — reference these in your widget tree)\n\`\`\`dart\n${target.styleSheet}\n\`\`\`\n`
+  const layoutSpecSection = target.layoutSpec
+    ? `\n## Widget Tree Spec (FOLLOW EXACTLY — do not change widget types or nesting)\n\`\`\`\n${target.layoutSpec}\n\`\`\`\n`
     : '';
+
+  const layoutConstantsSection = target.styleSheet
+    ? `\n## Pre-generated layout constants (copy verbatim, reference for all SizedBox/EdgeInsets)\n\`\`\`dart\n${target.styleSheet}\n\`\`\`\n`
+    : '';
+
+  const tokenFilesSection = ctx.flutterTokenFileContent
+    ? `\n## Design token files (ALREADY GENERATED — import and reference ONLY these constant names)\n\`\`\`dart\n${ctx.flutterTokenFileContent}\n\`\`\`\n`
+    : `\n## Design tokens\n${ctx.tokenSummary || '(no tokens — use hardcoded values from the design spec)'}\n`;
 
   return `Generate a Flutter/Dart ${target.kind} widget.
 
@@ -498,29 +565,23 @@ Class name: ${target.name}
 - package:flutter/material.dart — all Flutter widgets
 - package:flutter/cupertino.dart — iOS-style widgets (optional)
 
-## Project files already generated (use these relative paths)
+## Project files already generated (use these relative paths for imports)
 ${existingFiles || '  (none yet)'}
-
-## Design tokens
-Import from: package:your_app/tokens/app_colors.dart
-             package:your_app/tokens/app_text_styles.dart
-${ctx.tokenSummary || '(no tokens — use hardcoded values from the design spec)'}
-
+${tokenFilesSection}
 ## State management: ${ctx.stateManagement || 'none'}
-${assetLines ? `\n## Image assets — bundled in project ZIP (use Image.asset with paths below)\n${assetLines}\n` : ''}${layoutSection}
-## Design specification
+${assetLines ? `\n## Image assets — bundled in project ZIP\n${assetLines}\n` : ''}${layoutSpecSection}${layoutConstantsSection}
+## Design specification (visual reference — use widget tree spec above for structure)
 ${target.serialized}
 
 ## Critical requirements
-- class ${target.name} extends StatelessWidget (use StatefulWidget only if local state needed)
+- class ${target.name} extends StatelessWidget (StatefulWidget only if local animation/input state needed)
 - const constructor: const ${target.name}({super.key});
 - SafeArea(child: ...) at the root of the Scaffold body
-- EVERY asset listed above MUST appear as Image.asset('assets/images/slug.png', fit: BoxFit.cover) — do NOT omit any
-- Every other image: Image.network('https://via.placeholder.com/400x300', errorBuilder: (c,e,s) => const Icon(Icons.broken_image))
-- All colours from AppColors, all text styles from AppTextStyles
-${target.styleSheet
-  ? `- IMPORTANT: The layout constants above are already computed — copy them verbatim at the top of the file and use them for all SizedBox/Container/EdgeInsets dimensions.`
-  : `- No hard-coded magic numbers — use const spacing values`}`;
+- EVERY asset listed above MUST appear using Image.asset() with exact path shown — do NOT omit any
+- Every placeholder image: Image.network('https://via.placeholder.com/400x300', errorBuilder: (c,e,s) => const Icon(Icons.broken_image))
+- ALL colours: use AppColors.* constants. NEVER use Color(0xFF...) literals directly
+- ALL text styles: use AppTextStyles.* constants. NEVER hardcode fontSize or fontFamily
+- If a Widget Tree Spec is provided above: implement it exactly, widget type by widget type`;
 }
 
 // ─── Deterministic file builders ──────────────────────────────────────────────
@@ -765,6 +826,32 @@ function safeId(s: string): string {
 
 function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function toConstName(slug: string): string {
+  return slug
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())
+    .replace(/^[0-9]/, 'asset$&');
+}
+
+/**
+ * Builds a map of componentName → Figma PNG base64 for the vision loop.
+ * Only populated when assets carry pre-fetched base64 content.
+ * In practice this is a best-effort: the vision validator degrades gracefully
+ * when screenshots are not available.
+ */
+function buildFigmaScreenshotMap(
+  assets: import('@appvelocity/agent-design-to-code-core').IRAsset[]
+): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const asset of assets) {
+    if (asset.format === 'png' && (asset as unknown as { base64?: string }).base64) {
+      map.set(asset.name, (asset as unknown as { base64: string }).base64);
+    }
+  }
+  return map;
 }
 
 function toSnake(pascal: string): string {

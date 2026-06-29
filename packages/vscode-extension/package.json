@@ -1,0 +1,92 @@
+{
+  "name": "appvelocity-flutter",
+  "displayName": "AppVelocity Flutter",
+  "description": "AI-powered Flutter development: generate screens, auto-fix build errors, run apps",
+  "version": "0.1.0",
+  "publisher": "appvelocity",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "AI"
+  ],
+  "activationEvents": [
+    "workspaceContains:pubspec.yaml"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "appvelocity",
+          "title": "AppVelocity",
+          "icon": "assets/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "appvelocity": [
+        {
+          "id": "appvelocity.panel",
+          "type": "webview",
+          "name": "AppVelocity Flutter"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "appvelocity.analyzeProject",
+        "title": "AppVelocity: Analyze Project"
+      },
+      {
+        "command": "appvelocity.generateScreen",
+        "title": "AppVelocity: Generate Screen"
+      },
+      {
+        "command": "appvelocity.buildAndFix",
+        "title": "AppVelocity: Build & Auto-Fix"
+      },
+      {
+        "command": "appvelocity.runApp",
+        "title": "AppVelocity: Run App"
+      }
+    ],
+    "configuration": {
+      "title": "AppVelocity Flutter",
+      "properties": {
+        "appvelocity.llmApiUrl": {
+          "type": "string",
+          "description": "LLM proxy URL"
+        },
+        "appvelocity.apiKey": {
+          "type": "string",
+          "description": "API key for LLM proxy"
+        },
+        "appvelocity.model": {
+          "type": "string",
+          "default": "gemini-1.5-pro",
+          "description": "LLM model for code generation"
+        },
+        "appvelocity.figmaToken": {
+          "type": "string",
+          "description": "Figma personal access token"
+        },
+        "appvelocity.flutterPath": {
+          "type": "string",
+          "description": "Path to Flutter binary (leave empty to use PATH)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/vscode": "^1.120.0",
+    "typescript": "^5.9.3"
+  }
+}

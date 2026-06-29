@@ -1,0 +1,28 @@
+{
+  "name": "@appvelocity/cli",
+  "version": "0.1.0",
+  "description": "AppVelocity Flutter CLI — analyze, generate, build, and run Flutter apps with AI assistance",
+  "type": "module",
+  "bin": {
+    "av": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.1.1",
+    "yaml": "^2.4.5",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/node": "^20.14.0"
+  },
+  "files": [
+    "dist"
+  ]
+}
